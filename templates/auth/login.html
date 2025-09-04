@@ -1,0 +1,122 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - GTD Tasks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+        .expand-target::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
+                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Sign in to your GTD dashboard
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Manage your tasks and projects efficiently
+            </p>
+        </div>
+
+        <!-- Messages -->
+        {% include "partials/messages.html" %}
+
+        <form class="mt-8 space-y-6" method="post" id="login-form">
+            {% csrf_token %}
+            <input type="hidden" name="remember" value="true">
+            {% if request.GET.next %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% endif %}
+
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div>
+                    <label for="username" class="sr-only">Username</label>
+                    <input
+                        id="username"
+                        name="username"
+                        type="text"
+                        autocomplete="username"
+                        required
+                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                        placeholder="Username"
+                        value="{{ request.POST.username|default:'' }}"
+                    >
+                </div>
+                <div>
+                    <label for="password" class="sr-only">Password</label>
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                        placeholder="Password"
+                    >
+                </div>
+            </div>
+
+            <div>
+                <button
+                    type="submit"
+                    class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-blue-500 group-hover:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </span>
+                    Sign in
+                </button>
+            </div>
+
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+
+                </div>
+                {% if demo_users|length > 0 %}
+                <div class="mt-4 mb-4 space-y-2">
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-gray-50 text-gray-500">Demo Accounts</span>
+                    </div>
+                    <p class="text-xs text-gray-600 text-center">Use these demo accounts:</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        {% for user in demo_users %}
+                        <div class="bg-white p-2 rounded border text-center flex flex-col relative">
+                            <strong>{{user.username}}</strong><br>
+                            <span class="text-gray-500">{{user.password}}</span>
+                            <a onclick="document.getElementById('username').value='{{user.username}}'; document.getElementById('password').value='{{user.password}}'; document.getElementById('login-form').submit()"
+                               class="expand-target text-blue-600 hover:underline cursor-pointer flex-grow">
+                                Login as {{user.username}}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!-- Charts and Analytics Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+     hx-get="{% url 'dashboard_charts' %}"
+     hx-trigger="every 60s"
+     hx-swap="outerHTML">
+    <!-- Priority Distribution Chart -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Priority Distribution</h3>
+        <div class="relative h-64">
+            <canvas id="priorityChart"
+                    data-priority-stats="{% for priority in priority_stats %}{{ priority.priority }}:{{ priority.count }}{% if not forloop.last %},{% endif %}{% endfor %}"></canvas>
+            <div id="priorityChartPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500 text-lg hidden">
+                No data
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Progress -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">This Week's Progress</h3>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-700">Completed</span>
+                <span class="text-2xl font-bold text-green-600">{{ recent_activity.completed_this_week }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-700">New Items</span>
+                <span class="text-2xl font-bold text-blue-600">{{ recent_activity.created_this_week }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-700">Someday/Maybe</span>
+                <span class="text-2xl font-bold text-gray-600">{{ stats.someday_maybe_count }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Priority Distribution Chart
+document.addEventListener('DOMContentLoaded', function() {
+    initializePriorityChart();
+});
+
+// Re-initialize chart after HTMX swap
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.querySelector('#priorityChart')) {
+        initializePriorityChart();
+    }
+});
+
+function initializePriorityChart() {
+    const canvas = document.getElementById('priorityChart');
+    const placeholder = document.getElementById('priorityChartPlaceholder');
+    if (!canvas || !placeholder) return;
+
+    // Get priority stats from data attribute
+    const priorityStatsRaw = canvas.dataset.priorityStats;
+    const priorityData = [];
+
+    if (priorityStatsRaw && priorityStatsRaw.trim()) {
+        const pairs = priorityStatsRaw.split(',');
+        pairs.forEach(pair => {
+            const [priority, count] = pair.split(':').map(Number);
+            if (!isNaN(priority) && !isNaN(count)) {
+                priorityData.push({ priority, count });
+            }
+        });
+    }
+
+    const priorityLabels = ['Low', 'Normal', 'High', 'Urgent'];
+    const priorityColors = ['#3B82F6', '#6B7280', '#F59E0B', '#EF4444'];
+
+    // Process data for chart
+    const chartData = [0, 0, 0, 0]; // Initialize for priorities 1-4
+    priorityData.forEach(item => {
+        if (item.priority >= 1 && item.priority <= 4) {
+            chartData[item.priority - 1] = item.count;
+        }
+    });
+
+    // Check if there's any data
+    const hasData = chartData.some(count => count > 0);
+
+    // Destroy existing chart if it exists
+    if (window.priorityChartInstance) {
+        window.priorityChartInstance.destroy();
+    }
+
+    if (!hasData) {
+        // Show placeholder, hide canvas
+        placeholder.classList.remove('hidden');
+        canvas.style.display = 'none';
+        return;
+    }
+
+    // Hide placeholder, show canvas
+    placeholder.classList.add('hidden');
+    canvas.style.display = 'block';
+
+    const ctx = canvas.getContext('2d');
+
+    window.priorityChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: priorityLabels,
+            datasets: [{
+                data: chartData,
+                backgroundColor: priorityColors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+</script>

@@ -1,0 +1,44 @@
+# Example override file for docker-compose
+# Copy this to docker-compose.override.yml and customize as needed
+
+version: '3.8'
+
+services:
+  web:
+    build:
+      args:
+        USER_ID: 1000  # Change to your host user ID
+        GROUP_ID: 1000  # Change to your host group ID
+    environment:
+      - SECRET_KEY=your-custom-secret-key-here
+      - DEBUG=True
+    # Uncomment to override ports
+    # ports:
+    #   - "8001:8000"
+
+  celery:
+    build:
+      args:
+        USER_ID: 1000
+        GROUP_ID: 1000
+    environment:
+      - SECRET_KEY=your-custom-secret-key-here
+
+  celery-beat:
+    build:
+      args:
+        USER_ID: 1000
+        GROUP_ID: 1000
+    environment:
+      - SECRET_KEY=your-custom-secret-key-here
+
+  flower:
+    build:
+      args:
+        USER_ID: 1000
+        GROUP_ID: 1000
+
+  # Override database settings if needed
+  # db:
+  #   environment:
+  #     POSTGRES_PASSWORD: your-custom-password

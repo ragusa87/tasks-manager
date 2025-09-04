@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}GTD Dashboard - Tasks Processing{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0" hx-ext="morph" id="dashboard-body">
+    <!-- Welcome Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-900">Hello {{ request.user.first_name|default:"!" }}!</h2>
+        <p class="mt-1 text-sm text-gray-600">Here's your GTD overview for today</p>
+        <div class="mt-2 flex items-center space-x-4">
+            <span class="text-xs text-gray-500">Last updated: <span id="last-updated">{{ now|date:"H:i" }}</span></span>
+        </div>
+    </div>
+
+    <!-- Stats Cards Partial -->
+    {% include "partials/stats_cards.html" %}
+
+    <!-- Charts Section Partial -->
+    {% include "partials/charts_section.html" %}
+
+    <!-- Urgent Items Partial -->
+    {% include "partials/urgent_items.html" %}
+
+    <!-- Recent Activity Partial -->
+    {% include "partials/recent_activity.html" %}
+</div>
+
+<script>
+// Update last updated timestamp
+document.addEventListener('htmx:afterSwap', function(evt) {
+    const lastUpdated = document.getElementById('last-updated');
+    if (lastUpdated) {
+        const now = new Date();
+        lastUpdated.textContent = now.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+});
+
+// Global refresh function
+function refreshDashboard() {
+    htmx.trigger(document.body, 'refresh-dashboard');
+}
+
+// Keyboard shortcut for refresh (Ctrl+R or Cmd+R)
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refreshDashboard();
+    }
+});
+
+// Connection status indicator
+window.isOnline = navigator.onLine;
+document.addEventListener('htmx:responseError', function(evt) {
+    if (!navigator.onLine) {
+        // Show offline indicator
+        const offlineIndicator = document.createElement('div');
+        offlineIndicator.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        offlineIndicator.textContent = 'Connection lost - Updates paused';
+        offlineIndicator.id = 'offline-indicator';
+        document.body.appendChild(offlineIndicator);
+    }
+});
+
+window.addEventListener('online', function() {
+    window.isOnline = true;
+    const indicator = document.getElementById('offline-indicator');
+    if (indicator) {
+        indicator.remove();
+    }
+    // Refresh dashboard when coming back online
+    refreshDashboard();
+});
+
+window.addEventListener('offline', function() {
+    window.isOnline = false;
+});
+</script>
+{% endblock %}

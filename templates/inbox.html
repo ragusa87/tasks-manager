@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}Inbox - Tasks Processing{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Inbox</h2>
+                <p class="mt-1 text-sm text-gray-600">Process your unorganized items</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if inbox_count > 0 %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ inbox_count }} item{{ inbox_count|pluralize }}
+                </span>
+                <a href="{% url 'dashboard' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% sprite "lucide-chevron-left" 24 class="mr-2" %}
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if inbox_count > 0 %}
+        <!-- Pagination Info -->
+        {% if paginator.num_pages > 1 %}
+        <div class="mb-4 flex justify-between items-center">
+            <p class="text-sm text-gray-700">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ inbox_count }} items
+            </p>
+            <div class="text-sm text-gray-500">
+                Page {{ page_obj.number }} of {{ paginator.num_pages }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Inbox Items -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <ul class="divide-y divide-gray-200">
+                {% for item in inbox_items %}
+                <li class="px-6 py-4 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <div class="h-6 w-6 text-gray-400">
+                                        {% sprite "archive" 24 %}
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-sm font-medium text-gray-900 truncate">
+                                        {{ item.title }}
+                                    </h3>
+                                    {% if item.description %}
+                                    <p class="text-sm text-gray-500 truncate">
+                                        {{ item.description }}
+                                    </p>
+                                    {% endif %}
+                                    <div class="mt-1 flex items-center space-x-4 text-xs text-gray-500">
+                                        <span>Created {{ item.created_at|date:"M j, Y" }}</span>
+                                        {% if item.priority != 2 %}
+                                        <span class="inline-flex items-center">
+                                            {{ item.priority_display }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 flex space-x-2">
+                            <!-- Process Actions -->
+                            <div class="relative inline-block text-left">
+                                <button type="button" class="inline-flex items-center px-1.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="options-menu-{{ item.id }}" aria-expanded="false" aria-haspopup="true">
+                                    {% sprite "lucide-chevron-down" 24 %}
+                                </button>
+                                <!-- Dropdown menu (hidden by default) -->
+                                <div class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10" role="menu" aria-orientation="vertical" aria-labelledby="options-menu-{{ item.id }}">
+                                    <div class="py-1" role="none">
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                            {% sprite "zap" 24 class="inline mr-2" %}
+                                            Make Next Action
+                                        </a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                            {% sprite "briefcase" 24 class="inline mr-2" %}
+                                            Convert to Project
+                                        </a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                            {% sprite "clock" 24 class="inline mr-2" %}
+                                            Add to Someday/Maybe
+                                        </a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                            {% sprite "file-text" 24 class="inline mr-2" %}
+                                            Store as Reference
+                                        </a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100" role="menuitem">
+                                            {% sprite "trash" 24 class="inline mr-2" %}
+                                            Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% include "partials/pagination.html" with total_count=inbox_count %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <div class="mx-auto h-24 w-24 text-gray-300">
+                {% sprite "check-circle" 96 %}
+            </div>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Inbox is empty!</h3>
+            <p class="mt-2 text-sm text-gray-500">
+                Great job! You've processed all your inbox items.
+                <br>
+                New items will appear here when they're added.
+            </p>
+            <div class="mt-6">
+                <a href="{% url 'dashboard' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% sprite "lucide-chevron-left" 24 class="mr-2" %}
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Simple dropdown toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle dropdown toggles
+    document.querySelectorAll('[id^="options-menu-"]').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.nextElementSibling;
+
+            // Close other dropdowns
+            document.querySelectorAll('.origin-top-right').forEach(function(menu) {
+                if (menu !== dropdown) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            // Toggle current dropdown
+            dropdown.classList.toggle('hidden');
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[id^="options-menu-"]')) {
+            document.querySelectorAll('.origin-top-right').forEach(function(menu) {
+                menu.classList.add('hidden');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% load sprite_tags %}
+<!-- Quick Stats Grid -->
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8"
+     hx-get="{% url 'dashboard_stats' %}"
+     hx-trigger="every 30s"
+     hx-swap="outerHTML">
+    <!-- Inbox -->
+    <a href="{% url 'inbox' %}" class="block hover:bg-gray-50 transition-colors duration-150">
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 {% if stats.inbox_count > 0 %}border-red-400{% else %}border-gray-300{% endif %}">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 {% if stats.inbox_count > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
+                            {% sprite "archive" 32 %}
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Inbox</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.inbox_count }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                {% if stats.inbox_count > 0 %}
+                <div class="mt-2">
+                    <span class="text-xs text-red-600 font-medium">Needs processing</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </a>
+
+    <!-- Next Actions -->
+    <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-blue-400">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="h-8 w-8 text-blue-400">
+                        {% sprite "zap" 32 %}
+                    </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Next Actions</dt>
+                        <dd class="text-lg font-medium text-gray-900">{{ stats.next_actions_count }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects -->
+    <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-purple-400">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="h-8 w-8 text-purple-400">
+                        {% sprite "briefcase" 32 %}
+                    </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
+                        <dd class="text-lg font-medium text-gray-900">{{ stats.projects_count }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waiting For -->
+    <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-yellow-400">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="h-8 w-8 text-yellow-400">
+                        {% sprite "clock" 32 %}
+                    </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
+                        <dd class="text-lg font-medium text-gray-900">{{ stats.waiting_for_count }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
