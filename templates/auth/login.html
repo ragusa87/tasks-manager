@@ -1,13 +1,8 @@
-{% load static i18n %}
+{% extends "base.html" %}
+{% load static i18n sprite_tags %}
 {% get_current_language as LANGUAGE_CODE %}
-<!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - GTD Tasks</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-        <style>
+{% block extra_head %}
+    <style>
         .expand-target::after {
           content: "";
           position: absolute;
@@ -17,7 +12,14 @@
           left: 0;
         }
     </style>
-</head>
+{% endblock %}
+
+{% block title %}Login{% endblock %}
+
+{% block body_header %}{% endblock %}
+{% block messages %}{% endblock %}
+
+{% block content %}
 <body class="bg-gray-50 min-h-screen">
 <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
@@ -35,7 +37,6 @@
             </p>
         </div>
 
-        <!-- Messages -->
         {% include "partials/messages.html" %}
 
         <form class="mt-8 space-y-6" method="post" id="login-form">
@@ -118,5 +119,4 @@
         </form>
     </div>
 </div>
-</body>
-</html>
+{% endblock content %}

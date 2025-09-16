@@ -5,37 +5,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Tasks Dashboard{% endblock %}</title>
+    <title>{% block title %}{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-
-
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
+    {% block body_header %}
     <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-semibold text-gray-900">GTD Dashboard</h1>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-semibold text-gray-900">GTD Dashboard</h1>
+                    </div>
+                    {% if user.is_authenticated %}
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-700">
+                            Welcome, {{ user.first_name|default:user.username }}
+                        </span>
+                        <a href="{% url 'logout' %}"
+                           class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                            Logout
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-                {% if user.is_authenticated %}
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-700">
-                        Welcome, {{ user.first_name|default:user.username }}
-                    </span>
-                    <a href="{% url 'logout' %}"
-                       class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                        Logout
-                    </a>
-                </div>
-                {% endif %}
             </div>
-        </div>
-    </header>
+        </header>
+    {% endblock %}
 
+    {% block messages %}
     {% include 'partials/messages.html' %}
-
+    {% endblock %}
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {% block content %}
         {% endblock %}
