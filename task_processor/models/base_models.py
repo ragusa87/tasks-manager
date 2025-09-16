@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 
 from task_processor.constants import GTDConfig
+from task_processor.models.managers import AreaManager
 
 
 class Context(models.Model):
@@ -42,7 +43,7 @@ class Area(models.Model):
     description = models.TextField(blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    objects = AreaManager()
     class Meta:
         unique_together = ('name', 'user')
         ordering = ['name']
