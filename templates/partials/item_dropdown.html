@@ -8,7 +8,7 @@
     <div class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10" role="menu" aria-orientation="vertical" aria-labelledby="options-menu-{{ item.id }}">
         <div class="py-1" role="none">
             {% for transition in item.get_available_transitions %}
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" data-transition="{{ transition.name }}" data-item-id="{{ item.id }}">
+                <a href="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}?returnUrl={{ request.get_full_path|urlencode }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
                     {% sprite transition.sprite 24 class="inline mr-2" %}
                     {{ transition.label }}
                 </a>

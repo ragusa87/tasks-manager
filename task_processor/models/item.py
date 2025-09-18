@@ -13,6 +13,13 @@ from task_processor.constants import GTDConfig, GTDStatus, Priority
 from .base_models import Area, Context
 
 
+class ItemTransition(dict):
+    @property
+    def name(self):
+        return self.get("name")
+    @property
+    def label(self):
+        return self.get("label")
 class ItemManager(models.Manager):
     """Custom manager for GTD items with common queries"""
 
@@ -289,7 +296,7 @@ class Item(models.Model):
         return False
 
     # Get available transitions for UI
-    def get_available_transitions(self):
+    def get_available_transitions(self) ->list[ItemTransition]:
         """Get list of available state transitions for current state"""
         return self.flow.get_available_transitions()
 
@@ -298,8 +305,6 @@ class Item(models.Model):
         """Get list of available state transitions for current state"""
         return self.flow.get_all_transitions()
 
-class ItemTransition(dict):
-    pass
 
 class ItemFlow:
     """

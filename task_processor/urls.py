@@ -23,6 +23,7 @@ from .views import (
     DashboardUrgentView,
     DashboardView,
     InboxView,
+    ItemTransitionView,
     LoginView,
     LogoutView,
 )
@@ -32,6 +33,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("", DashboardView.as_view(), name="dashboard"),
     path("inbox/", InboxView.as_view(), name="inbox"),
+    path("item/<int:item_id>/transition/<str:transition_slug>/", ItemTransitionView.as_view(), name="item_transition"),
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard_stats"),
     path("dashboard/charts/", DashboardChartsView.as_view(), name="dashboard_charts"),
     path("dashboard/urgent/", DashboardUrgentView.as_view(), name="dashboard_urgent"),
