@@ -56,73 +56,6 @@ wheels = [
 ]
 
 [[package]]
-name = "tasks-proto"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "celery" },
-    { name = "channels" },
-    { name = "channels-redis" },
-    { name = "django" },
-    { name = "django-fsm" },
-    { name = "django-fsm-log" },
-    { name = "django-unfold" },
-    { name = "flower" },
-    { name = "gunicorn" },
-    { name = "psycopg2-binary" },
-    { name = "python-dotenv" },
-    { name = "redis" },
-    { name = "requests" },
-    { name = "uvicorn", extra = ["standard"] },
-    { name = "whitenoise" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "django-debug-toolbar" },
-    { name = "django-extensions" },
-    { name = "factory-boy" },
-    { name = "ipython" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-django" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "celery", specifier = ">=5.5.3" },
-    { name = "channels", specifier = ">=4.0.0" },
-    { name = "channels-redis", specifier = ">=4.2.0" },
-    { name = "django", specifier = ">=5.2.6" },
-    { name = "django-fsm", specifier = ">=3.0.0" },
-    { name = "django-fsm-log", specifier = ">=3.1.0" },
-    { name = "django-unfold", specifier = ">=0.47.0" },
-    { name = "flower", specifier = ">=2.0.1" },
-    { name = "gunicorn", specifier = ">=23.0.0" },
-    { name = "psycopg2-binary", specifier = ">=2.9.10" },
-    { name = "python-dotenv", specifier = ">=1.1.1" },
-    { name = "redis", specifier = ">=6.4.0" },
-    { name = "requests", specifier = ">=2.32.5" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.35.0" },
-    { name = "whitenoise", specifier = ">=6.9.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "django-debug-toolbar", specifier = ">=6.0.0" },
-    { name = "django-extensions", specifier = ">=4.1" },
-    { name = "factory-boy", specifier = ">=3.3.3" },
-    { name = "ipython", specifier = ">=9.5.0" },
-    { name = "pre-commit", specifier = ">=4.3.0" },
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pytest-cov", specifier = ">=6.2.1" },
-    { name = "pytest-django", specifier = ">=4.11.1" },
-    { name = "ruff", specifier = ">=0.12.11" },
-]
-
-[[package]]
 name = "billiard"
 version = "4.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -420,18 +353,6 @@ wheels = [
 ]
 
 [[package]]
-name = "django-appconf"
-version = "1.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/61/a9/dcf95ff3fa0620b6818fc02276fbbb8926e7f286039b6d015e56e8b7af39/django-appconf-1.1.0.tar.gz", hash = "sha256:9fcead372f82a0f21ee189434e7ae9c007cbb29af1118c18251720f3d06243e4", size = 15986, upload-time = "2025-02-13T16:09:40.258Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/9e/f3a899991e4aaae4b69c1aa187ba4a32e34742475c91eb13010ee7fbe9db/django_appconf-1.1.0-py3-none-any.whl", hash = "sha256:7abd5a163ff57557f216e84d3ce9dac36c37ffce1ab9a044d3d53b7c943dd10f", size = 6389, upload-time = "2025-02-13T16:09:39.133Z" },
-]
-
-[[package]]
 name = "django-debug-toolbar"
 version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -457,26 +378,15 @@ wheels = [
 ]
 
 [[package]]
-name = "django-fsm"
-version = "3.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/33/28/2b48f7dab9d889741f00b7b86c664d88b04ae71b4d2ade4a94eeb7df1956/django-fsm-3.0.0.tar.gz", hash = "sha256:0112bcac573ad14051cf8ebe73bf296b6d5409f093e5f1677eb16e2196e263b3", size = 15525, upload-time = "2024-04-09T07:50:25.879Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/4d/b63f351bb66df1dc25abd41d3824199b28404254164982fc9fc22c886c27/django_fsm-3.0.0-py2.py3-none-any.whl", hash = "sha256:fa28f84f47eae7ce9247585ac6c1895e4ada08efff93fb243a59e9ff77b2d4ec", size = 12380, upload-time = "2024-04-09T07:50:21.75Z" },
-]
-
-[[package]]
-name = "django-fsm-log"
-version = "3.1.0"
+name = "django-filter"
+version = "25.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
-    { name = "django-appconf" },
-    { name = "django-fsm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bd/25/25296d04f9d4bb3717049a4f758f8b3ce5c6614ffea3b9504d1f6e79121f/django-fsm-log-3.1.0.tar.gz", hash = "sha256:9ef766f5e6d7c573d1953cf91df73538a611373cc1ef97488eff19a3f71d6ed6", size = 211700, upload-time = "2023-03-23T16:49:35.939Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/40/c702a6fe8cccac9bf426b55724ebdf57d10a132bae80a17691d0cf0b9bac/django_filter-25.1.tar.gz", hash = "sha256:1ec9eef48fa8da1c0ac9b411744b16c3f4c31176c867886e4c48da369c407153", size = 143021, upload-time = "2025-02-14T16:30:53.238Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/0d/45936561ddef8a714d08acfa74a72d5e0b0d4f4775cec78b4cea8b33fd24/django_fsm_log-3.1.0-py3-none-any.whl", hash = "sha256:ac4394f22659e7fb8e5ac42d1cc075490cd5a2af37202377ab2a1cb221c5f3db", size = 14087, upload-time = "2023-03-23T16:49:31.647Z" },
+    { url = "https://files.pythonhosted.org/packages/07/a6/70dcd68537c434ba7cb9277d403c5c829caf04f35baf5eb9458be251e382/django_filter-25.1-py3-none-any.whl", hash = "sha256:4fa48677cf5857b9b1347fed23e355ea792464e0fe07244d1fdfb8a806215b80", size = 94114, upload-time = "2025-02-14T16:30:50.435Z" },
 ]
 
 [[package]]
@@ -489,6 +399,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/32/b7/0a1c17506bdfa1c9dc3a33166a6fee522da63deee8e7980dea7eb1a24461/django_unfold-0.65.0.tar.gz", hash = "sha256:7960b2f6e18cb883920b6bc03e255bcf8ca94c18c4f6caa770ff65eeb64d8724", size = 1070476, upload-time = "2025-08-25T07:57:43.966Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/42/23cd8a882f344fb653441e92856ad6135ba46e6fb80eab1e2524a2ef115b/django_unfold-0.65.0-py3-none-any.whl", hash = "sha256:1282dfaee3d7ac5a70ba63b3974667c6453efa1eda29dcafc5470b77241e4709", size = 1178465, upload-time = "2025-08-25T07:57:42.314Z" },
+]
+
+[[package]]
+name = "django-viewflow"
+version = "2.2.12"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-filter" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f9/d3/cbcd9abc276f9fc2666757a8dee7d363edc301c374a957420e874718977a/django_viewflow-2.2.12.tar.gz", hash = "sha256:5d37fab5aeee567efc9c5944f2be8019a0d4159e40499110eba09071e5c501cf", size = 15450607, upload-time = "2025-07-25T06:00:15.003Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f8/33/399325ca74077909c64fdefc005e5e925dc7a59b3341eeab526b1efba28c/django_viewflow-2.2.12-py3-none-any.whl", hash = "sha256:24a1bb8109b68b44498852a88884748dd94e694ce5e45ea5317d68a1ba1f8730", size = 15616435, upload-time = "2025-07-25T06:00:02.85Z" },
 ]
 
 [[package]]
@@ -1109,6 +1032,71 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
+]
+
+[[package]]
+name = "tasks-proto"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "celery" },
+    { name = "channels" },
+    { name = "channels-redis" },
+    { name = "django" },
+    { name = "django-unfold" },
+    { name = "django-viewflow" },
+    { name = "flower" },
+    { name = "gunicorn" },
+    { name = "psycopg2-binary" },
+    { name = "python-dotenv" },
+    { name = "redis" },
+    { name = "requests" },
+    { name = "uvicorn", extra = ["standard"] },
+    { name = "whitenoise" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "django-debug-toolbar" },
+    { name = "django-extensions" },
+    { name = "factory-boy" },
+    { name = "ipython" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-django" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "celery", specifier = ">=5.5.3" },
+    { name = "channels", specifier = ">=4.0.0" },
+    { name = "channels-redis", specifier = ">=4.2.0" },
+    { name = "django", specifier = ">=5.2.6" },
+    { name = "django-unfold", specifier = ">=0.47.0" },
+    { name = "django-viewflow", specifier = ">=2.2.12" },
+    { name = "flower", specifier = ">=2.0.1" },
+    { name = "gunicorn", specifier = ">=23.0.0" },
+    { name = "psycopg2-binary", specifier = ">=2.9.10" },
+    { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "redis", specifier = ">=6.4.0" },
+    { name = "requests", specifier = ">=2.32.5" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.35.0" },
+    { name = "whitenoise", specifier = ">=6.9.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "django-debug-toolbar", specifier = ">=6.0.0" },
+    { name = "django-extensions", specifier = ">=4.1" },
+    { name = "factory-boy", specifier = ">=3.3.3" },
+    { name = "ipython", specifier = ">=9.5.0" },
+    { name = "pre-commit", specifier = ">=4.3.0" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "pytest-django", specifier = ">=4.11.1" },
+    { name = "ruff", specifier = ">=0.12.11" },
 ]
 
 [[package]]

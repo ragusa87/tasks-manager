@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django_fsm import FSMField, transition
-from django_fsm_log.decorators import fsm_log_by
+from django.utils.translation import gettext_lazy as _
+from viewflow import fsm
 
 from task_processor.constants import GTDConfig, GTDStatus, Priority
 
@@ -86,7 +86,7 @@ class Item(models.Model):
     description = models.TextField(blank=True)
 
     # State machine field - this enforces valid transitions
-    status = FSMField(default=GTDStatus.INBOX, choices=GTDStatus.choices)
+    status = models.CharField(max_length=50, choices=GTDStatus.choices, default=GTDStatus.INBOX)
 
     priority = models.IntegerField(choices=Priority.choices, default=Priority.NORMAL)
 
@@ -248,100 +248,11 @@ class Item(models.Model):
         """Get priority display with emoji indicators"""
         return f"{GTDConfig.PRIORITY_INDICATORS.get(self.priority, '')} {self.get_priority_display()}"
 
-    # State Machine Transitions with Guards and Actions
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.INBOX, target=GTDStatus.NEXT_ACTION)
-    def process_as_action(self, by=None):
-        """Process inbox item as actionable task"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.INBOX, target=GTDStatus.PROJECT)
-    def process_as_project(self, by=None):
-        """Process inbox item as multi-step project"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.INBOX, target=GTDStatus.SOMEDAY_MAYBE)
-    def process_as_someday_maybe(self, by=None):
-        """Process inbox item as someday/maybe"""
-        if not self.last_reviewed:
-            self.last_reviewed = timezone.now().date()
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.INBOX, target=GTDStatus.REFERENCE)
-    def process_as_reference(self, by=None):
-        """Process inbox item as reference material"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.INBOX, target=GTDStatus.CANCELLED)
-    def process_as_trash(self, by=None):
-        """Delete/trash inbox item"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.WAITING_FOR)
-    def delegate(self, person=None, follow_up_days=None, by=None):
-        """Delegate task to someone else"""
-        if person:
-            self.waiting_for_person = person
-        if not self.date_requested:
-            self.date_requested = timezone.now().date()
-        if not self.follow_up_date:
-            days = follow_up_days or GTDConfig.DEFAULT_FOLLOW_UP_DAYS
-            self.follow_up_date = timezone.now().date() + timedelta(days=days)
-
-    @fsm_log_by
-    @transition(field=status, source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT, GTDStatus.WAITING_FOR],
-                target=GTDStatus.SOMEDAY_MAYBE)
-    def defer_to_someday_maybe(self, by=None):
-        """Move active item to someday/maybe"""
-        if not self.last_reviewed:
-            self.last_reviewed = timezone.now().date()
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.NEXT_ACTION)
-    def activate_from_someday_maybe(self, by=None):
-        """Activate someday/maybe item as next action"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.PROJECT)
-    def activate_as_project(self, by=None):
-        """Activate someday/maybe item as project"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.WAITING_FOR, target=GTDStatus.NEXT_ACTION)
-    def receive_response(self, by=None):
-        """Mark waiting for item as received/resolved"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.COMPLETED)
-    def complete(self, by=None):
-        """Mark item as completed"""
-        self.is_completed = True
-        self.completed_at = timezone.now()
-
-    @fsm_log_by
-    @transition(field=status, source='*', target=GTDStatus.CANCELLED)
-    def cancel(self, by=None):
-        """Cancel item from any state"""
-        pass
-
-    @fsm_log_by
-    @transition(field=status, source=GTDStatus.COMPLETED, target=GTDStatus.NEXT_ACTION,
-                conditions=['can_reopen'])
-    def reopen(self, by=None):
-        """Reopen completed item"""
-        self.is_completed = False
-        self.completed_at = None
-
-    def can_reopen(self):
-        """Guard condition for reopening completed items"""
-        return self.is_completed
+    # Property to get the flow instance
+    @property
+    def flow(self):
+        """Get the ItemFlow instance for this item"""
+        return ItemFlow(self)
 
     # Custom validation for state-specific fields
     def clean(self):
@@ -380,12 +291,178 @@ class Item(models.Model):
     # Get available transitions for UI
     def get_available_transitions(self):
         """Get list of available state transitions for current state"""
+        return self.flow.get_available_transitions()
+
+    # Get all transitions for UI
+    def get_all_transitions(self):
+        """Get list of available state transitions for current state"""
+        return self.flow.get_all_transitions()
+
+class ItemTransition(dict):
+    pass
+
+class ItemFlow:
+    """
+    Flow class for GTD Item state machine using viewflow.fsm
+    """
+    state_field = fsm.State(GTDStatus, default=GTDStatus.INBOX)
+
+    def __init__(self, item):
+        self.item = item
+
+    @state_field.setter()
+    def _set_item_status(self, value):
+        self.item.status = value
+
+    @state_field.getter()
+    def _get_item_status(self):
+        return self.item.status
+
+    # State Machine Transitions with Guards and Actions
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.NEXT_ACTION)
+    def process_as_action(self):
+        """Process inbox item as actionable task"""
+        pass
+
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.PROJECT)
+    def process_as_project(self):
+        """Process inbox item as multi-step project"""
+        pass
+
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.SOMEDAY_MAYBE)
+    def process_as_someday_maybe(self):
+        """Process inbox item as someday/maybe"""
+        if not self.item.last_reviewed:
+            self.item.last_reviewed = timezone.now().date()
+
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.REFERENCE)
+    def process_as_reference(self):
+        """Process inbox item as reference material"""
+        pass
+
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.CANCELLED)
+    def process_as_trash(self):
+        """Delete/trash inbox item"""
+        pass
+
+    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.WAITING_FOR, label=_("Waiting For"))
+    def delegate(self, person=None, follow_up_days=None):
+        """Delegate task to someone else"""
+        if person:
+            self.item.waiting_for_person = person
+        if not self.item.date_requested:
+            self.item.date_requested = timezone.now().date()
+        if not self.item.follow_up_date:
+            days = follow_up_days or GTDConfig.DEFAULT_FOLLOW_UP_DAYS
+            self.item.follow_up_date = timezone.now().date() + timedelta(days=days)
+
+    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT, GTDStatus.WAITING_FOR],
+                           target=GTDStatus.SOMEDAY_MAYBE, label=_("Someday/Maybe"))
+    def defer_to_someday_maybe(self):
+        """Move active item to someday/maybe"""
+        if not self.item.last_reviewed:
+            self.item.last_reviewed = timezone.now().date()
+
+    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.NEXT_ACTION)
+    def activate_from_someday_maybe(self):
+        """Activate someday/maybe item as next action"""
+        pass
+
+    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.PROJECT)
+    def activate_as_project(self):
+        """Activate someday/maybe item as project"""
+        pass
+
+    @state_field.transition(source=GTDStatus.WAITING_FOR, target=GTDStatus.NEXT_ACTION)
+    def receive_response(self):
+        """Mark waiting for item as received/resolved"""
+        pass
+
+    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.COMPLETED)
+    def complete(self):
+        """Mark item as completed"""
+        self.item.is_completed = True
+        self.item.completed_at = timezone.now()
+
+    @state_field.transition(source=fsm.State.ANY, target=GTDStatus.CANCELLED)
+    def cancel(self):
+        """Cancel item from any state"""
+        pass
+
+    @state_field.transition(source=GTDStatus.COMPLETED, target=GTDStatus.NEXT_ACTION,
+                           conditions=[lambda self: self.can_reopen()])
+    def reopen(self):
+        """Reopen completed item"""
+        self.item.is_completed = False
+        self.item.completed_at = None
+
+    def can_reopen(self):
+        """Guard condition for reopening completed items"""
+        return self.item.is_completed
+
+    @state_field.on_success()
+    def _on_transition_success(self, descriptor, source, target):
+        """Save the item after successful transition"""
+        self.item.save()
+
+    def get_all_transitions(self) -> list[ItemTransition]:
+        # Get all transition methods by checking for the viewflow transition decorator
         transitions = []
-        for trans in self._meta.get_field('status').transitions:
-            if trans.has_perm(self):
-                transitions.append({
-                    'name': trans.name,
-                    'target': trans.target,
-                    'display_name': trans.name.replace('_', ' ').title()
-                })
+        for method_name in dir(self):
+            if method_name.startswith('_'):
+                continue
+            method = getattr(self, method_name)
+            if hasattr(method, 'get_transitions'):
+                method_transitions = method.get_transitions()
+                for transition in method_transitions:
+                    transitions.append(self._transition_to_dict(transition))
+        return transitions
+
+    def _transition_to_dict(self, transition) -> ItemTransition:
+        icon_mapping = {
+            'activate_as_project': ('briefcase', '💼'),
+            'activate_from_someday_maybe': ('lucid-history', '💭'),
+            'cancel': ('x-circle', '🚫'),
+            'complete': ('lucide-badge-check', '✅'),
+            'defer_to_someday_maybe': ('lucid-history', '💭'),
+            'delegate': ('lucide-badge', '👤'),
+            'process_as_action': ('zap', '🚀'),
+            'process_as_project': ('briefcase', '💼'),
+            'process_as_reference': ('archive', '📁'),
+            'process_as_someday_maybe': ('lucid-history', '💭'),
+            'process_as_trash': ('trash', '🗑️'),
+            'receive_response': ('lucide-badge', '✉️'),
+            'reopen': ('refresh', '🔄'),
+        }
+
+        transition_slug = str(transition.slug)
+        sprite_icon_tuple = icon_mapping.get(transition_slug, (None, None))
+
+        return ItemTransition(**{
+            'name': transition_slug,
+            'label': str(transition.label),
+            'source': str(transition.source),
+            'target': str(transition.target),
+            'sprite': sprite_icon_tuple[0],
+            'icon': sprite_icon_tuple[1],
+        })
+    def get_available_transitions(self) ->list[ItemTransition]:
+        """Get list of available state transitions for current state"""
+        transitions = []
+
+        # Get all transition methods by checking for the viewflow transition decorator
+        for method_name in dir(self):
+            if method_name.startswith('_'):
+                continue
+
+            method = getattr(self, method_name)
+            if hasattr(method, 'get_transitions'):
+                # Check if this transition can proceed from current state
+                if hasattr(method, 'can_proceed') and method.can_proceed():
+                    # Get the transition details
+                    method_transitions = method.get_transitions()
+                    for transition in method_transitions:
+                        transitions.append(self._transition_to_dict(transition))
+                        break  # Usually only one transition per method
+
         return transitions
