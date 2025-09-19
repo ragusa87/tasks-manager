@@ -88,7 +88,7 @@ class Command(BaseCommand):
         """Create contexts and areas for user"""
         # Create contexts
         for context_name in GTDConfig.DEFAULT_CONTEXTS:
-            Context.objects.get_or_create(
+            Context.objects.update_or_create(
                 name=context_name,
                 user=user,
                 defaults={'description': f'Default context: {context_name}'}
@@ -246,11 +246,17 @@ class Command(BaseCommand):
             status=GTDStatus.PROJECT,
             priority=random.choice([Priority.NORMAL, Priority.HIGH]),
             user=user,
-            context=random.choice(contexts) if random.random() < 0.7 else None,
             area=random.choice(areas) if random.random() < 0.8 else None,
             due_date=self.random_future_date() if random.random() < 0.6 else None,
             estimated_duration=timedelta(hours=random.randint(5, 40))
         )
+
+        # Add contexts after creation (ManyToMany field)
+        if random.random() < 0.7 and contexts:
+            # Sometimes add 1-2 contexts
+            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            project.contexts.set(selected_contexts)
+
         return project
 
     def create_next_action_item(self, user, title, contexts, areas, parent_project=None):
@@ -262,12 +268,17 @@ class Command(BaseCommand):
             priority=random.choice(list(Priority)),
             user=user,
             parent_project=parent_project,
-            context=random.choice(contexts) if random.random() < 0.9 else None,
             area=random.choice(areas) if random.random() < 0.7 else None,
             due_date=self.random_future_date() if random.random() < 0.4 else None,
             estimated_duration=timedelta(minutes=random.randint(15, 180)),
             is_completed=random.random() < 0.2  # 20% completed
         )
+
+        # Add contexts after creation (ManyToMany field)
+        if random.random() < 0.9 and contexts:
+            # Usually add 1 context, sometimes 2
+            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            item.contexts.set(selected_contexts)
 
         # Set completion date for completed items
         if item.is_completed:
@@ -289,18 +300,25 @@ class Command(BaseCommand):
 
     def create_waiting_for_item(self, user, title, person, contexts, areas):
         """Create a waiting for item"""
-        return Item.objects.create(
+        item = Item.objects.create(
             title=title,
             description=f"Waiting for: {title}",
             status=GTDStatus.WAITING_FOR,
             priority=random.choice([Priority.NORMAL, Priority.HIGH]),
             user=user,
-            context=random.choice(contexts) if random.random() < 0.5 else None,
             area=random.choice(areas) if random.random() < 0.6 else None,
             waiting_for_person=person,
             date_requested=self.random_past_date(days=30),
             follow_up_date=self.random_future_date(days=14)
         )
+
+        # Add contexts after creation (ManyToMany field)
+        if random.random() < 0.5 and contexts:
+            # Less frequently add contexts for waiting items
+            selected_contexts = random.sample(contexts, min(1, len(contexts)))
+            item.contexts.set(selected_contexts)
+
+        return item
 
     def create_someday_maybe_item(self, user, title, contexts, areas):
         """Create a someday/maybe item"""
@@ -324,17 +342,24 @@ class Command(BaseCommand):
             GTDStatus.COMPLETED
         ])
 
-        return Item.objects.create(
+        item = Item.objects.create(
             title=f"Random item {index}",
             description=f"Random item description {index}",
             status=status,
             priority=random.choice(list(Priority)),
             user=user,
-            context=random.choice(contexts) if random.random() < 0.6 else None,
             area=random.choice(areas) if random.random() < 0.7 else None,
             due_date=self.random_future_date() if random.random() < 0.3 else None,
             is_completed=status == GTDStatus.COMPLETED
         )
+
+        # Add contexts after creation (ManyToMany field)
+        if random.random() < 0.6 and contexts:
+            # Randomly add 1-2 contexts
+            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            item.contexts.set(selected_contexts)
+
+        return item
 
     def create_reviews(self, user):
         """Create sample review data"""

@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n sprite_tags %}
 {% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE }}">
@@ -41,6 +41,6 @@
         {% block content %}
         {% endblock %}
     </main>
-    {% include './all-sprites.svg' %}
+    {% sprite_svg %}
 </body>
 </html>

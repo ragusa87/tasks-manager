@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ title }}</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    {% if item %}
+                        Update the details of your item
+                    {% else %}
+                        Create a new GTD item
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'dashboard' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% sprite "lucide-chevron-left" 24 class="mr-2" %}
+                    Cancel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white shadow rounded-lg">
+        <form method="post" class="p-6">
+            {% csrf_token %}
+
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+                <div class="rounded-md bg-red-50 p-4 mb-6">
+                    <div class="flex">
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">
+                                Please correct the following errors:
+                            </h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <ul class="list-disc pl-5 space-y-1">
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="space-y-6">
+                <!-- Title Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Title <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.title.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Description Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Description
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">Provide additional details about this item</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 space-y-6 border-t border-gray-200">
+                <!-- Priority Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.priority.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Priority
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.priority }}
+                        {% if form.priority.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Contexts Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.contexts.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Contexts
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.contexts }}
+                        {% if form.contexts.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.contexts.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">Where or how will you work on this? (Hold Ctrl/Cmd to select multiple)</p>
+                    </div>
+                </div>
+
+                <!-- Area Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.area.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Area
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.area }}
+                        {% if form.area.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.area.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">Which area of responsibility?</p>
+                    </div>
+                </div>
+
+                <!-- Parent Project Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.parent_project.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Parent Project
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.parent_project }}
+                        {% if form.parent_project.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.parent_project.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">Is this part of a larger project?</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 space-y-6 border-t border-gray-200">
+                <!-- Due Date Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Due Date
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.due_date }}
+                        {% if form.due_date.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.due_date.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">When does this need to be completed?</p>
+                    </div>
+                </div>
+
+                <!-- Start Date Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Start Date
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.start_date }}
+                        {% if form.start_date.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.start_date.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">When can you start working on this?</p>
+                    </div>
+                </div>
+
+                <!-- Estimated Duration Field -->
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.estimated_duration.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Estimated Duration
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.estimated_duration }}
+                        {% if form.estimated_duration.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.estimated_duration.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">How long will this take? (HH:MM format)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                <a href="{% url 'dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% if item %}
+                        {% sprite "lucide-save" 24 class="mr-2" %}
+                        Update Item
+                    {% else %}
+                        {% sprite "lucide-save" 24 class="mr-2" %}
+                        Create Item
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -38,7 +38,7 @@ class ItemManager(models.Manager):
             is_completed=False
         )
         if context:
-            queryset = queryset.filter(context=context)
+            queryset = queryset.filter(contexts=context)
         return queryset
 
     def waiting_for(self, user, needs_follow_up=False):
@@ -106,7 +106,7 @@ class Item(models.Model):
         related_name='sub_items',
         limit_choices_to={'status': GTDStatus.PROJECT}
     )
-    context = models.ForeignKey(Context, on_delete=models.SET_NULL, null=True, blank=True)
+    contexts = models.ManyToManyField(Context, blank=True)
     area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
 
     # Time-related fields
@@ -146,7 +146,6 @@ class Item(models.Model):
             models.Index(fields=['user', 'status']),
             models.Index(fields=['user', 'status', 'is_completed']),
             models.Index(fields=['due_date']),
-            models.Index(fields=['context']),
             models.Index(fields=['area']),
         ]
 
