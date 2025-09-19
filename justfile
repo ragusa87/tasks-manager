@@ -79,6 +79,6 @@ uv *args:
     docker compose run --rm {{BACKEND_CONTAINER}} uv "$@"
 
 sprites:
-    ./sprites/all-gen.sh
+    @just manage sprites
 import? 'override.justfile'
 

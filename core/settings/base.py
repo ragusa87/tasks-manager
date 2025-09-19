@@ -200,3 +200,8 @@ CHANNEL_LAYERS = {
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CELERI_ADMIN_URL= get_env_variable("CELERI_ADMIN_URL", "http://tasks-celery-admin.docker.test/")
 IS_DEMO = get_env_variable("IS_DEMO", "True").lower() in ("true", "1", "t")
+
+
+DATE_INPUT_FORMAT = "%Y-%m-%d"
+DATETIME_INPUT_FORMAT = "%Y-%m-%dT%H:%M"
+TIME_INPUT_FORMAT = "%H:%M"

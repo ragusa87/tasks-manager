@@ -7,13 +7,13 @@
                     <div class="flex">
                         <div class="flex-shrink-0">
                             {% if message.tags == 'error' %}
-                                {% sprite "x-circle" 20 class="text-red-400" %}
+                                {% sprite "lucide-circle-x" 24 class="text-red-400" %}
                             {% elif message.tags == 'warning' %}
-                                {% sprite "alert-triangle" 20 class="text-yellow-400" %}
+                                {% sprite "lucide-triangle-alert" 24 class="text-yellow-400" %}
                             {% elif message.tags == 'success' %}
-                                {% sprite "check-circle" 20 class="text-green-400" %}
+                                {% sprite "lucide-circle-check" 24 class="text-green-400" %}
                             {% else %}
-                                {% sprite "info-circle" 20 class="text-blue-400" %}
+                                {% sprite "lucide-info" 24 class="text-blue-400" %}
                             {% endif %}
                         </div>
                         <div class="ml-3">
@@ -25,7 +25,7 @@
                             <div class="-mx-1.5 -my-1.5">
                                 <button type="button" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" class="inline-flex rounded-md p-1.5 {% if message.tags == 'error' %}text-red-500 hover:bg-red-100{% elif message.tags == 'warning' %}text-yellow-500 hover:bg-yellow-100{% elif message.tags == 'success' %}text-green-500 hover:bg-green-100{% else %}text-blue-500 hover:bg-blue-100{% endif %}">
                                     <span class="sr-only">Dismiss</span>
-                                    {% sprite "x" 20 %}
+                                    {% sprite "lucid-x" 24 %}
                                 </button>
                             </div>
                         </div>

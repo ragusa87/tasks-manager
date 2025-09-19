@@ -8,7 +8,49 @@
     <title>{% block title %}{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    {% block extra_head %}{% endblock %}
+    {% block extra_head %}
+    <style>
+        .expand-target::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+        }
+        </style>
+        <script type="text/javascript">
+            // Simple dropdown toggle functionality
+            document.addEventListener('DOMContentLoaded', function() {
+                // Handle dropdown toggles
+                document.querySelectorAll('[id^="options-menu-"]').forEach(function(button) {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const dropdown = this.nextElementSibling;
+
+                        // Close other dropdowns
+                        document.querySelectorAll('.origin-top-right').forEach(function(menu) {
+                            if (menu !== dropdown) {
+                                menu.classList.add('hidden');
+                            }
+                        });
+
+                        // Toggle current dropdown
+                        dropdown.classList.toggle('hidden');
+                    });
+                });
+
+                // Close dropdowns when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('[id^="options-menu-"]')) {
+                        document.querySelectorAll('.origin-top-right').forEach(function(menu) {
+                            menu.classList.add('hidden');
+                        });
+                    }
+                });
+            });
+        </script>
+    {% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
     {% block body_header %}

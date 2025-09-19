@@ -83,6 +83,7 @@
 
             <div class="pt-6 space-y-6 border-t border-gray-200">
                 <!-- Priority Field -->
+                {% if form.priority %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                     <label for="{{ form.priority.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Priority
@@ -94,8 +95,10 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Contexts Field -->
+                {% if form.contexts %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                     <label for="{{ form.contexts.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Contexts
@@ -108,8 +111,10 @@
                         <p class="mt-2 text-sm text-gray-500">Where or how will you work on this? (Hold Ctrl/Cmd to select multiple)</p>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Area Field -->
+                {% if form.area %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                     <label for="{{ form.area.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Area
@@ -122,8 +127,10 @@
                         <p class="mt-2 text-sm text-gray-500">Which area of responsibility?</p>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Parent Project Field -->
+                {% if form.parent_project %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                     <label for="{{ form.parent_project.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Parent Project
@@ -136,10 +143,12 @@
                         <p class="mt-2 text-sm text-gray-500">Is this part of a larger project?</p>
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <div class="pt-6 space-y-6 border-t border-gray-200">
                 <!-- Due Date Field -->
+                {% if form.due_date %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                     <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Due Date
@@ -152,8 +161,10 @@
                         <p class="mt-2 text-sm text-gray-500">When does this need to be completed?</p>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Start Date Field -->
+                {% if form.start_date %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                     <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Start Date
@@ -166,8 +177,10 @@
                         <p class="mt-2 text-sm text-gray-500">When can you start working on this?</p>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Estimated Duration Field -->
+                {% if form.estimated_duration %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                     <label for="{{ form.estimated_duration.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Estimated Duration
@@ -180,6 +193,7 @@
                         <p class="mt-2 text-sm text-gray-500">How long will this take? (HH:MM format)</p>
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Form Actions -->

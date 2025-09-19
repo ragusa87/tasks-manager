@@ -266,7 +266,7 @@ class Item(models.Model):
 
         # Validate waiting_for fields
         if self.status == GTDStatus.WAITING_FOR:
-            if not self.waiting_for_person:
+            if not self.waiting_for_person or str(self.waiting_for_person).strip() == "":
                 raise ValidationError("Waiting for items must specify who/what you're waiting for")
 
         # Validate project hierarchy depth
@@ -311,6 +311,17 @@ class ItemFlow:
     """
     state_field = fsm.State(GTDStatus, default=GTDStatus.INBOX)
 
+    state_icon_mapping = {
+        GTDStatus.INBOX.value: ('lucide-inbox', '📥'),
+        GTDStatus.NEXT_ACTION.value: ('lucide-zap', '🚀'),
+        GTDStatus.WAITING_FOR.value: ('lucide-hourglass', '👤'),
+        GTDStatus.SOMEDAY_MAYBE.value: ('lucide-history', '💭'),
+        GTDStatus.REFERENCE.value: ('lucide-archive', '📁'),
+        GTDStatus.PROJECT.value: ('lucide-briefcase', '💼'),
+        GTDStatus.COMPLETED.value: ('lucide-badge-check', '✅'),
+        GTDStatus.CANCELLED.value: ('lucide-trash-2', '🚫'),
+    }
+
     def __init__(self, item):
         self.item = item
 
@@ -323,34 +334,29 @@ class ItemFlow:
         return self.item.status
 
     # State Machine Transitions with Guards and Actions
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.NEXT_ACTION)
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.NEXT_ACTION, label=_("Next Action"))
     def process_as_action(self):
         """Process inbox item as actionable task"""
         pass
 
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.PROJECT)
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.PROJECT, label=_("Convert to Project"))
     def process_as_project(self):
         """Process inbox item as multi-step project"""
         pass
 
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.SOMEDAY_MAYBE)
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.SOMEDAY_MAYBE, label=_("Someday/Maybe"))
     def process_as_someday_maybe(self):
         """Process inbox item as someday/maybe"""
         if not self.item.last_reviewed:
             self.item.last_reviewed = timezone.now().date()
 
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.REFERENCE)
+    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.REFERENCE,label=_("Convert as Reference"))
     def process_as_reference(self):
         """Process inbox item as reference material"""
         pass
 
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.CANCELLED)
-    def process_as_trash(self):
-        """Delete/trash inbox item"""
-        pass
-
     @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.WAITING_FOR, label=_("Waiting For"))
-    def delegate(self, person=None, follow_up_days=None):
+    def delegate(self, person, follow_up_days=None):
         """Delegate task to someone else"""
         if person:
             self.item.waiting_for_person = person
@@ -367,42 +373,43 @@ class ItemFlow:
         if not self.item.last_reviewed:
             self.item.last_reviewed = timezone.now().date()
 
-    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.NEXT_ACTION)
+    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.NEXT_ACTION, label=_("Next Action"))
     def activate_from_someday_maybe(self):
         """Activate someday/maybe item as next action"""
         pass
 
-    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.PROJECT)
+    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.PROJECT, label=_("Convert to Project"))
     def activate_as_project(self):
         """Activate someday/maybe item as project"""
         pass
 
-    @state_field.transition(source=GTDStatus.WAITING_FOR, target=GTDStatus.NEXT_ACTION)
+    @state_field.transition(source=GTDStatus.WAITING_FOR, target=GTDStatus.NEXT_ACTION, label=_("Received Response"))
     def receive_response(self):
         """Mark waiting for item as received/resolved"""
         pass
 
-    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.COMPLETED)
+    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.COMPLETED, label=_("Complete"))
     def complete(self):
         """Mark item as completed"""
         self.item.is_completed = True
         self.item.completed_at = timezone.now()
 
-    @state_field.transition(source=fsm.State.ANY, target=GTDStatus.CANCELLED)
+    @state_field.transition(source=fsm.State.ANY, target=GTDStatus.CANCELLED, conditions=[lambda self: not self.item.status == GTDStatus.CANCELLED], label=_("Cancel"))
     def cancel(self):
         """Cancel item from any state"""
         pass
 
+    @state_field.transition(source=GTDStatus.CANCELLED, target=GTDStatus.INBOX, label=_("Restore to Inbox"))
+    def uncancel(self):
+        """Process inbox item as actionable task"""
+        pass
+
     @state_field.transition(source=GTDStatus.COMPLETED, target=GTDStatus.NEXT_ACTION,
-                           conditions=[lambda self: self.can_reopen()])
+                           conditions=[lambda self: self.item.is_completed], label=_("Reopen"))
     def reopen(self):
         """Reopen completed item"""
         self.item.is_completed = False
         self.item.completed_at = None
-
-    def can_reopen(self):
-        """Guard condition for reopening completed items"""
-        return self.item.is_completed
 
     @state_field.on_success()
     def _on_transition_success(self, descriptor, source, target):
@@ -423,24 +430,9 @@ class ItemFlow:
         return transitions
 
     def _transition_to_dict(self, transition) -> ItemTransition:
-        icon_mapping = {
-            'activate_as_project': ('briefcase', '💼'),
-            'activate_from_someday_maybe': ('lucid-history', '💭'),
-            'cancel': ('x-circle', '🚫'),
-            'complete': ('lucide-badge-check', '✅'),
-            'defer_to_someday_maybe': ('lucid-history', '💭'),
-            'delegate': ('lucide-badge', '👤'),
-            'process_as_action': ('zap', '🚀'),
-            'process_as_project': ('briefcase', '💼'),
-            'process_as_reference': ('archive', '📁'),
-            'process_as_someday_maybe': ('lucid-history', '💭'),
-            'process_as_trash': ('trash', '🗑️'),
-            'receive_response': ('lucide-badge', '✉️'),
-            'reopen': ('refresh', '🔄'),
-        }
-
         transition_slug = str(transition.slug)
-        sprite_icon_tuple = icon_mapping.get(transition_slug, (None, None))
+        transition_target = str(transition.target)
+        sprite_icon_tuple = self.state_icon_mapping.get(transition_target, (None, None))
 
         return ItemTransition(**{
             'name': transition_slug,
@@ -450,6 +442,19 @@ class ItemFlow:
             'sprite': sprite_icon_tuple[0],
             'icon': sprite_icon_tuple[1],
         })
+
+    @property
+    def icon(self):
+        return self._get_icon(index=1)
+
+    @property
+    def sprite(self):
+        return self._get_icon()
+
+    def _get_icon(self, index=0):
+        """Get icon for current state"""
+        index = max(0, min(index, 1))  # Clamp index to 0 or 1
+        return self.state_icon_mapping.get(self.item.status, (None, None))[index]
     def get_available_transitions(self) ->list[ItemTransition]:
         """Get list of available state transitions for current state"""
         transitions = []

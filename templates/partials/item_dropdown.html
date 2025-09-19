@@ -5,12 +5,12 @@
         {% sprite "lucide-chevron-down" 24 %}
     </button>
     <!-- Dropdown menu (hidden by default) -->
-    <div class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10" role="menu" aria-orientation="vertical" aria-labelledby="options-menu-{{ item.id }}">
+    <div class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50" role="menu" aria-orientation="vertical" aria-labelledby="options-menu-{{ item.id }}">
         <div class="py-1" role="none">
             {% for transition in item.get_available_transitions %}
-                <a href="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}?returnUrl={{ request.get_full_path|urlencode }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
-                    {% sprite transition.sprite 24 class="inline mr-2" %}
-                    {{ transition.label }}
+                <a href="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}?returnUrl={{ request.get_full_path|urlencode }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                    {% sprite transition.sprite 16 class="flex-shrink-0 mr-3" %}
+                    <span class="truncate">{{ transition.label }}</span>
                 </a>
             {% empty %}
                 <span class="block px-4 py-2 text-sm text-gray-500 italic">No actions available</span>

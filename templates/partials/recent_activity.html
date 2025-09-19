@@ -14,46 +14,8 @@
         {% if recent_items %}
         <ul class="divide-y divide-gray-200">
             {% for item in recent_items %}
-            <li class="px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors duration-150">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        {% if item.status == 'inbox' %}
-                            <div class="h-3 w-3 rounded-full bg-red-400" title="Inbox"></div>
-                        {% elif item.status == 'next_action' %}
-                            <div class="h-3 w-3 rounded-full bg-blue-400" title="Next Action"></div>
-                        {% elif item.status == 'project' %}
-                            <div class="h-3 w-3 rounded-full bg-purple-400" title="Project"></div>
-                        {% elif item.status == 'waiting_for' %}
-                            <div class="h-3 w-3 rounded-full bg-yellow-400" title="Waiting For"></div>
-                        {% elif item.status == 'completed' %}
-                            <div class="h-3 w-3 rounded-full bg-green-400" title="Completed"></div>
-                        {% elif item.status == 'someday_maybe' %}
-                            <div class="h-3 w-3 rounded-full bg-gray-400" title="Someday/Maybe"></div>
-                        {% else %}
-                            <div class="h-3 w-3 rounded-full bg-gray-300" title="{{ item.get_status_display }}"></div>
-                        {% endif %}
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-900">{{ item.title }}</p>
-                        <div class="flex items-center space-x-2">
-                            <p class="text-sm text-gray-500">{{ item.get_status_display }}</p>
-                            {% if item.priority > 2 %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                         {% if item.priority == 4 %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                {% if item.priority == 4 %}Urgent{% else %}High{% endif %}
-                            </span>
-                            {% endif %}
-                            {% if item.due_date and not item.is_completed %}
-                            <span class="text-xs text-gray-400">
-                                Due {{ item.due_date|date:"M j" }}
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="text-sm text-gray-500">
-                    {{ item.updated_at|timesince }} ago
-                </div>
+            <li class="px-4 py-4 relative">
+                {% include 'partials/item_row.html' with item=item %}
             </li>
             {% endfor %}
         </ul>
@@ -67,13 +29,13 @@
         {% else %}
         <div class="text-center py-12">
             <div class="mx-auto h-12 w-12 text-gray-400">
-                {% sprite "clipboard" 48 %}
+                {% sprite "lucide-clipboard-check" 24 %}
             </div>
             <h3 class="mt-2 text-sm font-medium text-gray-900">No items yet</h3>
             <p class="mt-1 text-sm text-gray-500">Get started by adding your first task to the inbox.</p>
             <div class="mt-6">
                 <button type="button" class="disabled inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    {% sprite "plus" 20 class="-ml-1 mr-2" %}
+                    {% sprite "lucide-circle-plus" 20 class="-ml-1 mr-2" %}
                     Add First Task
                 </button>
             </div>

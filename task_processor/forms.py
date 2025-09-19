@@ -1,9 +1,24 @@
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
+from .constants import GTDStatus
 from .models.base_models import Area, Context
 from .models.item import Item, ItemFlow
 
+
+class NativeDateInput(forms.DateInput):
+    input_type = "date"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(format=settings.DATE_INPUT_FORMAT, *args, **kwargs)
+
+class NativeDurationInput(forms.DateInput):
+    input_type = "time"
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {}).setdefault("step", 1)  # step in seconds
+        super().__init__(format=settings.TIME_INPUT_FORMAT, *args, **kwargs)
 
 class BaseItemForm(forms.ModelForm):
     class Meta:
@@ -35,17 +50,14 @@ class BaseItemForm(forms.ModelForm):
             'area': forms.Select(attrs={
                 'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
             }),
-            'due_date': forms.DateTimeInput(attrs={
+            'due_date': NativeDateInput(attrs={
                 'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'type': 'datetime-local'
             }),
-            'start_date': forms.DateTimeInput(attrs={
+            'start_date': NativeDateInput(attrs={
                 'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'type': 'datetime-local'
             }),
-            'estimated_duration': forms.TimeInput(attrs={
+            'estimated_duration': NativeDurationInput(attrs={
                 'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'type': 'time'
             }),
         }
 
@@ -108,11 +120,19 @@ class ItemUpdateForm(BaseItemForm):
 
     def _adjust_fields_for_status(self):
         """Adjust visible fields based on the item's current status"""
-        current_status = self.item_flow.item.status
-
+        current_status = self.instance.status if self.instance else None
+        print(current_status)
         # Hide parent_project for project items to prevent circular references
-        if current_status == 'project':
+        if current_status == GTDStatus.PROJECT:
             self.fields['parent_project'].widget = forms.HiddenInput()
+
+        if current_status in [GTDStatus.CANCELLED.value, GTDStatus.COMPLETED.value, GTDStatus.WAITING_FOR.value]:
+            # Completed or cancelled items should not have due/start dates or priority
+            for field in self.fields.copy().keys():
+
+                if field not in ['title', 'description']:
+                    self.fields[field].disabled = True
+                    self.fields[field].widget.attrs['disabled'] = True
 
     def save(self, commit=True):
         item = super().save(commit=False)

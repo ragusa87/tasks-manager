@@ -1,18 +1,6 @@
 {% extends "base.html" %}
 {% load static i18n sprite_tags %}
 {% get_current_language as LANGUAGE_CODE %}
-{% block extra_head %}
-    <style>
-        .expand-target::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          left: 0;
-        }
-    </style>
-{% endblock %}
 
 {% block title %}Login{% endblock %}
 

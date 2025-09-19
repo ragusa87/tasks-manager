@@ -42,47 +42,11 @@
         {% endif %}
 
         <!-- Inbox Items -->
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="bg-white shadow sm:rounded-md">
             <ul class="divide-y divide-gray-200">
                 {% for item in inbox_items %}
                 <li class="px-6 py-4 hover:bg-gray-50">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center space-x-3">
-                                <div class="flex-shrink-0">
-                                    <div class="h-6 w-6 text-gray-400">
-                                        {% sprite "archive" 24 %}
-                                    </div>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="text-sm font-medium text-gray-900 truncate">
-                                        {{ item.title }}
-                                    </h3>
-                                    {% if item.description %}
-                                    <p class="text-sm text-gray-500 truncate">
-                                        {{ item.description }}
-                                    </p>
-                                    {% endif %}
-                                    <div class="mt-1 flex items-center space-x-4 text-xs text-gray-500">
-                                        <span>Created {{ item.created_at|date:"M j, Y" }}</span>
-                                        {% if item.priority != 2 %}
-                                        <span class="inline-flex items-center">
-                                            {{ item.priority_display }}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-shrink-0 flex space-x-2">
-                            <!-- Edit Button -->
-                            <a href="{% url 'item_update' item_id=item.id %}" class="inline-flex items-center px-1.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Edit item">
-                                {% sprite "lucide-pencil" 24 %}
-                            </a>
-                            <!-- Process Actions -->
-                            {% include "partials/item_dropdown.html" with item=item %}
-                        </div>
-                    </div>
+                    {% include 'partials/item_row.html' with item=item %}
                 </li>
                 {% endfor %}
             </ul>
@@ -93,8 +57,8 @@
     {% else %}
         <!-- Empty State -->
         <div class="text-center py-12">
-            <div class="mx-auto h-24 w-24 text-gray-300">
-                {% sprite "check-circle" 96 %}
+            <div class="mx-auto h-24 24 text-gray-300 flex items-center justify-center">
+                {% sprite "lucide-circle-check" 24 %}
             </div>
             <h3 class="mt-4 text-lg font-medium text-gray-900">Inbox is empty!</h3>
             <p class="mt-2 text-sm text-gray-500">
@@ -111,36 +75,4 @@
         </div>
     {% endif %}
 </div>
-
-<script>
-// Simple dropdown toggle functionality
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle dropdown toggles
-    document.querySelectorAll('[id^="options-menu-"]').forEach(function(button) {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const dropdown = this.nextElementSibling;
-
-            // Close other dropdowns
-            document.querySelectorAll('.origin-top-right').forEach(function(menu) {
-                if (menu !== dropdown) {
-                    menu.classList.add('hidden');
-                }
-            });
-
-            // Toggle current dropdown
-            dropdown.classList.toggle('hidden');
-        });
-    });
-
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('[id^="options-menu-"]')) {
-            document.querySelectorAll('.origin-top-right').forEach(function(menu) {
-                menu.classList.add('hidden');
-            });
-        }
-    });
-});
-</script>
 {% endblock %}
