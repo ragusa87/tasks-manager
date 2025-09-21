@@ -1,7 +1,10 @@
 import re
 from dataclasses import dataclass, field
 from typing import Dict, List
+
 from django.db.models import Q
+
+from task_processor.constants import GTDEnergy
 
 
 @dataclass
@@ -159,7 +162,9 @@ def apply_search(queryset, query: str, **kwargs):
 def _build_field_filter(field_name: str, values: list) -> Q:
     """Build a Q object for a specific field with OR logic for multiple values."""
     from datetime import timedelta
+
     from django.utils import timezone
+
     from .constants import GTDStatus, Priority
 
     field_q = Q()
@@ -234,7 +239,21 @@ def _build_field_filter(field_name: str, values: list) -> Q:
                 neg_value = value[1:]
                 if neg_value in priority_map:
                     field_q |= ~Q(priority=priority_map[neg_value])
-
+        elif field_name == "energy":
+            # Energy filters
+            energy_map = {
+                "low": GTDEnergy.LOW,
+                "normal": None,
+                "high": GTDEnergy.HIGH,
+                "medium": GTDEnergy.MEDIUM,
+            }
+            if value in energy_map:
+                field_q |= Q(energy=energy_map[value])
+            elif value.startswith("-"):
+                # Handle negative energy values like "-low"
+                neg_value = value[1:]
+                if neg_value in energy_map:
+                    field_q |= ~Q(energy=energy_map[neg_value])
         elif field_name == "due":
             # Date-based filters
             now = timezone.now()
@@ -266,12 +285,33 @@ def _build_field_filter(field_name: str, values: list) -> Q:
             # Project name search
             field_q |= Q(parent_project__title__icontains=value)
 
+        elif field_name == "parent":
+            # Parent project ID search
+            try:
+                parent_id = int(value)
+                field_q |= Q(parent_project__id=parent_id)
+            except (ValueError, TypeError):
+                # If not a valid integer, treat as name search
+                field_q |= Q(parent_project__title__icontains=value)
+
         elif field_name == "context":
             # Context search
-            clean_value = value.lstrip("@#!")  # Remove context prefixes
-            field_q |= Q(contexts__name__icontains=clean_value)
+            try:
+                parent_id = int(value)
+                field_q |= Q(contexts__id=parent_id)
+            except (ValueError, TypeError):
+                # If not a valid integer, treat as name search
+                clean_value = value.lstrip("@#!")  # Remove context prefixes
+                field_q |= Q(contexts__name__icontains=clean_value)
 
         elif field_name == "area":
+            try:
+                parent_id = int(value)
+                field_q |= Q(area__id=parent_id)
+            except (ValueError, TypeError):
+                # If not a valid integer, treat as name search
+                clean_value = value.lstrip("@#!")  # Remove context prefixes
+                field_q |= Q(area__name__icontains=clean_value)
             # Area search
             field_q |= Q(area__name__icontains=value)
 
@@ -290,8 +330,10 @@ def _build_field_filter(field_name: str, values: list) -> Q:
 def _apply_field_filter(queryset, field_name: str, values: list, exclude: bool = False):
     """Apply a specific field filter to the queryset."""
     from datetime import timedelta
+
     from django.db.models import Q
     from django.utils import timezone
+
     from .constants import GTDStatus, Priority
 
     # Build separate Q objects for inclusion and exclusion
@@ -405,6 +447,15 @@ def _apply_field_filter(queryset, field_name: str, values: list, exclude: bool =
         elif field_name == "project":
             # Project name search
             target_q |= Q(parent_project__title__icontains=value)
+
+        elif field_name == "parent":
+            # Parent project ID search
+            try:
+                parent_id = int(value)
+                target_q |= Q(parent_project__id=parent_id)
+            except (ValueError, TypeError):
+                # If not a valid integer, treat as name search
+                target_q |= Q(parent_project__title__icontains=value)
 
         elif field_name == "context":
             # Context search

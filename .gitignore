@@ -58,3 +58,4 @@ celerybeat.pid
 # Docker
 docker-compose.override.yml
 .docker/
+Nirvana_Export_*.json

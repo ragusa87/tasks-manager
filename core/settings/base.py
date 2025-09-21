@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "core",
     "task_processor",
+    "nirvana",
 ]
 
 MIDDLEWARE = [

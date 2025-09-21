@@ -9,7 +9,7 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from viewflow import fsm
 
-from task_processor.constants import GTDConfig, GTDStatus, Priority
+from task_processor.constants import GTDConfig, GTDEnergy, GTDStatus, Priority
 
 from .base_models import Area, Context
 
@@ -137,11 +137,12 @@ class Item(models.Model):
     """
     Universal GTD Item with State Machine for status transitions
     """
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=1024)
     description = models.TextField(blank=True)
 
     # State machine field - this enforces valid transitions
     status = models.CharField(max_length=50, choices=GTDStatus.choices, default=GTDStatus.INBOX)
+    energy = models.CharField(max_length=10, choices=GTDEnergy.choices, default=None, null=True)
 
     priority = models.IntegerField(choices=Priority.choices, default=Priority.NORMAL)
 
@@ -181,6 +182,10 @@ class Item(models.Model):
         help_text="How often to review this someday/maybe item"
     )
 
+    # External integrations
+    nirvana_id = models.CharField(max_length=100, null=True, blank=True, unique=True,
+                                  help_text="External Nirvana ID for syncing")
+
     # Metadata
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -195,6 +200,7 @@ class Item(models.Model):
             models.Index(fields=['user', 'status', 'is_completed']),
             models.Index(fields=['due_date']),
             models.Index(fields=['area']),
+            models.Index(fields=['nirvana_id']),
         ]
 
     def __str__(self):
@@ -217,6 +223,10 @@ class Item(models.Model):
     @property
     def is_project(self):
         return self.status == GTDStatus.PROJECT
+
+    @property
+    def is_reference(self):
+        return self.status == GTDStatus.REFERENCE
 
     @property
     def is_task(self):

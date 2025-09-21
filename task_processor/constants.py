@@ -13,6 +13,11 @@ class GTDStatus(models.TextChoices):
     COMPLETED = 'completed', 'Completed'
     CANCELLED = 'cancelled', 'Cancelled'
 
+class GTDEnergy(models.TextChoices):
+    HIGH = 'high', 'High Energy'
+    MEDIUM = 'medium', 'Medium Energy'
+    LOW = 'low', 'Low Energy'
+
 
 class Priority(models.IntegerChoices):
     """Task Priority Levels"""

@@ -46,9 +46,17 @@
                     {% sprite "lucide-hourglass" 12 class="mr-1" %}
                     Waiting For
                 </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:someday" data-color="blue">
+                    {% sprite "lucide-history" 12 class="mr-1" %}
+                    Someday
+                </button>
                 <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:project" data-color="blue">
                     {% sprite "lucide-briefcase" 12 class="mr-1" %}
                     Projects
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:reference" data-color="blue">
+                    {% sprite "lucide-archive" 12 class="mr-1" %}
+                    Reference
                 </button>
                 <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="has:project" data-color="blue">
                     {% sprite "lucide-folder" 12 class="mr-1" %}
@@ -110,6 +118,24 @@
                         </button>
                     {% endfor %}
                 {% endif %}
+
+                <!-- Energy -->
+                <button data-energy="low" type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="energy:low" data-color="yellow">
+                    {% sprite "lucide-battery-low" 12 class="mr-1" %}
+                    Low
+                </button>
+                <button data-energy="medium" type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="energy:medium" data-color="yellow">
+                    {% sprite "lucide-battery-medium" 12 class="mr-1" %}
+                    Medium
+                </button>
+                <button data-energy="high" type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="energy:high" data-color="yellow">
+                    {% sprite "lucide-battery-full" 12 class="mr-1" %}
+                    High
+                </button>
+                <button data-energy="normal" type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="energy:normal" data-color="yellow">
+                    {% sprite "lucide-battery" 12 class="mr-1" %}
+                    Normal
+                </button>
             </div>
         </div>
     </div>

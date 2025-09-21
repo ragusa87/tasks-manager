@@ -1,6 +1,7 @@
 {% load static %}
 {% load sprite_tags %}
-<div class="space-y-3 sm:space-y-0">
+
+<div class="space-y-3 sm:space-y-0" data-item="{{ item.id }}">
     <!-- Main content row -->
     <div class="flex items-center justify-between">
         <div class="flex-1 min-w-0">
@@ -35,7 +36,7 @@
                         {% endif %}
 
                         {% if item.area %}
-                        <span class="inline-flex items-center text-green-600">
+                        <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-area="{{ item.area.pk }}">
                             {% sprite "lucide-target" 12 class="mr-1" %}
                             {{ item.area.name }}
                         </span>
@@ -44,15 +45,29 @@
                         {% if item.contexts.exists %}
                         <span class="inline-flex items-center text-purple-600">
                             {% sprite "lucide-hash" 12 class="mr-1" %}
-                            {% for context in item.contexts.all %}{{ context.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            {% for context in item.contexts.all %}
+                                <span data-context="{{context.name}}" class="{{item_secondary_classes}}">{{ context.name }}</span>
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
                         </span>
                         {% endif %}
 
                         {% if item.parent_project %}
-                        <span class="inline-flex items-center text-blue-600">
-                            {% sprite "lucide-folder" 12 class="mr-1" %}
-                            {{ item.parent_project.title }}
-                        </span>
+                            {% if item.parent_project.is_reference %}
+                                <span class="inline-flex items-center text-blue-600 {{item_secondary_classes}}" data-project="{{ item.parent_project.pk }}">
+                                    {% sprite "lucide-archive" 12 class="mr-1" %}
+                                    {{ item.parent_project.title }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-project="{{ item.parent_project.pk }}">
+                                    {% sprite "lucide-folder" 12 class="mr-1" %}
+                                    {{ item.parent_project.title }}
+                                </span>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if item.energy %}
+                            <span data-energy="{{ item.energy }}" class="{{item_secondary_classes}}">{{item.get_energy_display}}</span>
                         {% endif %}
                     </div>
                 </div>

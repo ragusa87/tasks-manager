@@ -35,7 +35,7 @@
     {% include "partials/stats_cards.html" %}
 
     <!-- Search Box Partial -->
-    {% include "partials/search_box.html" %}
+    {% include "partials/search_box.html" with item_secondary_classes="cursor-pointer" %}
 
     <!-- Charts Section Partial -->
     {% include "partials/charts_section.html" %}
@@ -44,7 +44,7 @@
     {% include "partials/urgent_items.html" %}
 
     <!-- Recent Activity Partial -->
-    {% include "partials/recent_activity.html" %}
+    {% include "partials/recent_activity.html" with item_secondary_classes="cursor-pointer" %}
 </div>
 
 <script>
@@ -99,6 +99,44 @@ window.addEventListener('online', function() {
 
 window.addEventListener('offline', function() {
     window.isOnline = false;
+});
+
+// Clickable data attributes for filtering
+document.addEventListener('click', function(e) {
+    const target = e.target.closest('[data-project], [data-area], [data-context], [data-energy]');
+    if (!target) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    let filter = '';
+
+    if (target.hasAttribute('data-project')) {
+        filter = `parent:"${target.getAttribute('data-project')}"`;
+    } else if (target.hasAttribute('data-area')) {
+        filter = `area:"${target.getAttribute('data-area')}"`;
+    } else if (target.hasAttribute('data-context')) {
+        filter = `context:"${target.getAttribute('data-context')}"`;
+    } else if (target.hasAttribute('data-energy')) {
+        filter = `energy:"${target.getAttribute('data-energy')}"`;
+    }
+
+    if (filter) {
+        // Find the search input
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            // Use the existing addFilter function from search_box.html
+            if (typeof addFilter === 'function') {
+                addFilter(filter);
+            } else {
+                // Fallback: directly set the filter
+                const currentValue = searchInput.value.trim();
+                const newValue = currentValue ? `${currentValue} ${filter}` : filter;
+                searchInput.value = newValue;
+                htmx.trigger(searchInput, 'input');
+            }
+        }
+    }
 });
 </script>
 {% endblock %}
