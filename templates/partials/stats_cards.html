@@ -31,59 +31,125 @@
     </a>
 
     <!-- Next Actions -->
-    <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-blue-400">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="h-8 w-8 text-blue-400">
-                        {% sprite "lucide-zap" 24 %}
+    <button type="button"
+            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            data-filter="in:next">
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-blue-400">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 text-blue-400">
+                            {% sprite "lucide-zap" 24 %}
+                        </div>
                     </div>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Next Actions</dt>
-                        <dd class="text-lg font-medium text-gray-900">{{ stats.next_actions_count }}</dd>
-                    </dl>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Next Actions</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.next_actions_count }}</dd>
+                        </dl>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </button>
 
     <!-- Projects -->
-    <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-purple-400">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="h-8 w-8 text-purple-400">
-                        {% sprite "lucide-briefcase" 24 %}
+    <button type="button"
+            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            data-filter="in:project">
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-purple-400">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 text-purple-400">
+                            {% sprite "lucide-briefcase" 24 %}
+                        </div>
                     </div>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
-                        <dd class="text-lg font-medium text-gray-900">{{ stats.projects_count }}</dd>
-                    </dl>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.projects_count }}</dd>
+                        </dl>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </button>
 
     <!-- Waiting For -->
-    <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-yellow-400">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="h-8 w-8 text-yellow-400">
-                        {% sprite "lucide-hourglass" 24 %}
+    <button type="button"
+            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+            data-filter="in:waiting">
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-yellow-400">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 text-yellow-400">
+                            {% sprite "lucide-hourglass" 24 %}
+                        </div>
                     </div>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
-                        <dd class="text-lg font-medium text-gray-900">{{ stats.waiting_for_count }}</dd>
-                    </dl>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.waiting_for_count }}</dd>
+                        </dl>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </button>
 </div>
+
+<script>
+// Initialize stats filter buttons
+function initializeStatsFilters() {
+    document.querySelectorAll('.stats-filter-btn').forEach(function(button) {
+        // Remove existing listeners to avoid duplicates
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+
+        // Add new listener
+        newButton.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            setSearchFilter(filter);
+        });
+    });
+}
+
+function setSearchFilter(filter) {
+    const searchInput = document.getElementById('search-input');
+    if (!searchInput) return;
+
+    // Replace the entire search query with this filter
+    searchInput.value = filter;
+
+    // Trigger the search
+    htmx.trigger(searchInput, 'input');
+
+    // Update filter button states if the function exists
+    if (typeof updateFilterStates === 'function') {
+        updateFilterStates();
+    }
+
+    // Focus on the search input
+    searchInput.focus();
+
+    // Scroll to search results if they exist
+    const searchContainer = document.getElementById('search-results-container');
+    if (searchContainer) {
+        searchContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStatsFilters();
+});
+
+// Re-initialize when HTMX loads new content
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.matches('[hx-get*="dashboard_stats"]')) {
+        initializeStatsFilters();
+    }
+});
+</script>

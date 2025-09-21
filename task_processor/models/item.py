@@ -302,6 +302,16 @@ class Item(models.Model):
         """Get priority display with emoji indicators"""
         return f"{GTDConfig.PRIORITY_INDICATORS.get(self.priority, '')} {self.get_priority_display()}"
 
+    @property
+    def priority_icon(self):
+        """Get priority icon name for sprite tags"""
+        return GTDConfig.PRIORITY_ICONS.get(self.priority, '')
+
+    @property
+    def priority_color(self):
+        """Get priority color class for styling"""
+        return GTDConfig.PRIORITY_COLORS.get(self.priority, 'text-gray-500')
+
     # Property to get the flow instance
     @property
     def flow(self):
@@ -404,7 +414,7 @@ class ItemFlow:
         pass
 
     @requires_form("task_processor.forms.WaitingForForm")
-    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.WAITING_FOR, label=_("Waiting For"))
+    @state_field.transition(source=[GTDStatus.NEXT_ACTION], target=GTDStatus.WAITING_FOR, label=_("Waiting For"))
     def delegate(self, person, follow_up_days=None):
         """Delegate task to someone else"""
         if person:
@@ -415,7 +425,7 @@ class ItemFlow:
             days = follow_up_days or GTDConfig.DEFAULT_FOLLOW_UP_DAYS
             self.item.follow_up_date = timezone.now().date() + timedelta(days=days)
 
-    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT, GTDStatus.WAITING_FOR],
+    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.WAITING_FOR],
                            target=GTDStatus.SOMEDAY_MAYBE, label=_("Someday/Maybe"))
     def defer_to_someday_maybe(self):
         """Move active item to someday/maybe"""

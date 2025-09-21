@@ -14,7 +14,7 @@ from django.utils.http import is_same_domain
 from django.views.generic import CreateView, FormView, UpdateView, View
 from factory.django import get_model
 
-from .forms import ItemCreateForm, ItemUpdateForm
+from .forms import ItemCreateForm, ItemUpdateForm, ItemUpdateProjectForm
 from .models import Item
 
 
@@ -143,10 +143,17 @@ class DashboardSearchView(View):
         paginator = Paginator(items, 10)  # 10 items per page
         page_obj = paginator.get_page(page)
 
+        # Get recent areas and contexts for filter suggestions
+        from .models import Area, Context
+        recent_areas = Area.objects.filter(user=request.user).order_by('-created_at')[:5]
+        recent_contexts = Context.objects.filter(user=request.user).order_by('-created_at')[:5]
+
         context = {
             'items': page_obj,
             'query': query,
             'total_results': paginator.count if query else 0,
+            'recent_areas': recent_areas,
+            'recent_contexts': recent_contexts,
         }
 
         return render(request, 'partials/search_results.html', context)
@@ -260,12 +267,19 @@ class DashboardView(View):
         # Get recent items for the activity feed
         recent_items = user_items.order_by('-updated_at')[:10]
 
+        # Get recent areas and contexts for filter suggestions
+        from .models import Area, Context
+        recent_areas = Area.objects.filter(user=request.user).order_by('-created_at')[:5]
+        recent_contexts = Context.objects.filter(user=request.user).order_by('-created_at')[:5]
+
         context = {
             'stats': stats,
             'priority_stats': priority_stats,
             'urgent_items': urgent_items,
             'recent_activity': recent_activity,
             'recent_items': recent_items,
+            'recent_areas': recent_areas,
+            'recent_contexts': recent_contexts,
             'now': timezone.now(),
         }
 
@@ -410,6 +424,12 @@ class ItemUpdateView(ReturnRefererMixin, UpdateView):
     model = Item
     form_class = ItemUpdateForm
     template_name = "items/item_form.html"
+
+    def get_form_class(self):
+        if self.object and self.object.is_project:
+            return ItemUpdateProjectForm
+        return self.form_class
+
     def get_form_kwargs(self):
         return {
             'item_flow': self.object.flow,

@@ -1,3 +1,4 @@
+{% load sprite_tags %}
 <!-- Charts and Analytics Row -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
      hx-get="{% url 'dashboard_charts' %}"
@@ -6,13 +7,15 @@
     <!-- Priority Distribution Chart -->
     <div class="bg-white shadow rounded-lg p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Priority Distribution</h3>
-        <div class="relative h-64">
+        <div class="relative h-48 mb-4">
             <canvas id="priorityChart"
                     data-priority-stats="{% for priority in priority_stats %}{{ priority.priority }}:{{ priority.count }}{% if not forloop.last %},{% endif %}{% endfor %}"></canvas>
             <div id="priorityChartPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500 text-lg hidden">
                 No data
             </div>
         </div>
+        <!-- Custom Legend with Icons -->
+        <div id="priorityLegend" class="grid grid-cols-2 gap-2 text-sm"></div>
     </div>
 
     <!-- Weekly Progress -->
@@ -68,7 +71,7 @@ function initializePriorityChart() {
     }
 
     const priorityLabels = ['Low', 'Normal', 'High', 'Urgent'];
-    const priorityColors = ['#3B82F6', '#6B7280', '#F59E0B', '#EF4444'];
+    const priorityColors = ['#3B82F6', '#6B7280', '#F97316', '#EF4444']; // Updated to match our color system
 
     // Process data for chart
     const chartData = [0, 0, 0, 0]; // Initialize for priorities 1-4
@@ -115,14 +118,43 @@ function initializePriorityChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true
-                    }
+                    display: false // Disable default legend, we'll create custom
                 }
             }
         }
+    });
+
+    // Create custom legend with icons
+    createCustomLegend(chartData, priorityLabels, priorityColors);
+}
+
+function createCustomLegend(chartData, labels, colors) {
+    const legendContainer = document.getElementById('priorityLegend');
+    if (!legendContainer) return;
+
+    const priorityIcons = ['lucide-arrow-down', 'lucide-minus', 'lucide-arrow-up', 'lucide-circle-alert'];
+    const priorityColorClasses = ['text-blue-500', 'text-gray-500', 'text-orange-500', 'text-red-500'];
+
+    legendContainer.innerHTML = '';
+
+    labels.forEach((label, index) => {
+        const count = chartData[index];
+        const color = colors[index];
+        const icon = priorityIcons[index];
+        const colorClass = priorityColorClasses[index];
+
+        const legendItem = document.createElement('div');
+        legendItem.className = 'flex items-center space-x-2 p-2 rounded hover:bg-gray-50';
+
+        legendItem.innerHTML = `
+            <svg class="h-3 w-3 ${colorClass}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <use href="#${icon}"></use>
+            </svg>
+            <span class="text-gray-700">${label}</span>
+            <span class="font-medium text-gray-900">${count}</span>
+        `;
+
+        legendContainer.appendChild(legendItem);
     });
 }
 </script>

@@ -149,7 +149,8 @@ def apply_search(queryset, query: str, **kwargs):
     if tokens.query:
         queryset = queryset.filter(
             Q(title__icontains=tokens.query) |
-            Q(description__icontains=tokens.query)
+            Q(description__icontains=tokens.query) |
+            Q(waiting_for_person__icontains=tokens.query)
         )
 
     return queryset

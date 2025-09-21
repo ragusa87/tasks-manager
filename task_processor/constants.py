@@ -61,10 +61,23 @@ class GTDConfig:
         ReviewType.ANNUAL: 365,
     }
 
-    # Priority indicators for UI
+    # Priority indicators for UI (legacy emoji)
     PRIORITY_INDICATORS = {
         Priority.LOW: "🔵",
         Priority.NORMAL: "⚪",
         Priority.HIGH: "🟡",
         Priority.URGENT: "🔴"
+    }
+    PRIORITY_COLORS = {
+        Priority.LOW: "text-blue-500",
+        Priority.NORMAL: "text-gray-500",
+        Priority.HIGH: "text-orange-500",
+        Priority.URGENT: "text-red-500"
+    }
+    # Priority icons (Lucide sprites)
+    PRIORITY_ICONS = {
+        Priority.LOW: "lucide-arrow-down",
+        Priority.NORMAL: "lucide-minus",
+        Priority.HIGH: "lucide-arrow-up",
+        Priority.URGENT: "lucide-circle-alert"
     }

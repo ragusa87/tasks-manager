@@ -76,76 +76,77 @@
                         {% if form.description.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.description.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-2 text-sm text-gray-500">Provide additional details about this item</p>
+                        <p class="mt-2 text-sm text-gray-500 mb-2">Provide additional details about this item</p>
                     </div>
                 </div>
             </div>
-
-            <div class="pt-6 space-y-6 border-t border-gray-200">
-                <!-- Priority Field -->
-                {% if form.priority %}
-                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                    <label for="{{ form.priority.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
-                        Priority
-                    </label>
-                    <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.priority }}
-                        {% if form.priority.errors %}
-                            <p class="mt-2 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
-                        {% endif %}
+            {% if form.priority or form.contexts or form.area or form.parent_project %}
+                <div class="pt-6 space-y-6 border-t border-gray-200">
+                    <!-- Priority Field -->
+                    {% if form.priority %}
+                    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                        <label for="{{ form.priority.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                            Priority
+                        </label>
+                        <div class="mt-1 sm:mt-0 sm:col-span-2">
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-                {% endif %}
+                    {% endif %}
 
-                <!-- Contexts Field -->
-                {% if form.contexts %}
-                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                    <label for="{{ form.contexts.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
-                        Contexts
-                    </label>
-                    <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.contexts }}
-                        {% if form.contexts.errors %}
-                            <p class="mt-2 text-sm text-red-600">{{ form.contexts.errors.0 }}</p>
-                        {% endif %}
-                        <p class="mt-2 text-sm text-gray-500">Where or how will you work on this? (Hold Ctrl/Cmd to select multiple)</p>
+                    <!-- Contexts Field -->
+                    {% if form.contexts %}
+                    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                        <label for="{{ form.contexts.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                            Contexts
+                        </label>
+                        <div class="mt-1 sm:mt-0 sm:col-span-2">
+                            {{ form.contexts }}
+                            {% if form.contexts.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.contexts.errors.0 }}</p>
+                            {% endif %}
+                            <p class="mt-2 text-sm text-gray-500">Where or how will you work on this? (Hold Ctrl/Cmd to select multiple)</p>
+                        </div>
                     </div>
-                </div>
-                {% endif %}
+                    {% endif %}
 
-                <!-- Area Field -->
-                {% if form.area %}
-                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                    <label for="{{ form.area.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
-                        Area
-                    </label>
-                    <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.area }}
-                        {% if form.area.errors %}
-                            <p class="mt-2 text-sm text-red-600">{{ form.area.errors.0 }}</p>
-                        {% endif %}
-                        <p class="mt-2 text-sm text-gray-500">Which area of responsibility?</p>
+                    <!-- Area Field -->
+                    {% if form.area %}
+                    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                        <label for="{{ form.area.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                            Area
+                        </label>
+                        <div class="mt-1 sm:mt-0 sm:col-span-2">
+                            {{ form.area }}
+                            {% if form.area.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.area.errors.0 }}</p>
+                            {% endif %}
+                            <p class="mt-2 text-sm text-gray-500">Which area of responsibility?</p>
+                        </div>
                     </div>
-                </div>
-                {% endif %}
+                    {% endif %}
 
-                <!-- Parent Project Field -->
-                {% if form.parent_project %}
-                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                    <label for="{{ form.parent_project.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
-                        Parent Project
-                    </label>
-                    <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.parent_project }}
-                        {% if form.parent_project.errors %}
-                            <p class="mt-2 text-sm text-red-600">{{ form.parent_project.errors.0 }}</p>
-                        {% endif %}
-                        <p class="mt-2 text-sm text-gray-500">Is this part of a larger project?</p>
+                    <!-- Parent Project Field -->
+                    {% if form.parent_project %}
+                    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                        <label for="{{ form.parent_project.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                            Parent Project
+                        </label>
+                        <div class="mt-1 sm:mt-0 sm:col-span-2">
+                            {{ form.parent_project }}
+                            {% if form.parent_project.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.parent_project.errors.0 }}</p>
+                            {% endif %}
+                            <p class="mt-2 text-sm text-gray-500">Is this part of a larger project?</p>
+                        </div>
                     </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-            </div>
-
+            {% endif %}
+            {% if form.due_date or form.start_date or form.estimated_duration or form.parent_project %}
             <div class="pt-6 space-y-6 border-t border-gray-200">
                 <!-- Due Date Field -->
                 {% if form.due_date %}
@@ -195,7 +196,7 @@
                 </div>
                 {% endif %}
             </div>
-
+            {% endif %}
             <!-- Form Actions -->
             <div class="flex items-center justify-between pt-6 border-t border-gray-200">
                 <a href="{% url 'dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">

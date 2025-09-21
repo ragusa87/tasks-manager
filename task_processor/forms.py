@@ -201,6 +201,29 @@ class WaitingForForm(forms.Form):
     )
 
 
+class ItemUpdateProjectForm(forms.ModelForm):
+    def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
+        self.item_flow = item_flow
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = Item
+        fields = [
+            'title', 'description'
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
+                'placeholder': 'Enter item title'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
+                'rows': 4,
+                'placeholder': 'Enter description'
+            }),
+        }
+
 class ItemUpdateForm(BaseItemForm):
     def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
         super().__init__(item_flow, user, *args, **kwargs)
@@ -215,14 +238,6 @@ class ItemUpdateForm(BaseItemForm):
         # Hide parent_project for project items to prevent circular references
         if current_status == GTDStatus.PROJECT:
             self.fields['parent_project'].widget = forms.HiddenInput()
-
-        if current_status in [GTDStatus.CANCELLED.value, GTDStatus.COMPLETED.value, GTDStatus.WAITING_FOR.value]:
-            # Completed or cancelled items should not have due/start dates or priority
-            for field in self.fields.copy().keys():
-
-                if field not in ['title', 'description']:
-                    self.fields[field].disabled = True
-                    self.fields[field].widget.attrs['disabled'] = True
 
     def save(self, commit=True):
         item = super().save(commit=False)

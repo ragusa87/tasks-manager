@@ -32,67 +32,84 @@
 
         <!-- Filter Suggestions -->
         <div class="mt-4">
-            <p class="text-xs text-gray-500 mb-2">Quick filters:</p>
             <div class="flex flex-wrap gap-2">
-                <!-- Status Filters -->
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:inbox">
+                <!-- Quick Filters - Blue -->
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:inbox" data-color="blue">
                     {% sprite "lucide-inbox" 12 class="mr-1" %}
                     Inbox
                 </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:next">
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:next" data-color="blue">
                     {% sprite "lucide-zap" 12 class="mr-1" %}
                     Next Actions
                 </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:waiting">
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:waiting" data-color="blue">
                     {% sprite "lucide-hourglass" 12 class="mr-1" %}
                     Waiting For
                 </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:project">
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:project" data-color="blue">
                     {% sprite "lucide-briefcase" 12 class="mr-1" %}
                     Projects
                 </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="has:project" data-color="blue">
+                    {% sprite "lucide-folder" 12 class="mr-1" %}
+                    Has Project
+                </button>
 
-                <!-- State Filters -->
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="is:overdue">
-                    {% sprite "lucide-alert-triangle" 12 class="mr-1" %}
+                <!-- Priority - Red -->
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200" data-filter="priority:low" data-color="red">
+                    {% sprite "lucide-arrow-down" 12 class="mr-1" %}
+                    Low
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200" data-filter="priority:normal" data-color="red">
+                    {% sprite "lucide-minus" 12 class="mr-1" %}
+                    Normal
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200" data-filter="priority:high" data-color="red">
+                    {% sprite "lucide-arrow-up" 12 class="mr-1" %}
+                    High
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200" data-filter="priority:urgent" data-color="red">
+                    {% sprite "lucide-circle-alert" 12 class="mr-1" %}
+                    Urgent
+                </button>
+
+                <!-- Due Dates - Orange -->
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="has:due" data-color="orange">
+                    {% sprite "lucide-calendar-clock" 12 class="mr-1" %}
+                    Has Due Date
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="is:overdue" data-color="orange">
+                    {% sprite "lucide-triangle-alert" 12 class="mr-1" %}
                     Overdue
                 </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="is:due">
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="is:due" data-color="orange">
                     {% sprite "lucide-calendar" 12 class="mr-1" %}
                     Due Today
                 </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="is:soon">
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200" data-filter="is:soon" data-color="orange">
                     {% sprite "lucide-clock" 12 class="mr-1" %}
                     Due Soon
                 </button>
 
-                <!-- Priority Filters -->
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:low">
-                    {% sprite "lucide-arrow-down" 12 class="mr-1" %}
-                    Low Priority
-                </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:normal">
-                    {% sprite "lucide-minus" 12 class="mr-1" %}
-                    Normal Priority
-                </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:high">
-                    {% sprite "lucide-arrow-up" 12 class="mr-1" %}
-                    High Priority
-                </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:urgent">
-                    {% sprite "lucide-alert-circle" 12 class="mr-1" %}
-                    Urgent Priority
-                </button>
+                <!-- Areas - Green -->
+                {% if recent_areas %}
+                    {% for area in recent_areas %}
+                        <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200" data-filter="area:&quot;{{ area.name }}&quot;" data-color="green">
+                            {% sprite "lucide-target" 12 class="mr-1" %}
+                            {{ area.name }}
+                        </button>
+                    {% endfor %}
+                {% endif %}
 
-                <!-- Existence Filters -->
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="has:due">
-                    {% sprite "lucide-calendar-check" 12 class="mr-1" %}
-                    Has Due Date
-                </button>
-                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="has:project">
-                    {% sprite "lucide-folder" 12 class="mr-1" %}
-                    Has Project
-                </button>
+                <!-- Contexts - Purple -->
+                {% if recent_contexts %}
+                    {% for context in recent_contexts %}
+                        <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200" data-filter="context:&quot;{{ context.name }}&quot;" data-color="purple">
+                            {% sprite "lucide-hash" 12 class="mr-1" %}
+                            {{ context.name }}
+                        </button>
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
@@ -116,9 +133,19 @@ function isFilterActive(filter) {
     const searchInput = document.getElementById('search-input');
     const currentValue = searchInput.value.trim();
 
-    // Check if the exact filter exists (word boundary to avoid partial matches)
-    const regex = new RegExp('\\b' + filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
-    return regex.test(currentValue);
+    // Escape special regex characters
+    const escapedFilter = filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // For quoted filters (area/context), use more flexible matching
+    if (filter.includes('"')) {
+        // Match the filter surrounded by word boundaries or spaces
+        const regex = new RegExp('(^|\\s)' + escapedFilter + '(\\s|$)');
+        return regex.test(currentValue);
+    } else {
+        // Use word boundary for simple filters
+        const regex = new RegExp('\\b' + escapedFilter + '\\b');
+        return regex.test(currentValue);
+    }
 }
 
 function addFilter(filter) {
@@ -149,8 +176,19 @@ function removeFilter(filter) {
     const searchInput = document.getElementById('search-input');
     const currentValue = searchInput.value.trim();
 
-    // Remove the filter using regex (word boundary to avoid partial matches)
-    const regex = new RegExp('\\s*\\b' + filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b\\s*', 'g');
+    // Escape special regex characters
+    const escapedFilter = filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Remove the filter using appropriate regex based on whether it's quoted
+    let regex;
+    if (filter.includes('"')) {
+        // For quoted filters, match with flexible spacing
+        regex = new RegExp('\\s*(^|\\s)' + escapedFilter + '(\\s|$)\\s*', 'g');
+    } else {
+        // Use word boundary for simple filters
+        regex = new RegExp('\\s*\\b' + escapedFilter + '\\b\\s*', 'g');
+    }
+
     const newValue = currentValue.replace(regex, ' ').replace(/\s+/g, ' ').trim();
 
     searchInput.value = newValue;
@@ -169,16 +207,20 @@ function updateFilterStates() {
     document.querySelectorAll('.filter-suggestion').forEach(function(button) {
         const filter = button.getAttribute('data-filter');
         const isActive = isFilterActive(filter);
+        const colorCategory = button.getAttribute('data-color') || 'gray';
 
-        if (isActive) {
-            // Active state - blue colored
-            button.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
-            button.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700', 'ring-2', 'ring-blue-300');
-        } else {
-            // Inactive state - neutral gray
-            button.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700', 'ring-2', 'ring-blue-300');
-            button.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
-        }
+        // Toggle between inactive and active states
+        // Inactive state classes
+        button.classList.toggle(`bg-${colorCategory}-100`, !isActive);
+        button.classList.toggle(`text-${colorCategory}-700`, !isActive);
+        button.classList.toggle(`hover:bg-${colorCategory}-200`, !isActive);
+
+        // Active state classes
+        button.classList.toggle(`bg-${colorCategory}-600`, isActive);
+        button.classList.toggle('text-white', isActive);
+        button.classList.toggle(`hover:bg-${colorCategory}-700`, isActive);
+        button.classList.toggle('ring-2', isActive);
+        button.classList.toggle(`ring-${colorCategory}-300`, isActive);
     });
 }
 

@@ -14,8 +14,8 @@
                     <h3 class="text-sm font-medium text-gray-900 truncate">
                         {{ item.title }}
                         {% if item.is_waiting_for %}
-                            <span class="inline-flex items-center px-2.5 py-0.5">
-                                {{ item.is_waiting_for_display }}
+                            <span class="inline-flex items-center px-2.5 py-0.5 font-extrabold">
+                                {{ item.waiting_for_person }}
                             </span>
                         {% endif %}
                     </h3>
@@ -24,11 +24,34 @@
                         {{ item.description }}
                     </p>
                     {% endif %}
-                    <div class="mt-1 flex items-center space-x-4 text-xs text-gray-500">
-                        <span>Created {{ item.created_at|date:"M j, Y" }}</span>
+                    <div class="mt-1 flex items-center flex-wrap gap-x-4 gap-y-1 text-xs">
+                        <span class="text-gray-500">Created {{ item.created_at|date:"M j, Y" }}</span>
+
                         {% if item.priority != 2 %}
-                        <span class="inline-flex items-center">
-                            {{ item.priority_display }}
+                        <span class="inline-flex items-center {{ item.priority_color }}">
+                            {% sprite item.priority_icon 12 class="mr-1 {{ item.priority_color }}" %}
+                            <span>{{ item.get_priority_display }}</span>
+                        </span>
+                        {% endif %}
+
+                        {% if item.area %}
+                        <span class="inline-flex items-center text-green-600">
+                            {% sprite "lucide-target" 12 class="mr-1" %}
+                            {{ item.area.name }}
+                        </span>
+                        {% endif %}
+
+                        {% if item.contexts.exists %}
+                        <span class="inline-flex items-center text-purple-600">
+                            {% sprite "lucide-hash" 12 class="mr-1" %}
+                            {% for context in item.contexts.all %}{{ context.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </span>
+                        {% endif %}
+
+                        {% if item.parent_project %}
+                        <span class="inline-flex items-center text-blue-600">
+                            {% sprite "lucide-folder" 12 class="mr-1" %}
+                            {{ item.parent_project.title }}
                         </span>
                         {% endif %}
                     </div>
