@@ -1,5 +1,8 @@
 ### TODOS
-- Implement actions via get_available_transitions
+- Reminders
+- Project/Reference view with Hierarchy
+- Rename `parent_project` and `project_depth` as it's also used for references.
+- Tests & Pipeline
 
 ### Linting and Formatting
 
