@@ -5,12 +5,27 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from viewflow import fsm
 
 from task_processor.constants import GTDConfig, GTDStatus, Priority
 
 from .base_models import Area, Context
+
+
+def requires_form(form_class):
+    """
+    Decorator for ItemFlow transitions that require a form.
+
+    Args:
+        form_class: The Django form class to use for this transition (can be a string path)
+    """
+    def decorator(func):
+        func._form_class = form_class
+        return func
+    return decorator
+
 
 
 class ItemTransition(dict):
@@ -20,6 +35,18 @@ class ItemTransition(dict):
     @property
     def label(self):
         return self.get("label")
+    @property
+    def form_class(self):
+        return self.get("form_class")
+
+class ItemTransitionsBag(list[ItemTransition]):
+    def get_transition(self, transition_slug):
+        # Check if the requested transition is allowed
+        for trans in self:
+            if trans.name == transition_slug:
+                return trans
+        return None
+
 class ItemManager(models.Manager):
     """Custom manager for GTD items with common queries"""
 
@@ -295,12 +322,12 @@ class Item(models.Model):
         return False
 
     # Get available transitions for UI
-    def get_available_transitions(self) ->list[ItemTransition]:
+    def get_available_transitions(self) ->ItemTransitionsBag:
         """Get list of available state transitions for current state"""
         return self.flow.get_available_transitions()
 
     # Get all transitions for UI
-    def get_all_transitions(self):
+    def get_all_transitions(self) -> ItemTransitionsBag:
         """Get list of available state transitions for current state"""
         return self.flow.get_all_transitions()
 
@@ -355,6 +382,7 @@ class ItemFlow:
         """Process inbox item as reference material"""
         pass
 
+    @requires_form("task_processor.forms.WaitingForForm")
     @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.WAITING_FOR, label=_("Waiting For"))
     def delegate(self, person, follow_up_days=None):
         """Delegate task to someone else"""
@@ -412,11 +440,11 @@ class ItemFlow:
         self.item.completed_at = None
 
     @state_field.on_success()
-    def _on_transition_success(self, descriptor, source, target):
+    def _on_transition_success(self, descriptor, source, target, **kwargs):
         """Save the item after successful transition"""
         self.item.save()
 
-    def get_all_transitions(self) -> list[ItemTransition]:
+    def get_all_transitions(self) -> ItemTransitionsBag:
         # Get all transition methods by checking for the viewflow transition decorator
         transitions = []
         for method_name in dir(self):
@@ -427,7 +455,25 @@ class ItemFlow:
                 method_transitions = method.get_transitions()
                 for transition in method_transitions:
                     transitions.append(self._transition_to_dict(transition))
-        return transitions
+        return ItemTransitionsBag(transitions)
+
+    def _get_annotated_form_class(self, transition_slug: str):
+        # Get the original function from the class to check for decorator attributes
+        original_func = getattr(self.__class__, transition_slug)
+
+        # The decorator attributes are preserved on the _descriptor object
+        form_class = None
+        if hasattr(original_func, '_descriptor'):
+            descriptor = original_func._descriptor
+            form_class = getattr(descriptor, '_form_class', None)
+
+        if not form_class:
+            return None
+
+        # Import the form class if it's a string path
+        if isinstance(form_class, str):
+            return import_string(form_class)
+        return form_class
 
     def _transition_to_dict(self, transition) -> ItemTransition:
         transition_slug = str(transition.slug)
@@ -441,6 +487,7 @@ class ItemFlow:
             'target': str(transition.target),
             'sprite': sprite_icon_tuple[0],
             'icon': sprite_icon_tuple[1],
+            'form_class': self._get_annotated_form_class(transition_slug),
         })
 
     @property
@@ -455,7 +502,7 @@ class ItemFlow:
         """Get icon for current state"""
         index = max(0, min(index, 1))  # Clamp index to 0 or 1
         return self.state_icon_mapping.get(self.item.status, (None, None))[index]
-    def get_available_transitions(self) ->list[ItemTransition]:
+    def get_available_transitions(self) -> ItemTransitionsBag:
         """Get list of available state transitions for current state"""
         transitions = []
 
@@ -474,4 +521,4 @@ class ItemFlow:
                         transitions.append(self._transition_to_dict(transition))
                         break  # Usually only one transition per method
 
-        return transitions
+        return ItemTransitionsBag(transitions)

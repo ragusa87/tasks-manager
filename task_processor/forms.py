@@ -185,6 +185,22 @@ class ItemCreateForm(BaseItemForm):
         return item
 
 
+class WaitingForForm(forms.Form):
+    """
+    Form for delegating items to someone else (transition to waiting_for).
+    """
+    person = forms.CharField(
+        max_length=100,
+        required=True,
+        label="Who are you waiting for?",
+        widget=forms.TextInput(attrs={
+            'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
+            'placeholder': 'Enter person or organization name'
+        }),
+        help_text="Person or organization you're delegating this to"
+    )
+
+
 class ItemUpdateForm(BaseItemForm):
     def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
         super().__init__(item_flow, user, *args, **kwargs)

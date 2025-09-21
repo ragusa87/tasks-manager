@@ -11,6 +11,9 @@
                 <a href="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}?returnUrl={{ request.get_full_path|urlencode }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
                     {% sprite transition.sprite 16 class="flex-shrink-0 mr-3" %}
                     <span class="truncate">{{ transition.label }}</span>
+                    {% if transition.form_class %}
+                      {{ "..." }}
+                    {% endif %}
                 </a>
             {% empty %}
                 <span class="block px-4 py-2 text-sm text-gray-500 italic">No actions available</span>

@@ -11,7 +11,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.http import is_same_domain
-from django.views.generic import CreateView, UpdateView, View
+from django.views.generic import CreateView, FormView, UpdateView, View
 from factory.django import get_model
 
 from .forms import ItemCreateForm, ItemUpdateForm
@@ -267,56 +267,74 @@ class InboxView(View):
 
 
 @method_decorator(login_required, name='dispatch')
-class ItemTransitionView(View):
+class ItemTransitionView(FormView):
     """
     Handle item state transitions for logged-in users.
+    Supports form-based transitions for decorated methods.
     """
+    template_name = 'transitions/form.html'
 
-    def get(self, request, item_id, transition_slug):
+    def get_form_class(self):
+        return self.transition.form_class
+
+    def dispatch(self, request, *args, **kwargs):
+        """Initialize transition data and validate availability"""
+        # Extract URL parameters
+        self.item_id = kwargs.get('item_id')
+        self.transition_slug = kwargs.get('transition_slug')
+
+        # Get item and validate ownership
         Item = get_model('task_processor', 'Item')
-        fallback_url = reverse('dashboard')
-        # Get the item and ensure it belongs to the current user
-        item = get_object_or_404(Item, id=item_id, user=request.user)
+        self.item = get_object_or_404(Item, id=self.item_id, user=request.user)
 
-        # Get available transitions for this item
-        available_transitions = item.get_available_transitions()
+        # Get transition and validate availability
+        available_transitions = self.item.get_available_transitions()
+        self.transition = available_transitions.get_transition(self.transition_slug)
 
-        # Check if the requested transition is allowed
-        transition = None
-        for trans in available_transitions:
-            if trans.name == transition_slug:
-                transition = trans
-                break
+        if not self.transition:
+            messages.error(request, f"Transition '{self.transition_slug}' is not available for this item.")
+            return redirect(self.get_success_url())
 
-        if not transition:
-            messages.error(request, f"Transition '{transition_slug}' is not available for this item.")
-            return_url = request.GET.get('returnUrl', fallback_url)
-            return redirect(return_url)
+        # If no form required, execute transition directly
+        if not self.get_form_class():
+            self._execute_transition()
+            return redirect(self.get_success_url())
 
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """Add transition and item data to template context"""
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'item': self.item,
+            'transition': self.transition,
+            'return_url': self.get_success_url()
+        })
+        return context
+
+    def get_success_url(self):
+        """Get the URL to redirect to after successful transition"""
+        return self.request.GET.get('returnUrl', reverse('dashboard'))
+
+    def form_valid(self, form):
+        """Handle valid form submission - execute transition with form data"""
+        self._execute_transition(**form.cleaned_data if form is not None else {})
+
+        return super().form_valid(form)
+
+    def _execute_transition(self, **kwargs):
+        """Execute transition without form (for direct transitions)"""
         try:
-            # Apply the transition using match statement for transitions that need args
-            match transition_slug:
-                # Add specific cases here for transitions that need arguments
-                # case 'transition_with_args':
-                #     # Handle transitions that need special arguments
-                #     method = getattr(item, transition_slug)
-                #     method(special_arg=value)
-                case _:
-                    # Default case: call the transition method without arguments
-                    method = getattr(item.flow, transition_slug)
-                    method()
-
-            # Save the item after transition
-            item.save()
-
-            messages.success(request, f"Successfully applied '{transition.label}' to '{item.title}'.")
-
+            method = getattr(self.item.flow, self.transition.name)
+            method(**kwargs)
+            self.item.save()
+            messages.success(
+                self.request,
+                f"Successfully applied '{self.transition.label}' to '{self.item.title}'."
+            )
         except Exception as e:
-            messages.error(request, f"Error applying transition: {str(e)}")
+            messages.error(self.request, f"Error applying transition: {str(e)}")
 
-        # Redirect to the return URL or dashboard
-        return_url = request.GET.get('returnUrl', fallback_url)
-        return redirect(return_url)
 
 
 @method_decorator(login_required, name='dispatch')
