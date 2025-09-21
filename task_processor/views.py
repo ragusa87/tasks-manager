@@ -124,6 +124,10 @@ class DashboardSearchView(View):
     """
     HTMX endpoint for search functionality with pagination.
     """
+    def dispatch(self, request, *args, **kwargs):
+        if request.headers.get("HX-Request") != "true":
+            return redirect('/')
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
         Item = get_model('task_processor', 'Item')

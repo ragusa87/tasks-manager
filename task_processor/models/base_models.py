@@ -63,3 +63,23 @@ class Area(models.Model):
                 user=user,
                 defaults={'description': f'Default {area_name} area'}
             )
+
+
+class Tag(models.Model):
+    """
+    Tags for Items - Flexible labeling system for categorization
+    """
+    name = models.CharField(max_length=50)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('name', 'user')
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['user', 'name']),
+        ]
+
+    def __str__(self):
+        return self.name

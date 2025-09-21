@@ -3,12 +3,12 @@
 - Project/Reference views with Hierarchy
 - Rename `parent_project` and `project_depth` as it's also used for references.
 - Tests & Pipeline
-- Add "tags" and import them from nirvana.
 - Use select2 for forms autocompletion
-- UI for Nirvana import
-- Better forms, add missing fields (Energy)
+- Nirvana: UI for import, `tag<->area` conversion
+- Better forms, add missing fields
 - Priority is always Normal from nirvana. Normal ?
-- External JS with vite
+- External JS with vite + tailwind - https://tailwindcss.com/docs/installation/using-vite
+
 ### Linting and Formatting
 
 ```bash

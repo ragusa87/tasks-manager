@@ -4,7 +4,7 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-from .constants import GTDStatus
+from .constants import GTDEnergy, GTDStatus
 from .models.base_models import Area, Context
 from .models.item import Item, ItemFlow
 
@@ -91,12 +91,19 @@ class NativeDurationInput(forms.Field):
 
 class BaseItemForm(forms.ModelForm):
     estimated_duration = NativeDurationInput(required=False)
+    energy = forms.ChoiceField(
+        choices=[("", "----")] + GTDEnergy.choices,
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
+        })
+    )
 
     class Meta:
         model = Item
         fields = [
             'title', 'description', 'priority', 'parent_project', 'contexts', 'area',
-            'due_date', 'start_date', 'estimated_duration'
+            'due_date', 'start_date', 'estimated_duration', 'energy'
         ]
         widgets = {
             'title': forms.TextInput(attrs={

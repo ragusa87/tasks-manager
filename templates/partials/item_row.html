@@ -69,6 +69,12 @@
                         {% if item.energy %}
                             <span data-energy="{{ item.energy }}" class="{{item_secondary_classes}}">{{item.get_energy_display}}</span>
                         {% endif %}
+
+                        {% for tag in item.tags.all %}
+                            <span data-tag="{{tag.name}}" class="{{item_secondary_classes}}">{{ tag.name }}</span>
+                            {% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+
                     </div>
                 </div>
             </div>

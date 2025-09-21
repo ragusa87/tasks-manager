@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from task_processor.constants import GTDEnergy, GTDStatus, Priority
 from task_processor.models import Area, Context, Item
+from task_processor.models.base_models import Tag
 
 
 class Command(BaseCommand):
@@ -116,7 +117,7 @@ class Command(BaseCommand):
         """Import items into the GTD system"""
         created_count = 0
         updated_count = 0
-        context_cache = {}
+        tags_cache = {}
 
         # First pass: Create all items without relationships
         item_mapping = {}
@@ -161,7 +162,7 @@ class Command(BaseCommand):
             if tags:
                 gtd_item = item_mapping.get(nirvana_item['id'])
                 if gtd_item:
-                    self.assign_contexts(gtd_item, tags, user, context_cache)
+                    self.assign_tags(gtd_item, tags, user, tags_cache)
 
         self.stdout.write(f'Created: {created_count}, Updated: {updated_count}')
         return created_count + updated_count
@@ -262,32 +263,33 @@ class Command(BaseCommand):
 
         return state_mapping.get(state, GTDStatus.INBOX)
 
-    def assign_contexts(self, item, tags_string, user, context_cache):
+    def assign_tags(self, item, tags_string, user, tags_cache):
         """Assign contexts based on Nirvana tags"""
         tag_names = [tag.strip() for tag in tags_string.split(',') if tag.strip()]
 
         for tag_name in tag_names:
             # Get or create context
-            if tag_name not in context_cache:
-                context, created = Context.objects.get_or_create(
+            if tag_name not in tags_cache:
+                context, created = Tag.objects.get_or_create(
                     name=tag_name,
                     user=user,
-                    defaults={'description': f'Imported from Nirvana: {tag_name}'}
                 )
-                context_cache[tag_name] = context
+                tags_cache[tag_name] = context
 
-            item.contexts.add(context_cache[tag_name])
+            item.tags.add(tags_cache[tag_name])
 
     def delete_existing_data(self, user, dry_run=False):
         """Delete all existing Items, Areas, and Contexts for the user"""
         # Count existing data before deletion
         items_count = Item.objects.filter(user=user).count()
         areas_count = Area.objects.filter(user=user).count()
+        tags_count = Tag.objects.filter(user=user).count()
         contexts_count = Context.objects.filter(user=user).count()
 
         self.stdout.write(f'Found existing data for {user.username} to delete:')
         self.stdout.write(f'  Items: {items_count}')
         self.stdout.write(f'  Areas: {areas_count}')
+        self.stdout.write(f'  Tags: {tags_count}')
         self.stdout.write(f'  Contexts: {contexts_count}')
         if dry_run:
             self.stdout.write('  - Dry run')
@@ -303,10 +305,12 @@ class Command(BaseCommand):
                 deleted_areas = Area.objects.filter(user=user).delete()
                 # Delete Contexts
                 deleted_contexts = Context.objects.filter(user=user).delete()
+                # Delete Tags
+                deleted_tags = Tag.objects.filter(user=user).delete()
 
             self.stdout.write(
                 self.style.WARNING(
-                    f'Deleted {deleted_items[0]} items, {deleted_areas[0]} areas, '
+                    f'Deleted {deleted_items[0]} items, {deleted_areas[0]} areas, {deleted_tags[0]} tags'
                     f'and {deleted_contexts[0]} contexts for user {user.username}'
                 )
             )

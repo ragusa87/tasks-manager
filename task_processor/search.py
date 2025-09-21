@@ -284,6 +284,16 @@ def _build_field_filter(field_name: str, values: list) -> Q:
         elif field_name == "project":
             # Project name search
             field_q |= Q(parent_project__title__icontains=value)
+        elif field_name == "tag":
+            # Project name search
+            field_q |= Q(tags__name=value)
+
+            if value.startswith("-"):
+                neg_value = value[1:]
+                field_q |= ~Q(tags__name=neg_value)
+            else:
+                field_q |= Q(tags__name=value)
+
 
         elif field_name == "parent":
             # Parent project ID search
@@ -311,9 +321,7 @@ def _build_field_filter(field_name: str, values: list) -> Q:
             except (ValueError, TypeError):
                 # If not a valid integer, treat as name search
                 clean_value = value.lstrip("@#!")  # Remove context prefixes
-                field_q |= Q(area__name__icontains=clean_value)
-            # Area search
-            field_q |= Q(area__name__icontains=value)
+                field_q |= Q(area__name__iexact=clean_value)
 
         elif field_name == "waiting":
             # Waiting for person search

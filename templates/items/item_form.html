@@ -195,6 +195,22 @@
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- Energy -->
+                {% if form.energy %}
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.estimated_duration.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Energy
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.energy }}
+                        {% if form.energy.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.energy.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">How much energy do you need ?</p>
+                    </div>
+                </div>
+                {% endif %}
             </div>
             {% endif %}
             <!-- Form Actions -->

@@ -11,7 +11,7 @@ from viewflow import fsm
 
 from task_processor.constants import GTDConfig, GTDEnergy, GTDStatus, Priority
 
-from .base_models import Area, Context
+from .base_models import Area, Context, Tag
 
 
 def requires_form(form_class):
@@ -157,6 +157,7 @@ class Item(models.Model):
     )
     contexts = models.ManyToManyField(Context, blank=True)
     area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
 
     # Time-related fields
     due_date = models.DateTimeField(null=True, blank=True)
