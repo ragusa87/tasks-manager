@@ -26,6 +26,12 @@ def requires_form(form_class):
         return func
     return decorator
 
+def priority(position: int = 0):
+    def decorator(func):
+        func._position = position
+        return func
+    return decorator
+
 
 
 class ItemTransition(dict):
@@ -40,6 +46,21 @@ class ItemTransition(dict):
         return self.get("form_class")
 
 class ItemTransitionsBag(list[ItemTransition]):
+    @staticmethod
+    def sort_by_priority(x: ItemTransition):
+        p = x.get('position')
+        if p is None:
+            p = 0
+        if p > 0:
+            return (0, -p)  # positives, highest first
+        if p == 0:
+            return (1, 0)  # None/0, middle
+        return (2, -p)  # negatives, closer to 0 first
+
+    def __init__(self, seq=()):
+        # Sort by priority (higher numbers first, None values as zero)
+        sorted_seq = sorted(seq, key=ItemTransitionsBag.sort_by_priority)
+        super().__init__(sorted_seq)
     def get_transition(self, transition_slug):
         # Check if the requested transition is allowed
         for trans in self:
@@ -422,6 +443,7 @@ class ItemFlow:
         self.item.is_completed = True
         self.item.completed_at = timezone.now()
 
+    @priority(-100)
     @state_field.transition(source=fsm.State.ANY, target=GTDStatus.CANCELLED, conditions=[lambda self: not self.item.status == GTDStatus.CANCELLED], label=_("Cancel"))
     def cancel(self):
         """Cancel item from any state"""
@@ -457,23 +479,23 @@ class ItemFlow:
                     transitions.append(self._transition_to_dict(transition))
         return ItemTransitionsBag(transitions)
 
-    def _get_annotated_form_class(self, transition_slug: str):
+    def _get_annotated_property(self, transition_slug: str, property_name = "_form_class"):
         # Get the original function from the class to check for decorator attributes
         original_func = getattr(self.__class__, transition_slug)
 
         # The decorator attributes are preserved on the _descriptor object
-        form_class = None
+        property_value = None
         if hasattr(original_func, '_descriptor'):
             descriptor = original_func._descriptor
-            form_class = getattr(descriptor, '_form_class', None)
+            property_value = getattr(descriptor, property_name, None)
 
-        if not form_class:
+        if not property_value:
             return None
 
         # Import the form class if it's a string path
-        if isinstance(form_class, str):
-            return import_string(form_class)
-        return form_class
+        if property_name == '_form_class' and isinstance(property_value, str):
+            return import_string(property_value)
+        return property_value
 
     def _transition_to_dict(self, transition) -> ItemTransition:
         transition_slug = str(transition.slug)
@@ -487,7 +509,8 @@ class ItemFlow:
             'target': str(transition.target),
             'sprite': sprite_icon_tuple[0],
             'icon': sprite_icon_tuple[1],
-            'form_class': self._get_annotated_form_class(transition_slug),
+            'form_class': self._get_annotated_property(transition_slug),
+            'position': self._get_annotated_property(transition_slug, "_position"),
         })
 
     @property

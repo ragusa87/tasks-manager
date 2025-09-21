@@ -41,3 +41,16 @@ class TestDecoratorDetection(TestCase):
             if transition.name in non_form_transitions:
                 form_class = getattr(transition, 'form_class', None)
                 assert form_class is None, f"{transition.name} should not have a form_class"
+
+
+    def test_cancel_action_is_last(self):
+        """Test that the cancel action appears last in the transition list due to its negative priority"""
+        flow = self.item.flow
+
+        # Get all available transitions
+        available_transitions = flow.get_available_transitions()
+
+        # Assert cancel transition is the last one in the list
+        self.assertTrue(len(available_transitions) > 1, 'Should have at least one transition')
+        last_transition = available_transitions[-1]
+        self.assertEqual(last_transition.name, 'cancel',"Cancel transition should be the last transition in the list")

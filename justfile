@@ -28,7 +28,6 @@ shell_plus *args:
   docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py shell_plus "$@"
 
 alias t := test
-# Run the tests suite
 test *args:
   docker compose exec {{BACKEND_CONTAINER}} uv run pytest "$@"
 
