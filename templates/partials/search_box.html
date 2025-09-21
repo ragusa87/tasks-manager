@@ -13,12 +13,14 @@
                     <input type="text"
                            id="search-input"
                            name="q"
+                           value="{{ search_query|default:'' }}"
                            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                            placeholder="Search items..."
                            hx-get="{% url 'dashboard_search' %}"
                            hx-target="#search-results"
                            hx-swap="outerHTML"
                            hx-trigger="input changed delay:300ms, search"
+                           hx-sync="#search-input:queue"
                            autocomplete="off">
                 </div>
             </div>
@@ -147,12 +149,24 @@
 </div>
 
 <script>
+// URL management
+function updateUrl(query) {
+    const url = new URL(window.location);
+    if (query && query.trim()) {
+        url.searchParams.set('q', query.trim());
+    } else {
+        url.searchParams.delete('q');
+    }
+    history.replaceState(null, '', url);
+}
+
 // Search functionality
 function clearSearch() {
     const searchInput = document.getElementById('search-input');
     searchInput.value = '';
     htmx.trigger(searchInput, 'input');
     updateFilterStates();
+    updateUrl('');
 }
 
 function isFilterActive(filter) {
@@ -191,8 +205,9 @@ function addFilter(filter) {
     // Trigger the search
     htmx.trigger(searchInput, 'input');
 
-    // Update filter button states
+    // Update filter button states and URL
     updateFilterStates();
+    updateUrl(newValue);
 
     // Focus back on the input
     searchInput.focus();
@@ -222,8 +237,9 @@ function removeFilter(filter) {
     // Trigger the search
     htmx.trigger(searchInput, 'input');
 
-    // Update filter button states
+    // Update filter button states and URL
     updateFilterStates();
+    updateUrl(newValue);
 
     // Focus back on the input
     searchInput.focus();
@@ -270,11 +286,18 @@ function initializeFilterSuggestions() {
 // Add event listeners for filter suggestions
 document.addEventListener('DOMContentLoaded', function() {
     initializeFilterSuggestions();
+
+    // Trigger initial search if there's a query in the input
+    const searchInput = document.getElementById('search-input');
+    if (searchInput && searchInput.value.trim()) {
+        htmx.trigger(searchInput, 'input');
+    }
 });
 
-// Update filter states when user types
+// Update filter states and URL when user types
 document.getElementById('search-input').addEventListener('input', function() {
     updateFilterStates();
+    updateUrl(this.value);
 });
 
 // Re-initialize filter suggestions when HTMX loads new content

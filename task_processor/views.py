@@ -272,6 +272,9 @@ class DashboardView(View):
         recent_areas = Area.objects.filter(user=request.user).order_by('-created_at')[:5]
         recent_contexts = Context.objects.filter(user=request.user).order_by('-created_at')[:5]
 
+        # Get search query from URL parameter
+        search_query = request.GET.get('q', '').strip()
+
         context = {
             'stats': stats,
             'priority_stats': priority_stats,
@@ -280,6 +283,7 @@ class DashboardView(View):
             'recent_items': recent_items,
             'recent_areas': recent_areas,
             'recent_contexts': recent_contexts,
+            'search_query': search_query,
             'now': timezone.now(),
         }
 

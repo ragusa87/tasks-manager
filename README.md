@@ -8,7 +8,6 @@
 - UI for Nirvana import
 - Better forms, add missing fields (Energy)
 - Priority is always Normal from nirvana. Normal ?
-- Dashboard save url
 - External JS with vite
 ### Linting and Formatting
 
