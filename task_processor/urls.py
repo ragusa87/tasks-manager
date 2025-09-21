@@ -19,6 +19,7 @@ from django.urls import path
 from .views import (
     DashboardActivityView,
     DashboardChartsView,
+    DashboardSearchView,
     DashboardStatsView,
     DashboardUrgentView,
     DashboardView,
@@ -42,4 +43,5 @@ urlpatterns = [
     path("dashboard/charts/", DashboardChartsView.as_view(), name="dashboard_charts"),
     path("dashboard/urgent/", DashboardUrgentView.as_view(), name="dashboard_urgent"),
     path("dashboard/activity/", DashboardActivityView.as_view(), name="dashboard_activity"),
+    path("dashboard/search/", DashboardSearchView.as_view(), name="dashboard_search"),
 ]

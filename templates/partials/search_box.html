@@ -8,7 +8,7 @@
                 <label for="search-input" class="sr-only">Search items</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        {% sprite "lucide-search" 20 class="text-gray-400" %}
+                        {% sprite "lucide-search" 24 class="text-gray-400" %}
                     </div>
                     <input type="text"
                            id="search-input"
@@ -24,10 +24,76 @@
             </div>
             <button type="button"
                     class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    onclick="document.getElementById('search-input').value = ''; htmx.trigger('#search-input', 'input');">
+                    onclick="clearSearch();">
                 {% sprite "lucide-x" 16 class="mr-1" %}
                 Clear
             </button>
+        </div>
+
+        <!-- Filter Suggestions -->
+        <div class="mt-4">
+            <p class="text-xs text-gray-500 mb-2">Quick filters:</p>
+            <div class="flex flex-wrap gap-2">
+                <!-- Status Filters -->
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:inbox">
+                    {% sprite "lucide-inbox" 12 class="mr-1" %}
+                    Inbox
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:next">
+                    {% sprite "lucide-zap" 12 class="mr-1" %}
+                    Next Actions
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:waiting">
+                    {% sprite "lucide-hourglass" 12 class="mr-1" %}
+                    Waiting For
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="in:project">
+                    {% sprite "lucide-briefcase" 12 class="mr-1" %}
+                    Projects
+                </button>
+
+                <!-- State Filters -->
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="is:overdue">
+                    {% sprite "lucide-alert-triangle" 12 class="mr-1" %}
+                    Overdue
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="is:due">
+                    {% sprite "lucide-calendar" 12 class="mr-1" %}
+                    Due Today
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="is:soon">
+                    {% sprite "lucide-clock" 12 class="mr-1" %}
+                    Due Soon
+                </button>
+
+                <!-- Priority Filters -->
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:low">
+                    {% sprite "lucide-arrow-down" 12 class="mr-1" %}
+                    Low Priority
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:normal">
+                    {% sprite "lucide-minus" 12 class="mr-1" %}
+                    Normal Priority
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:high">
+                    {% sprite "lucide-arrow-up" 12 class="mr-1" %}
+                    High Priority
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="priority:urgent">
+                    {% sprite "lucide-alert-circle" 12 class="mr-1" %}
+                    Urgent Priority
+                </button>
+
+                <!-- Existence Filters -->
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="has:due">
+                    {% sprite "lucide-calendar-check" 12 class="mr-1" %}
+                    Has Due Date
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" data-filter="has:project">
+                    {% sprite "lucide-folder" 12 class="mr-1" %}
+                    Has Project
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -36,3 +102,117 @@
 <div id="search-results-container" class="mb-8">
     {% include 'partials/search_results.html' %}
 </div>
+
+<script>
+// Search functionality
+function clearSearch() {
+    const searchInput = document.getElementById('search-input');
+    searchInput.value = '';
+    htmx.trigger(searchInput, 'input');
+    updateFilterStates();
+}
+
+function isFilterActive(filter) {
+    const searchInput = document.getElementById('search-input');
+    const currentValue = searchInput.value.trim();
+
+    // Check if the exact filter exists (word boundary to avoid partial matches)
+    const regex = new RegExp('\\b' + filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
+    return regex.test(currentValue);
+}
+
+function addFilter(filter) {
+    const searchInput = document.getElementById('search-input');
+    const currentValue = searchInput.value.trim();
+
+    // Check if filter already exists - if so, remove it
+    if (isFilterActive(filter)) {
+        removeFilter(filter);
+        return;
+    }
+
+    // Add the filter with a space if there's existing content
+    const newValue = currentValue ? `${currentValue} ${filter}` : filter;
+    searchInput.value = newValue;
+
+    // Trigger the search
+    htmx.trigger(searchInput, 'input');
+
+    // Update filter button states
+    updateFilterStates();
+
+    // Focus back on the input
+    searchInput.focus();
+}
+
+function removeFilter(filter) {
+    const searchInput = document.getElementById('search-input');
+    const currentValue = searchInput.value.trim();
+
+    // Remove the filter using regex (word boundary to avoid partial matches)
+    const regex = new RegExp('\\s*\\b' + filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b\\s*', 'g');
+    const newValue = currentValue.replace(regex, ' ').replace(/\s+/g, ' ').trim();
+
+    searchInput.value = newValue;
+
+    // Trigger the search
+    htmx.trigger(searchInput, 'input');
+
+    // Update filter button states
+    updateFilterStates();
+
+    // Focus back on the input
+    searchInput.focus();
+}
+
+function updateFilterStates() {
+    document.querySelectorAll('.filter-suggestion').forEach(function(button) {
+        const filter = button.getAttribute('data-filter');
+        const isActive = isFilterActive(filter);
+
+        if (isActive) {
+            // Active state - blue colored
+            button.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+            button.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700', 'ring-2', 'ring-blue-300');
+        } else {
+            // Inactive state - neutral gray
+            button.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700', 'ring-2', 'ring-blue-300');
+            button.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+        }
+    });
+}
+
+function initializeFilterSuggestions() {
+    document.querySelectorAll('.filter-suggestion').forEach(function(button) {
+        // Remove existing listeners to avoid duplicates
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+
+        // Add new listener
+        newButton.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            addFilter(filter);
+        });
+    });
+
+    // Initial state update
+    updateFilterStates();
+}
+
+// Add event listeners for filter suggestions
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFilterSuggestions();
+});
+
+// Update filter states when user types
+document.getElementById('search-input').addEventListener('input', function() {
+    updateFilterStates();
+});
+
+// Re-initialize filter suggestions when HTMX loads new content
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.matches('#search-results')) {
+        initializeFilterSuggestions();
+    }
+});
+</script>

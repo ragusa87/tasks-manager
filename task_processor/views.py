@@ -119,6 +119,39 @@ class DashboardActivityView(View):
         return render(request, 'partials/recent_activity.html', {'recent_items': recent_items})
 
 
+@method_decorator(login_required, name='dispatch')
+class DashboardSearchView(View):
+    """
+    HTMX endpoint for search functionality with pagination.
+    """
+
+    def get(self, request):
+        Item = get_model('task_processor', 'Item')
+        query = request.GET.get('q', '').strip()
+        page = request.GET.get('page', 1)
+
+        if query:
+            # Apply advanced search using the search parser
+            from .search import apply_search
+            items = Item.objects.for_user(request.user).select_related('area').prefetch_related('contexts')
+            items = apply_search(items, query)
+            items = items.order_by('-updated_at')
+        else:
+            items = Item.objects.none()
+
+        # Pagination
+        paginator = Paginator(items, 10)  # 10 items per page
+        page_obj = paginator.get_page(page)
+
+        context = {
+            'items': page_obj,
+            'query': query,
+            'total_results': paginator.count if query else 0,
+        }
+
+        return render(request, 'partials/search_results.html', context)
+
+
 class LoginView(View):
     """
     Custom login view for GTD application.
