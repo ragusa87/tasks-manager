@@ -1,11 +1,12 @@
 {% load sprite_tags %}
 
-<div class="relative inline-block text-left">
+<!-- Desktop: Dropdown menu -->
+<div class="relative inline-block text-left hidden sm:block">
     <button type="button" class="inline-flex items-center px-1.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="options-menu-{{ item.id }}" aria-expanded="false" aria-haspopup="true">
         {% sprite "lucide-chevron-down" 24 %}
     </button>
     <!-- Dropdown menu (hidden by default) -->
-    <div class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50" role="menu" aria-orientation="vertical" aria-labelledby="options-menu-{{ item.id }}">
+    <div class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none dropdown-menu" role="menu" aria-orientation="vertical" aria-labelledby="options-menu-{{ item.id }}" style="z-index: 9999; position: fixed;">
         <div class="py-1" role="none">
             {% for transition in item.get_available_transitions %}
                 <a href="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}?returnUrl={{ request.get_full_path|urlencode }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
@@ -20,4 +21,16 @@
             {% endfor %}
         </div>
     </div>
+</div>
+
+<!-- Mobile: Icon buttons -->
+<div class="flex flex-wrap gap-2">
+    {% for transition in item.get_available_transitions %}
+        <a href="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}?returnUrl={{ request.get_full_path|urlencode }}" class="inline-flex flex-col items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-w-0" title="{{ transition.label }}">
+            {% sprite transition.sprite 20 class="mb-1" %}
+            <span class="text-xs truncate max-w-full">{{ transition.label }}</span>
+        </a>
+    {% empty %}
+        <span class="text-xs text-gray-500 italic">No actions</span>
+    {% endfor %}
 </div>
