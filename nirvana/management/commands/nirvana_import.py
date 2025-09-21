@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from datetime import timezone as dt_timezone
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
@@ -179,7 +180,7 @@ class Command(BaseCommand):
         updated_ts = nirvana_item.get('updated', 0)
         completed_ts = nirvana_item.get('completed', 0)
 
-        created_at = timezone.make_aware(datetime.fromtimestamp(created_ts)) if created_ts else timezone.now()
+        created_at = datetime.fromtimestamp(created_ts, tz=dt_timezone.utc) if created_ts else timezone.now()
         updated_at = timezone.make_aware(datetime.fromtimestamp(updated_ts)) if updated_ts else created_at
         completed_at = timezone.make_aware(datetime.fromtimestamp(completed_ts)) if completed_ts else None
 
