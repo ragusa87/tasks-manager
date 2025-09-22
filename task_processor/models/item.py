@@ -469,6 +469,7 @@ class ItemFlow:
         self.item.is_completed = True
         self.item.completed_at = timezone.now()
 
+
     @priority(-100)
     @state_field.transition(source=fsm.State.ANY, target=GTDStatus.CANCELLED, conditions=[lambda self: not self.item.status == GTDStatus.CANCELLED], label=_("Cancel"))
     def cancel(self):

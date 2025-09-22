@@ -8,6 +8,7 @@
 - Better forms, add missing fields
 - Priority is always Normal from nirvana. Normal ?
 - External JS with vite + tailwind - https://tailwindcss.com/docs/installation/using-vite
+- Convert whole project to references
 
 ### Linting and Formatting
 
