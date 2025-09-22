@@ -19,7 +19,7 @@
                            hx-get="{% url 'dashboard_search' %}"
                            hx-target="#search-results"
                            hx-swap="outerHTML"
-                           hx-trigger="input changed delay:300ms, search"
+                           hx-trigger="input changed delay:300ms, search, load"
                            hx-sync="#search-input:queue"
                            autocomplete="off">
                 </div>
@@ -51,6 +51,14 @@
                 <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:someday" data-color="blue">
                     {% sprite "lucide-history" 12 class="mr-1" %}
                     Someday
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:completed" data-color="blue">
+                    {% sprite "lucide-badge-check" 12 class="mr-1" %}
+                    Completed
+                </button>
+                <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:cancelled" data-color="blue">
+                    {% sprite "lucide-trash-2" 12 class="mr-1" %}
+                    Cancelled
                 </button>
                 <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:project" data-color="blue">
                     {% sprite "lucide-briefcase" 12 class="mr-1" %}

@@ -241,14 +241,12 @@ class Command(BaseCommand):
         # For projects (type 1), map to PROJECT status when active, otherwise use state mapping
         if nirvana_type == 1:
             # Active projects
-            if state in [0, 1, 4]:  # inbox, active, or project state
+            if state in [0, 1, 4, 11]:  # inbox, active, project, someday_maybe
                 return GTDStatus.PROJECT
             elif state == 7:  # completed
                 return GTDStatus.COMPLETED
-            elif state == 11:  # someday/maybe
-                return GTDStatus.SOMEDAY_MAYBE
             else:
-                return GTDStatus.PROJECT  # default for other project states
+                return GTDStatus.PROJECT
 
         # For regular tasks/actions (type 0), use state-based mapping
         state_mapping = {

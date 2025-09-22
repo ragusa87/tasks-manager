@@ -279,7 +279,7 @@ class DashboardView(View):
         recent_contexts = Context.objects.filter(user=request.user).order_by('-created_at')[:5]
 
         # Get search query from URL parameter
-        search_query = request.GET.get('q', '').strip()
+        search_query = request.GET.get("q",'in:next in:-completed in:-cancelled').strip()
 
         context = {
             'stats': stats,

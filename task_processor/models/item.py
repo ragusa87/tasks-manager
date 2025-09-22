@@ -424,6 +424,11 @@ class ItemFlow:
         """Process inbox item as reference material"""
         pass
 
+    @state_field.transition(source=GTDStatus.NEXT_ACTION, target=GTDStatus.REFERENCE,label=_("Convert as Reference"))
+    def convert_as_reference(self):
+        self.item.parent_project = None
+        pass
+
     @requires_form("task_processor.forms.WaitingForForm")
     @state_field.transition(source=[GTDStatus.NEXT_ACTION], target=GTDStatus.WAITING_FOR, label=_("Waiting For"))
     def delegate(self, person, follow_up_days=None):
@@ -458,7 +463,7 @@ class ItemFlow:
         """Mark waiting for item as received/resolved"""
         pass
 
-    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT], target=GTDStatus.COMPLETED, label=_("Complete"))
+    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT, GTDStatus.SOMEDAY_MAYBE, GTDStatus.WAITING_FOR], target=GTDStatus.COMPLETED, label=_("Complete"))
     def complete(self):
         """Mark item as completed"""
         self.item.is_completed = True

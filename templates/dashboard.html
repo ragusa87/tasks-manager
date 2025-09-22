@@ -113,6 +113,7 @@ document.addEventListener('click', function(e) {
 
     if (target.hasAttribute('data-project')) {
         filter = `parent:"${target.getAttribute('data-project')}"`;
+        removeFilter("in:project")
     } else if (target.hasAttribute('data-area')) {
         filter = `area:"${target.getAttribute('data-area')}"`;
     } else if (target.hasAttribute('data-context')) {
@@ -139,8 +140,7 @@ function updateUrl(query) {
     } else {
         url.searchParams.delete('q');
     }
-    console.log("update url " + url)
-    // history.replaceState(null, '', url);
+    history.replaceState(null, '', url);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
