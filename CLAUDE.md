@@ -1,3 +1,4 @@
 - Alway use just to run command inside the container (just uv, just manage, just bash)
 - The sprites works as this: you need to create a svg without comment in the sprites/ folder, then run "just sprites" to generate the all-sprites.svg. Once done you can use the tag "sprite" in the template to use it.
 - Everytime you alter sprites, please run "just sprites" to update the all-sprites.svg
+- When you create a new view, try to use a class and one of the one provided by django (FormView, ListView, CreateView, UpdateView, etc) to avoid boilerplate code.
