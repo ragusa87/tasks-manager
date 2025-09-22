@@ -11,16 +11,17 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.http import is_same_domain
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, FormView, UpdateView, View
 from factory.django import get_model
 
-from .forms import ItemCreateForm, ItemUpdateForm, ItemUpdateProjectForm
+from .forms import ItemCreateForm, ItemDetailForm, ItemUpdateForm, ItemUpdateProjectForm
 from .models import Item
 
 
 class ForceHtmxRequestMixin(object):
     def dispatch(self, request, *args, **kwargs):
-        if request.headers.get("HX-Request") != "true":
+        if request.method == "GET" and request.headers.get("HX-Request") != "true":
             return redirect(reverse_lazy('dashboard'))
         return super().dispatch(request, *args, **kwargs)
 
@@ -391,6 +392,34 @@ class ItemTransitionView(FormView):
         except Exception as e:
             messages.error(self.request, f"Error applying transition: {str(e)}")
 
+
+
+@method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
+class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
+    """
+    View for displaying item details in a modal.
+    """
+    model = Item
+    pk_url_kwarg = "item_id"
+    template_name = "partials/item_detail_modal.html"
+    form_class = ItemDetailForm
+    context_object_name = "item"
+
+    def get_form_kwargs(self):
+        return {
+            'item_flow': self.object.flow,
+            'user': self.request.user,
+            **super().get_form_kwargs(),
+        }
+
+    def form_valid(self, form):
+        self.object = form.save()
+        # Return the updated modal content after successful save
+        return self.render_to_response(self.get_context_data())
+
+    def get_queryset(self):
+        return Item.objects.for_user(self.request.user)
 
 
 @method_decorator(login_required, name='dispatch')

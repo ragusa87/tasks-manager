@@ -208,7 +208,7 @@ class WaitingForForm(forms.Form):
     )
 
 
-class ItemUpdateProjectForm(forms.ModelForm):
+class ItemDetailForm(forms.ModelForm):
     def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
         self.item_flow = item_flow
         self.user = user
@@ -230,6 +230,8 @@ class ItemUpdateProjectForm(forms.ModelForm):
                 'placeholder': 'Enter description'
             }),
         }
+class ItemUpdateProjectForm(ItemDetailForm):
+    pass
 
 class ItemUpdateForm(BaseItemForm):
     def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
