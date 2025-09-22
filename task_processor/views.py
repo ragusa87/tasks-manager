@@ -18,7 +18,13 @@ from .forms import ItemCreateForm, ItemUpdateForm, ItemUpdateProjectForm
 from .models import Item
 
 
-class ReturnRefererMixin(View):
+class ForceHtmxRequestMixin(object):
+    def dispatch(self, request, *args, **kwargs):
+        if request.headers.get("HX-Request") != "true":
+            return redirect(reverse_lazy('dashboard'))
+        return super().dispatch(request, *args, **kwargs)
+
+class ReturnRefererMixin(object):
     fallback_url = reverse_lazy('dashboard')
     def get_success_url(self):
         referer = self.request.META.get('HTTP_REFERER')
@@ -120,15 +126,10 @@ class DashboardActivityView(View):
 
 
 @method_decorator(login_required, name='dispatch')
-class DashboardSearchView(View):
+class DashboardSearchView(ForceHtmxRequestMixin, View):
     """
     HTMX endpoint for search functionality with pagination.
     """
-    def dispatch(self, request, *args, **kwargs):
-        if request.headers.get("HX-Request") != "true":
-            return redirect('/')
-        return super().dispatch(request, *args, **kwargs)
-
     def get(self, request):
         Item = get_model('task_processor', 'Item')
         query = request.GET.get('q', '').strip()
