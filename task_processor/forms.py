@@ -103,7 +103,7 @@ class BaseItemForm(forms.ModelForm):
         model = Item
         fields = [
             'title', 'description', 'priority', 'parent_project', 'contexts', 'area',
-            'due_date', 'start_date', 'estimated_duration', 'energy'
+            'due_date', 'start_date', 'estimated_duration', 'energy', 'waiting_for_person'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -134,6 +134,10 @@ class BaseItemForm(forms.ModelForm):
             'start_date': NativeDateInput(attrs={
                 'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
             }),
+            'waiting_for_person': forms.TextInput(attrs={
+                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
+                'placeholder': 'Bob and Alice'
+            }),
         }
 
     def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
@@ -160,6 +164,9 @@ class BaseItemForm(forms.ModelForm):
             # No user available, show empty querysets
             self.fields['contexts'].queryset = Context.objects.none()
             self.fields['area'].queryset = Area.objects.none()
+
+        if not self.instance.is_waiting_for:
+            del self.fields['waiting_for_person']
 
     def clean_title(self):
         title = self.cleaned_data.get('title')

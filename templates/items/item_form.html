@@ -211,6 +211,22 @@
                     </div>
                 </div>
                 {% endif %}
+
+                {% if form.waiting_for_person %}
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.waiting_for_person.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Waiting for:
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.waiting_for_person }}
+                        {% if form.waiting_for_person.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.waiting_for_person.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">Waiting for who/what ?</p>
+                    </div>
+                </div>
+                {% endif %}
+
             </div>
             {% endif %}
             <!-- Form Actions -->
