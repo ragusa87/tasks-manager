@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "channels",
     "django_extensions",
+    "django_vite",
     "core",
     "task_processor",
     "nirvana",
@@ -206,3 +207,13 @@ IS_DEMO = get_env_variable("IS_DEMO", "True").lower() in ("true", "1", "t")
 DATE_INPUT_FORMAT = "%Y-%m-%d"
 DATETIME_INPUT_FORMAT = "%Y-%m-%dT%H:%M"
 TIME_INPUT_FORMAT = "%H:%M"
+
+# Django Vite Configuration
+DJANGO_VITE = {
+    "default": {
+        "dev_mode": False,  # Will be overridden in development.py
+        "manifest_path": BASE_DIR / "static" / "dist" / ".vite" / "manifest.json",
+        "static_url_prefix": "dist"
+    }
+}
+#  /frontend/js/base.js

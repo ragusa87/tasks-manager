@@ -41,3 +41,11 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.dummy.DummyCache",
     }
 }
+
+# Override Vite settings for development
+DJANGO_VITE["default"]["dev_mode"] = True
+# Setup for traefik
+DJANGO_VITE["default"]["dev_server_host"] = get_env_variable("DJANGO_VITE_DEV_SERVER_HOST", "tasks-vite.docker.test")
+DJANGO_VITE["default"]["dev_server_port"] = get_env_variable("DJANGO_VITE_DEV_SERVER_PORT", "443") # 5173
+DJANGO_VITE["default"]["dev_server_protocol"] = get_env_variable("DJANGO_VITE_DEV_SERVER_PROTOCOL", "https")
+DJANGO_VITE["default"]["static_url_prefix"] = "frontend/js/"

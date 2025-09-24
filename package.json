@@ -1,0 +1,15 @@
+{
+  "name": "tasks-proto-frontend",
+  "version": "1.0.0",
+  "description": "Frontend assets for tasks-proto Django application",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "type": "module",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "dependencies": {}
+}

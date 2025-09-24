@@ -415,6 +415,18 @@ wheels = [
 ]
 
 [[package]]
+name = "django-vite"
+version = "3.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/23/fe/4be07f538bbf9bf8bf73b045552ec2a1b4fba67e3176abb30490b643368e/django_vite-3.1.0.tar.gz", hash = "sha256:8b4ffe4a9fa81ff568bfb195e74dde8694aaf13fd4b656ae60bf59cce08b85e8", size = 25434, upload-time = "2025-02-23T15:32:07.914Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/59/7df4b1077fa41b43b4e542696d75138dbb86a65f44248c607b3e0f1014ce/django_vite-3.1.0-py3-none-any.whl", hash = "sha256:4e46572bd6b1ce70784be129205dc2ffcbc7a3c19fea50bebfb72b327bbde5fc", size = 23579, upload-time = "2025-02-23T15:32:06.603Z" },
+]
+
+[[package]]
 name = "executing"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1045,6 +1057,7 @@ dependencies = [
     { name = "django" },
     { name = "django-unfold" },
     { name = "django-viewflow" },
+    { name = "django-vite" },
     { name = "flower" },
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
@@ -1076,6 +1089,7 @@ requires-dist = [
     { name = "django", specifier = ">=5.2.6" },
     { name = "django-unfold", specifier = ">=0.47.0" },
     { name = "django-viewflow", specifier = ">=2.2.12" },
+    { name = "django-vite", specifier = ">=3.1.0" },
     { name = "flower", specifier = ">=2.0.1" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
