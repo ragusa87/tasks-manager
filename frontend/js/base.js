@@ -1,3 +1,5 @@
+import htmx from 'htmx.org';
+window.htmx = htmx
 // Simple dropdown toggle functionality
 function initializeDropdowns() {
     // Remove existing listeners to avoid duplicates

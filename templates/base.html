@@ -6,8 +6,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     {% block extra_head %}
     <style>
         .expand-target::after {
@@ -19,7 +17,9 @@
           left: 0;
         }
         </style>
-        {% vite_asset 'base' %}
+        {% vite_hmr_client %}
+        {% vite_asset 'frontend/js/base.js' %}
+        {% vite_asset 'frontend/css/main.css' %}
     {% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">

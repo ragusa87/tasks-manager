@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
+import {resolve} from 'path'
 
 export default defineConfig({
+   plugins: [
+       tailwindcss(),
+   ],
   // Build configuration
   build: {
     // Output directory for built assets
-    outDir: 'static/dist',
+    outDir: resolve('./static/dist'),
     // Generate manifest for Django integration
     manifest: true,
     // Empty outDir before building
@@ -13,8 +18,9 @@ export default defineConfig({
     rollupOptions: {
       // Define entry points
       input: {
-        base: 'frontend/js/base.js',
-        dashboard: 'frontend/js/dashboard.js'
+        // 'main': resolve('./frontend/css/main.css'),
+        // 'base': resolve('./frontend/js/base.js'),
+        // 'dashboard': resolve('./frontend/js/dashboard.js')
       }
     }
   },

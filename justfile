@@ -1,4 +1,5 @@
 export BACKEND_CONTAINER := "web"
+export FRONTEND_CONTAINER := "vite"
 
 set allow-duplicate-recipes
 set positional-arguments
@@ -66,6 +67,9 @@ alias f := fixturize
 # Reset the database and load the fixtures
 fixturize *args:
   docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py fixturize -y "$@"
+
+npm *args:
+  docker compose exec {{FRONTEND_CONTAINER}} npm "$@"
 
 alias messages := translate
 # Make messages and compile them
