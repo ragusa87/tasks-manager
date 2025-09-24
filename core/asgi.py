@@ -1,5 +1,5 @@
 """
-ASGI config for document_processing project.
+ASGI config for task_processing project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

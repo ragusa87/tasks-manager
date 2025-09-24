@@ -164,6 +164,10 @@ class Item(models.Model):
     start_date = models.DateTimeField(null=True, blank=True)
     estimated_duration = models.DurationField(null=True, blank=True, help_text="Estimated time to complete")
 
+    # Reminder fields
+    remind_at = models.DateTimeField(null=True, blank=True, help_text="Next reminder occurrence")
+    rrule = models.TextField(blank=True, null=True, help_text="RRULE recurrence pattern (RFC 5545)")
+
     # Completion tracking
     is_completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -202,6 +206,8 @@ class Item(models.Model):
             models.Index(fields=['due_date']),
             models.Index(fields=['area']),
             models.Index(fields=['nirvana_id']),
+            models.Index(fields=['remind_at']),
+            models.Index(fields=['remind_at', 'status', 'is_completed']),
         ]
 
     def __str__(self):
@@ -572,3 +578,42 @@ class ItemFlow:
                         break  # Usually only one transition per method
 
         return ItemTransitionsBag(transitions)
+
+
+class ItemReminderLog(models.Model):
+    """
+    Log of reminder attempts for GTD items.
+    Tracks successful and failed reminder notifications.
+    """
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='reminder_logs')
+    reminded_at = models.DateTimeField(auto_now_add=True)
+    error = models.TextField(blank=True, null=True, help_text="Error message if sending failed")
+    nb_retry = models.IntegerField(default=0, help_text="Number of retry attempts")
+    active = models.BooleanField(default=True, help_text="Whether to continue retry attempts")
+
+    class Meta:
+        ordering = ['-reminded_at']
+        indexes = [
+            models.Index(fields=['item', 'active']),
+            models.Index(fields=['reminded_at']),
+        ]
+
+    def __str__(self):
+        status = "Success" if not self.error else f"Failed (retry {self.nb_retry})"
+        return f"Reminder for '{self.item.title}' - {status} at {self.reminded_at}"
+
+    @property
+    def is_success(self):
+        """Return True if this reminder attempt was successful"""
+        return not self.error
+
+    @property
+    def is_failed(self):
+        """Return True if this reminder attempt failed"""
+        return bool(self.error)
+
+    @property
+    def can_retry(self):
+        """Return True if this reminder can be retried"""
+        from task_processor.constants import GTDConfig
+        return self.active and self.nb_retry < GTDConfig.MAX_REMINDER_THRESHOLD

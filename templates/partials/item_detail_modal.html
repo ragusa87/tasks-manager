@@ -104,6 +104,34 @@
                 </div>
                 {% endif %}
 
+                {% if item.remind_at %}
+                <div>
+                    <span class="font-medium text-gray-700">Next Reminder:</span>
+                    <span class="ml-2 inline-flex items-center align-bottom">
+                        {% sprite "lucide-bell" 16 class="mr-1" %}
+                        {{ item.remind_at|date:"M j, Y H:i" }}
+                        {% now "Y-m-d" as today %}
+                        {% if item.remind_at|date:"Y-m-d" < today %}
+                            <span class="ml-1 text-red-600">(Past Due)</span>
+                        {% elif item.remind_at|date:"Y-m-d" == today %}
+                            <span class="ml-1 text-orange-600">(Today)</span>
+                        {% else %}
+                            <span class="ml-1 text-orange-600">(Future)</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if item.rrule %}
+                <div>
+                    <span class="font-medium text-gray-700">Recurrence:</span>
+                    <span class="ml-2 inline-flex items-center text-purple-600">
+                        {% sprite "lucide-repeat" 16 class="mr-1" %}
+                        <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{ item.rrule }}</code>
+                    </span>
+                </div>
+                {% endif %}
+
                 {% if item.is_waiting_for %}
                 <div>
                     <span class="font-medium text-gray-700">Waiting For:</span>

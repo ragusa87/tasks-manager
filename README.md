@@ -1,5 +1,4 @@
 ### TODOS
-- Reminders & recurring reminders
 - Project/Reference views with Hierarchy
 - Rename `parent_project` and `project_depth` as it's also used for references.
 - Tests & Pipeline

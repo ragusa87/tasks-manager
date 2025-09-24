@@ -32,9 +32,6 @@ if not os.getenv("DB_NAME"):
         }
     }
 
-# Email backend for development
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
 # Disable caching in development
 CACHES = {
     "default": {

@@ -1,5 +1,5 @@
 """
-WSGI config for document_processing project.
+WSGI config for task_processing project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

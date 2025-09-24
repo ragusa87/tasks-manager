@@ -30,7 +30,7 @@ x-django-service: &django-service
     - CACHE_URL=redis://redis:6379/1
     - ALLOWED_HOSTS=tasks.docker.test celeri-admin.docker.test docling.docker.test
     - REMOTE_FILE_SHARE=smb://smbuser:smbpassword@remoteshare/samba
-
+    - EMAIL_URL=smtp://mailpit:1025
   volumes: &django-volumes
     - .:/app
     - media_data:/app/media
@@ -101,7 +101,7 @@ services:
     <<: *django-service
     volumes:
       - .:/app
-      - celery_beat_data:/app/celerybeat-schedule
+      - celery_beat_data:/celerybeat-schedule
     command: uv run celery -A task_processor beat -l info
 
   celery-admin:
@@ -150,6 +150,17 @@ services:
     networks:
       - default
       - pontsun
+  mailpit:
+    image: axllent/mailpit:latest
+    networks:
+      - default
+      - pontsun
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.tasks_mailpit.entrypoints=http,https'
+      - 'traefik.http.routers.tasks_mailpit.middlewares=https_redirect@file'
+      - 'traefik.http.routers.tasks_mailpit.rule=Host(`tasks-mail.docker.test`)'
+      - 'traefik.http.services.tasks_mailpit.loadbalancer.server.port=8025'
 volumes:
   postgres_data:
   redis_data:

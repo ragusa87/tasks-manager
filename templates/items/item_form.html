@@ -14,7 +14,7 @@
                     {% if item %}
                         Update the details of your item
                     {% else %}
-                        Create a new GTD item
+                        Create a new item
                     {% endif %}
                 </p>
             </div>
@@ -229,6 +229,66 @@
 
             </div>
             {% endif %}
+
+            <!-- Reminders Section -->
+            {% if form.remind_at or form.rrule %}
+            <div class="pt-6 space-y-6 border-t border-gray-200">
+                <div class="pb-2">
+                    <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                        {% sprite "lucide-bell" 20 class="mr-2" %}
+                        Reminders
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-600">Set up automatic reminders for this item</p>
+                </div>
+
+                <!-- Remind At Field -->
+                {% if form.remind_at %}
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.remind_at.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Next Reminder
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.remind_at }}
+                        {% if form.remind_at.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.remind_at.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">When to send the first reminder notification</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- RRULE Field -->
+                {% if form.rrule %}
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.rrule.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Recurrence Pattern
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ form.rrule }}
+                        {% if form.rrule.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.rrule.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.rrule.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ form.rrule.help_text }}</p>
+                        {% endif %}
+
+                        <!-- RRULE Examples -->
+                        <div class="mt-3 p-3 bg-gray-50 rounded-md">
+                            <h4 class="text-xs font-medium text-gray-900 mb-2">Common patterns:</h4>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                <div><code class="bg-white px-1 py-0.5 rounded">FREQ=DAILY;INTERVAL=1</code> - Every day</div>
+                                <div><code class="bg-white px-1 py-0.5 rounded">FREQ=WEEKLY;BYDAY=MO,WE,FR</code> - Monday, Wednesday, Friday</div>
+                                <div><code class="bg-white px-1 py-0.5 rounded">FREQ=MONTHLY;BYMONTHDAY=1</code> - First day of each month</div>
+                                <div><code class="bg-white px-1 py-0.5 rounded">FREQ=WEEKLY;INTERVAL=2;BYDAY=TU</code> - Every other Tuesday</div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Leave empty for one-time reminder only</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <!-- Form Actions -->
             <div class="flex items-center justify-between pt-6 border-t border-gray-200">
                 <a href="{% url 'dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">

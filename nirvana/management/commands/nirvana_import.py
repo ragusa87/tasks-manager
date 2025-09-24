@@ -114,7 +114,7 @@ class Command(BaseCommand):
         self.stdout.write(f'Types distribution: {types}')
 
     def import_items(self, nirvana_items, user):
-        """Import items into the GTD system"""
+        """Import items into the system"""
         created_count = 0
         updated_count = 0
         tags_cache = {}

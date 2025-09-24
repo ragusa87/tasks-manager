@@ -239,6 +239,13 @@ def _build_field_filter(field_name: str, values: list) -> Q:
                 neg_value = value[1:]
                 if neg_value in priority_map:
                     field_q |= ~Q(priority=priority_map[neg_value])
+        elif field_name == "id":
+            # ID-based filters
+            try:
+                item_id = int(value)
+                field_q |= Q(id=item_id)
+            except (ValueError, TypeError):
+                pass
         elif field_name == "energy":
             # Energy filters
             energy_map = {

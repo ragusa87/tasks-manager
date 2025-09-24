@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load sprite_tags django_vite %}
 
-{% block title %}GTD Dashboard{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block extra_head %}
     {{ block.super }}
@@ -18,7 +18,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">Hello {{ request.user.first_name|default:"!" }}!</h2>
-                <p class="mt-1 text-sm text-gray-600">Here's your GTD overview for today</p>
+                <p class="mt-1 text-sm text-gray-600">Here's your overview for today</p>
                 <div class="mt-2 flex items-center space-x-4">
                     <span class="text-xs text-gray-500">Last updated: <span id="last-updated">{{ now|date:"H:i" }}</span></span>
                 </div>

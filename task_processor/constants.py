@@ -1,4 +1,3 @@
-# gtd/constants.py
 from django.db import models
 
 
@@ -42,9 +41,10 @@ class GTDConfig:
     DEFAULT_WAITING_FOR_REVIEW_DAYS = 14
     MAX_PROJECT_DEPTH = 3  # Maximum nesting level for projects
     OVERDUE_WARNING_DAYS = 1  # Days before due date to show warning
+    MAX_REMINDER_THRESHOLD = 10  # Maximum retry attempts for failed reminders
 
     # Context prefixes
-    CONTEXT_PREFIXES = ['@', '#', '!']
+    CONTEXT_PREFIXES = ['@']
 
     # Default contexts
     DEFAULT_CONTEXTS = [

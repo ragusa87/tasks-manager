@@ -5,6 +5,7 @@ Base Django settings for core project.
 import os
 from pathlib import Path
 
+import dj_email_url
 from dotenv import load_dotenv
 
 from core.settings import get_env_variable
@@ -30,6 +31,7 @@ INSTALLED_APPS = [
     "channels",
     "django_extensions",
     "django_vite",
+    "django_celery_beat",
     "core",
     "task_processor",
     "nirvana",
@@ -73,7 +75,7 @@ ASGI_APPLICATION = "core.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "document_processing"),
+        "NAME": os.getenv("DB_NAME", "task_processing"),
         "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD", ""),
         "HOST": os.getenv("DB_HOST", "localhost"),
@@ -216,4 +218,15 @@ DJANGO_VITE = {
         "static_url_prefix": "dist"
     }
 }
-#  /frontend/js/base.js
+# Email backend settings
+EMAIL_URL = get_env_variable("EMAIL_URL", "console://")
+email_config = dj_email_url.parse(EMAIL_URL)
+EMAIL_FILE_PATH = email_config["EMAIL_FILE_PATH"]
+EMAIL_HOST_USER = email_config["EMAIL_HOST_USER"]
+EMAIL_HOST_PASSWORD = email_config["EMAIL_HOST_PASSWORD"]
+EMAIL_HOST = email_config["EMAIL_HOST"]
+EMAIL_PORT = email_config["EMAIL_PORT"]
+EMAIL_BACKEND = email_config["EMAIL_BACKEND"]
+EMAIL_USE_TLS = email_config["EMAIL_USE_TLS"]
+EMAIL_USE_SSL = email_config["EMAIL_USE_SSL"]
+FRONTEND_URL= get_env_variable("FRONTEND_URL", "https://tasks.docker.test")

@@ -6,6 +6,3 @@ class TaskProcessorConfig(AppConfig):
     name = 'task_processor'
     verbose_name = 'Task Processor'
 
-    def ready(self):
-        # Import models to ensure they're registered
-        pass

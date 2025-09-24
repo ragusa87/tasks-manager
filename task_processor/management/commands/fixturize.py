@@ -11,7 +11,7 @@ from task_processor.models import Area, Context, Item, Review
 
 
 class Command(BaseCommand):
-    help = 'Generate sample GTD data for development/demo environment'
+    help = 'Generate sample data for development/demo environment'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -37,7 +37,7 @@ class Command(BaseCommand):
             self.stdout.write('Clearing existing data...')
             self.clear_data()
 
-        self.stdout.write('Generating sample GTD data...')
+        self.stdout.write('Generating sample data...')
 
         with transaction.atomic():
             users = self.create_users(options['users'])

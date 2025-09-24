@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from dateutil.rrule import rrulestr
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -14,6 +15,12 @@ class NativeDateInput(forms.DateInput):
 
     def __init__(self, *args, **kwargs):
         super().__init__(format=settings.DATE_INPUT_FORMAT, *args, **kwargs)
+
+class NativeDateTimeInput(forms.DateInput):
+    input_type = "datetime-local"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(format=settings.DATETIME_INPUT_FORMAT, *args, **kwargs)
 
 
 class NativeDurationWidget(forms.MultiWidget):
@@ -89,6 +96,59 @@ class NativeDurationInput(forms.Field):
             if value.total_seconds() > 24 * 3600 * 999:  # Max 999 days
                 raise ValidationError("Duration is too large.")
 
+
+class RecurrenceField(forms.CharField):
+    """
+    Custom form field for handling RRULE recurrence patterns.
+    Validates that the RRULE is properly formatted and has minimum daily frequency.
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('required', False)
+        kwargs.setdefault('help_text', 'Optional: Enter RRULE recurrence pattern (e.g., FREQ=DAILY;INTERVAL=1 or FREQ=WEEKLY;BYDAY=MO,WE)')
+        super().__init__(*args, **kwargs)
+
+    def clean(self, value):
+        value = super().clean(value)
+
+        if not value:
+            return None
+
+        value = value.strip()
+        if not value:
+            return None
+
+        try:
+            # Try to parse the RRULE
+            rrule = rrulestr(value)
+
+            # Validate minimum frequency is daily
+            if hasattr(rrule, '_freq'):
+                # RRULE frequencies: YEARLY=0, MONTHLY=1, WEEKLY=2, DAILY=3, HOURLY=4, etc.
+                # Allow YEARLY, MONTHLY, WEEKLY, and DAILY (0-3), but not more frequent
+                if rrule._freq > 3:  # More frequent than daily (hourly, minutely, etc.)
+                    raise ValidationError("Maximum recurrence frequency is daily. Sub-daily patterns (hourly, minutely) are not allowed.")
+
+            return value
+
+        except Exception as e:
+            raise ValidationError(f"Invalid RRULE pattern: {str(e)}")
+
+
+class RecurrenceWidget(forms.TextInput):
+    """
+    Widget for RRULE input with helpful placeholder and styling.
+    """
+
+    def __init__(self, attrs=None):
+        default_attrs = {
+            'placeholder': 'e.g., FREQ=DAILY;INTERVAL=2 (every 2 days)',
+            'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'
+        }
+        if attrs:
+            default_attrs.update(attrs)
+        super().__init__(default_attrs)
+
 class BaseItemForm(forms.ModelForm):
     estimated_duration = NativeDurationInput(required=False)
     energy = forms.ChoiceField(
@@ -99,11 +159,26 @@ class BaseItemForm(forms.ModelForm):
         })
     )
 
+    # Reminder fields
+    remind_at = forms.DateTimeField(
+        required=False,
+        widget=NativeDateTimeInput(attrs={
+            'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'
+        }),
+        help_text='When to send the first reminder'
+    )
+
+    rrule = RecurrenceField(
+        widget=RecurrenceWidget(),
+        help_text='Recurrence pattern using RRULE format. Leave empty for one-time reminder.'
+    )
+
     class Meta:
         model = Item
         fields = [
             'title', 'description', 'priority', 'parent_project', 'contexts', 'area',
-            'due_date', 'start_date', 'estimated_duration', 'energy', 'waiting_for_person'
+            'due_date', 'start_date', 'estimated_duration', 'energy', 'waiting_for_person',
+            'remind_at', 'rrule'
         ]
         widgets = {
             'title': forms.TextInput(attrs={

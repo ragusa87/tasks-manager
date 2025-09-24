@@ -227,7 +227,7 @@ class LogoutView(View):
 @method_decorator(login_required, name='dispatch')
 class DashboardView(View):
     """
-    GTD Dashboard view with real-time statistics and insights.
+    Dashboard view with real-time statistics and insights.
     """
 
     def get(self, request):
@@ -237,7 +237,7 @@ class DashboardView(View):
         # Get current user's items
         user_items = Item.objects.for_user(request.user)
 
-        # Calculate GTD statistics
+        # Calculate statistics
         stats = {
             'inbox_count': Item.objects.inbox_items(request.user).count(),
             'next_actions_count': Item.objects.next_actions(request.user).count(),
