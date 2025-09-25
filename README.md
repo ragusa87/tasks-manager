@@ -7,6 +7,7 @@
 - Better forms, add missing fields
 - Priority is always Normal from nirvana. Normal ?
 - Convert whole project to references
+- Email inbox via https://maileroo.com/docs/inbound-routing/
 
 ### Linting and Formatting
 
