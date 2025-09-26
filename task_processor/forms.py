@@ -5,7 +5,7 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-from .constants import GTDEnergy, GTDStatus
+from .constants import GTDConfig, GTDEnergy, GTDStatus
 from .models.base_models import Area, Context
 from .models.item import Item, ItemFlow
 
@@ -176,7 +176,7 @@ class BaseItemForm(forms.ModelForm):
     class Meta:
         model = Item
         fields = [
-            'title', 'description', 'priority', 'parent_project', 'contexts', 'area',
+            'title', 'description', 'priority', 'parent', 'contexts', 'area',
             'due_date', 'start_date', 'estimated_duration', 'energy', 'waiting_for_person',
             'remind_at', 'rrule'
         ]
@@ -193,7 +193,7 @@ class BaseItemForm(forms.ModelForm):
             'priority': forms.Select(attrs={
                 'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
             }),
-            'parent_project': forms.Select(attrs={
+            'parent': forms.Select(attrs={
                 'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
             }),
             'contexts': forms.SelectMultiple(attrs={
@@ -225,17 +225,22 @@ class BaseItemForm(forms.ModelForm):
         }
         self.fields['estimated_duration'].widget = NativeDurationWidget(attrs=duration_widget_attrs)
 
-        # Set user-specific querysets
+        # parent relationship is only valid for projects/references
+        current_status = self.instance.status if self.instance and self.instance.status else None
+        if current_status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
+            current_status = GTDConfig.STATUS_WITH_PARENT_ALLOWED[0] if len(GTDConfig.STATUS_WITH_PARENT_ALLOWED) > 0 else None
+
+        # set user-specific querysets
         if user:
-            self.fields['parent_project'].queryset = Item.objects.filter(
+            self.fields['parent'].queryset = Item.objects.filter(
                 user=user,
-                status='project',
-                parent_project__pk=None,
+                status=current_status,
+                parent__pk=None,
             )
             self.fields['contexts'].queryset = Context.objects.filter(user=user)
             self.fields['area'].queryset = Area.objects.filter(user=user)
         else:
-            del self.fields['parent_project']
+            del self.fields['parent']
             # No user available, show empty querysets
             self.fields['contexts'].queryset = Context.objects.none()
             self.fields['area'].queryset = Area.objects.none()
@@ -249,14 +254,14 @@ class BaseItemForm(forms.ModelForm):
             raise ValidationError("Title cannot be empty or just whitespace.")
         return title.strip() if title else title
 
-    def clean_parent_project(self):
-        parent_project = self.cleaned_data.get('parent_project')
-        if parent_project:
+    def clean_parent(self):
+        parent = self.cleaned_data.get('parent')
+        if parent:
             # Check if parent is actually a project
-            if parent_project.status != 'project':
+            if parent.status != 'project':
                 raise ValidationError("Parent must be a project.")
 
-        return parent_project
+        return parent
 
 
 
@@ -325,9 +330,9 @@ class ItemUpdateForm(BaseItemForm):
     def _adjust_fields_for_status(self):
         """Adjust visible fields based on the item's current status"""
         current_status = self.instance.status if self.instance else None
-        # Hide parent_project for project items to prevent circular references
+        # Hide parent for project items to prevent circular references
         if current_status == GTDStatus.PROJECT:
-            self.fields['parent_project'].widget = forms.HiddenInput()
+            self.fields['parent'].widget = forms.HiddenInput()
 
     def save(self, commit=True):
         item = super().save(commit=False)

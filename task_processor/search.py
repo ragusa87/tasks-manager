@@ -690,7 +690,7 @@ def _build_field_filter(field_name: str, values: list) -> Q:
             if value == "due":
                 field_q |= Q(due_date__isnull=False)
             elif value == "project":
-                field_q |= Q(parent_project__isnull=False)
+                field_q |= Q(parent__isnull=False)
             elif value == "context":
                 field_q |= Q(contexts__isnull=False)
             elif value == "area":
@@ -767,9 +767,9 @@ def _build_field_filter(field_name: str, values: list) -> Q:
             try:
                 item_id = int(value)
                 field_q |= Q(id=item_id, status=GTDStatus.PROJECT)
-                field_q |= Q(parent_project__id=item_id)
+                field_q |= Q(parent__id=item_id)
             except (ValueError, TypeError):
-                field_q |= Q(parent_project__title__icontains=value)
+                field_q |= Q(parent__title__icontains=value)
         elif field_name == "tag":
             # Project name search
             field_q |= Q(tags__name=value)
@@ -785,10 +785,10 @@ def _build_field_filter(field_name: str, values: list) -> Q:
             # Parent project ID search
             try:
                 parent_id = int(value)
-                field_q |= Q(parent_project__id=parent_id)
+                field_q |= Q(parent__id=parent_id)
             except (ValueError, TypeError):
                 # If not a valid integer, treat as name search
-                field_q |= Q(parent_project__title__icontains=value)
+                field_q |= Q(parent__title__icontains=value)
 
         elif field_name == "context":
             # Context search
@@ -885,7 +885,7 @@ def _apply_field_filter(queryset, field_name: str, values: list, exclude: bool =
             if value == "due":
                 target_q |= Q(due_date__isnull=False)
             elif value == "project":
-                target_q |= Q(parent_project__isnull=False)
+                target_q |= Q(parent__isnull=False)
             elif value == "context":
                 target_q |= Q(contexts__isnull=False)
             elif value == "area":
@@ -940,16 +940,16 @@ def _apply_field_filter(queryset, field_name: str, values: list, exclude: bool =
 
         elif field_name == "project":
             # Project name search
-            target_q |= Q(parent_project__title__icontains=value)
+            target_q |= Q(parent__title__icontains=value)
 
         elif field_name == "parent":
             # Parent project ID search
             try:
                 parent_id = int(value)
-                target_q |= Q(parent_project__id=parent_id)
+                target_q |= Q(parent__id=parent_id)
             except (ValueError, TypeError):
                 # If not a valid integer, treat as name search
-                target_q |= Q(parent_project__title__icontains=value)
+                target_q |= Q(parent__title__icontains=value)
 
         elif field_name == "context":
             # Context search

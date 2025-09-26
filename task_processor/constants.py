@@ -39,10 +39,14 @@ class GTDConfig:
     DEFAULT_FOLLOW_UP_DAYS = 7
     DEFAULT_SOMEDAY_MAYBE_REVIEW_DAYS = 90
     DEFAULT_WAITING_FOR_REVIEW_DAYS = 14
-    MAX_PROJECT_DEPTH = 3  # Maximum nesting level for projects
+    MAX_DEPTH = 2  # Maximum nesting level for projects/references
     OVERDUE_WARNING_DAYS = 1  # Days before due date to show warning
     MAX_REMINDER_THRESHOLD = 10  # Maximum retry attempts for failed reminders
 
+    STATUS_WITH_PARENT_ALLOWED = [
+        GTDStatus.PROJECT,
+        GTDStatus.REFERENCE,
+    ]
     # Context prefixes
     CONTEXT_PREFIXES = ['@']
 

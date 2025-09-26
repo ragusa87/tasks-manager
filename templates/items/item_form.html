@@ -80,7 +80,7 @@
                     </div>
                 </div>
             </div>
-            {% if form.priority or form.contexts or form.area or form.parent_project %}
+            {% if form.priority or form.contexts or form.area or form.parent %}
                 <div class="pt-6 space-y-6 border-t border-gray-200">
                     <!-- Priority Field -->
                     {% if form.priority %}
@@ -130,15 +130,15 @@
                     {% endif %}
 
                     <!-- Parent Project Field -->
-                    {% if form.parent_project %}
+                    {% if form.parent %}
                     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                        <label for="{{ form.parent_project.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        <label for="{{ form.parent.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                             Parent Project
                         </label>
                         <div class="mt-1 sm:mt-0 sm:col-span-2">
-                            {{ form.parent_project }}
-                            {% if form.parent_project.errors %}
-                                <p class="mt-2 text-sm text-red-600">{{ form.parent_project.errors.0 }}</p>
+                            {{ form.parent }}
+                            {% if form.parent.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.parent.errors.0 }}</p>
                             {% endif %}
                             <p class="mt-2 text-sm text-gray-500">Is this part of a larger project?</p>
                         </div>
@@ -146,7 +146,7 @@
                     {% endif %}
                 </div>
             {% endif %}
-            {% if form.due_date or form.start_date or form.estimated_duration or form.parent_project %}
+            {% if form.due_date or form.start_date or form.estimated_duration or form.parent %}
             <div class="pt-6 space-y-6 border-t border-gray-200">
                 <!-- Due Date Field -->
                 {% if form.due_date %}

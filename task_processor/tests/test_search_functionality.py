@@ -59,7 +59,7 @@ class TestSearchFunctionality(TestCase):
         self.project_task = Item.objects.create(
             title="Design homepage",
             status=GTDStatus.NEXT_ACTION,
-            parent_project=self.project,
+            parent=self.project,
             priority=Priority.NORMAL,  # Different priority
             area=None,  # No area assigned directly
             user=self.user

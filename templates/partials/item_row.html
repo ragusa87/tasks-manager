@@ -55,16 +55,16 @@
                         </span>
                         {% endif %}
 
-                        {% if item.parent_project %}
-                            {% if item.parent_project.is_reference %}
-                                <span class="inline-flex items-center text-blue-600 {{item_secondary_classes}}" data-project="{{ item.parent_project.pk }}">
+                        {% if item.parent %}
+                            {% if item.parent.is_reference %}
+                                <span class="inline-flex items-center text-blue-600 {{item_secondary_classes}}" data-project="{{ item.parent.pk }}">
                                     {% sprite "lucide-archive" 12 class="mr-1" %}
-                                    {{ item.parent_project.title }}
+                                    {{ item.parent.title }}
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-project="{{ item.parent_project.pk }}">
+                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-project="{{ item.parent.pk }}">
                                     {% sprite "lucide-folder" 12 class="mr-1" %}
-                                    {{ item.parent_project.title }}
+                                    {{ item.parent.title }}
                                 </span>
                             {% endif %}
                         {% endif %}

@@ -147,7 +147,7 @@ class Item(models.Model):
     priority = models.IntegerField(choices=Priority.choices, default=Priority.NORMAL)
 
     # GTD-specific fields
-    parent_project = models.ForeignKey(
+    parent = models.ForeignKey(
         'self',
         on_delete=models.CASCADE,
         null=True,
@@ -295,13 +295,13 @@ class Item(models.Model):
         return False
 
     @property
-    def project_depth(self):
+    def depth(self):
         """Calculate nesting depth for projects"""
         depth = 0
-        current = self.parent_project
-        while current and depth < GTDConfig.MAX_PROJECT_DEPTH:
+        current = self.parent
+        while current and depth < GTDConfig.MAX_DEPTH:
             depth += 1
-            current = current.parent_project
+            current = current.parent
         return depth
 
     @property
@@ -345,17 +345,17 @@ class Item(models.Model):
                 raise ValidationError("Waiting for items must specify who/what you're waiting for")
 
         # Validate project hierarchy depth
-        if self.parent_project:
-            if self.parent_project.status != GTDStatus.PROJECT:
-                raise ValidationError("Parent must be a project")
+        if self.parent:
+            if self.parent.status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
+                raise ValidationError("Parent must be of type: " + ", ".join(GTDConfig.STATUS_WITH_PARENT_ALLOWED))
 
-            if self.project_depth >= GTDConfig.MAX_PROJECT_DEPTH:
-                raise ValidationError(f"Project nesting cannot exceed {GTDConfig.MAX_PROJECT_DEPTH} levels")
+            if self.depth >= GTDConfig.MAX_DEPTH:
+                raise ValidationError(f"Item nesting cannot exceed {GTDConfig.MAX_DEPTH} levels")
 
         # Prevent circular references
-        if self.parent_project and self.status == GTDStatus.PROJECT:
-            if self._check_circular_reference(self.parent_project):
-                raise ValidationError(f"Circular project reference detected: {self.parent_project.pk}")
+        if self.parent and self.parent.status in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
+            if self._check_circular_reference(self.parent):
+                raise ValidationError(f"Circular project reference detected: {self.parent.pk}")
 
         # Validate priority for urgent items
         if self.priority == Priority.URGENT and not self.due_date:
@@ -365,8 +365,8 @@ class Item(models.Model):
         """Check for circular references in project hierarchy"""
         if potential_parent == self:
             return True
-        if potential_parent.parent_project:
-            return self._check_circular_reference(potential_parent.parent_project)
+        if potential_parent.parent:
+            return self._check_circular_reference(potential_parent.parent)
         return False
 
     # Get available transitions for UI
@@ -432,7 +432,7 @@ class ItemFlow:
 
     @state_field.transition(source=GTDStatus.NEXT_ACTION, target=GTDStatus.REFERENCE,label=_("Convert as Reference"))
     def convert_as_reference(self):
-        self.item.parent_project = None
+        self.item.parent = None
         pass
 
     @requires_form("task_processor.forms.WaitingForForm")

@@ -153,7 +153,7 @@ class DashboardView(ListView):
     Dashboard view with real-time statistics and insights.
     """
     def get_queryset(self):
-        items = Item.objects.for_user(self.request.user).select_related('area').prefetch_related('contexts').prefetch_related('tags').prefetch_related('parent_project').annotate(
+        items = Item.objects.for_user(self.request.user).select_related('area').prefetch_related('contexts').prefetch_related('tags').prefetch_related('parent').annotate(
         status_order=Case(
             When(status__in=[GTDStatus.COMPLETED.value, GTDStatus.COMPLETED.value], then=Value(-5)),
             When(status__in=[GTDStatus.CANCELLED], then=Value(-10)),
@@ -161,7 +161,7 @@ class DashboardView(ListView):
             output_field=IntegerField(),
         ),
         parent_order=Case(
-            When(parent_project__pk__isnull=True, then=Value(1)),
+            When(parent__pk__isnull=True, then=Value(1)),
             default=Value(0),
             output_field=IntegerField(),
         )

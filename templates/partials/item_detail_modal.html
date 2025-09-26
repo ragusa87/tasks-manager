@@ -66,16 +66,16 @@
                 </div>
                 {% endif %}
 
-                {% if item.parent_project %}
+                {% if item.parent %}
                 <div>
                     <span class="font-medium text-gray-700">Parent:</span>
-                    <span class="ml-2 inline-flex items-center {% if item.parent_project.is_reference %}text-blue-600{% else %}text-green-600{% endif %}">
-                        {% if item.parent_project.is_reference %}
+                    <span class="ml-2 inline-flex items-center {% if item.parent.is_reference %}text-blue-600{% else %}text-green-600{% endif %}">
+                        {% if item.parent.is_reference %}
                             {% sprite "lucide-archive" 16 class="mr-1" %}
                         {% else %}
                             {% sprite "lucide-folder" 16 class="mr-1" %}
                         {% endif %}
-                        {{ item.parent_project.title }}
+                        {{ item.parent.title }}
                     </span>
                 </div>
                 {% endif %}

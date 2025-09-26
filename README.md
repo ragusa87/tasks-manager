@@ -1,14 +1,11 @@
 ### TODOS
-- Project/Reference views with Hierarchy
-- Rename `parent_project` and `project_depth` as it's also used for references.
 - Tests & Pipeline
 - Use select2 for forms autocompletion
-- Nirvana: UI for import, `tag<->area` conversion
-- Better forms, add missing fields
-- Priority is always Normal from nirvana. Normal ?
-- Convert whole project to references
+- Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)
+- Bach actions support: `tag<->area` conversion, `+tag`, `-tag`, `+area`, `-area` etc
+- New transition: Convert whole project to references
 - Email inbox via https://maileroo.com/docs/inbound-routing/
-
+- Add Hierarchy in view
 ### Linting and Formatting
 
 ```bash

@@ -147,7 +147,7 @@ class Command(BaseCommand):
                 try:
                     parent_item = Item.objects.get(nirvana_id=str(parent_id))
                     if child_item and parent_item:
-                        child_item.parent_project = parent_item
+                        child_item.parent = parent_item
                         child_item.save()
                 except Item.DoesNotExist:
                     # Parent not found, skip relationship

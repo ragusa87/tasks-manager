@@ -188,13 +188,13 @@ class Command(BaseCommand):
         next_action_count = int(count * 0.40)
         for i in range(next_action_count):
             # Some next actions belong to projects
-            parent_project = random.choice(projects) if projects and random.random() < 0.3 else None
+            parent = random.choice(projects) if projects and random.random() < 0.3 else None
             self.create_next_action_item(
                 user,
-                random.choice(next_action_templates) + (f" {i+1}" if not parent_project else ""),
+                random.choice(next_action_templates) + (f" {i+1}" if not parent else ""),
                 contexts,
                 areas,
-                parent_project
+                parent
             )
             items_created += 1
 
@@ -259,7 +259,7 @@ class Command(BaseCommand):
 
         return project
 
-    def create_next_action_item(self, user, title, contexts, areas, parent_project=None):
+    def create_next_action_item(self, user, title, contexts, areas, parent=None):
         """Create a next action item"""
         item = Item.objects.create(
             title=title,
@@ -267,7 +267,7 @@ class Command(BaseCommand):
             status=GTDStatus.NEXT_ACTION,
             priority=random.choice(list(Priority)),
             user=user,
-            parent_project=parent_project,
+            parent=parent,
             area=random.choice(areas) if random.random() < 0.7 else None,
             due_date=self.random_future_date() if random.random() < 0.4 else None,
             estimated_duration=timedelta(minutes=random.randint(15, 180)),

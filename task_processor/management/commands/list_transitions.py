@@ -32,9 +32,9 @@ class Command(BaseCommand):
         self.stdout.write(f"\nItem: {item.title}")
         self.stdout.write(f"Current Status: {item.get_status_display()}")
         self.stdout.write(f"User: {item.user.username}")
-        if item.parent_project:
-            self.stdout.write(f"Parent Project: {item.parent_project.title}")
-            self.stdout.write(f"Parent Project Status: {item.parent_project.get_status_display()}")
+        if item.parent:
+            self.stdout.write(f"Parent Project: {item.parent.title}")
+            self.stdout.write(f"Parent Project Status: {item.parent.get_status_display()}")
 
 
         self.stdout.write("-" * 50)
