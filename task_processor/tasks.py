@@ -10,14 +10,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from .constants import GTDStatus
-from .models.item import Item
+from .models.item import Item, ItemReminderLog
 from .signals import reminder_due
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, name='task_processor.tasks.check_reminders')
-def check_reminders(self):
+def check_reminders(self) -> list[ItemReminderLog]:
     """
     Periodic task that runs every 30 minutes to check for due reminders.
 
@@ -31,38 +31,38 @@ def check_reminders(self):
         remind_at__lte=now,
         remind_at__isnull=False,
         is_completed=False,
-        status__in=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT]
+        status__in=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT],
+        user__is_active=True
     ).select_related('user')
 
-    reminder_count = 0
-    error_count = 0
+    responses = []
 
     for item in due_items:
+
+        # Send the reminder signal
+        raw = None
         try:
             with transaction.atomic():
-                # Send the reminder signal
-                reminder_due.send(
+               raw = reminder_due.send(
                     sender=Item,
                     item=item,
-                    reminder_time=now
+                    reminder_at=item.remind_at
                 )
-                reminder_count += 1
-                logger.info(f"Sent reminder signal for item: {item.title} (ID: {item.id})")
 
-        except Exception as e:
-            error_count += 1
-            logger.error(f"Error sending reminder for item {item.id}: {str(e)}")
+               response: ItemReminderLog|None = raw[0][1]
 
-    result = {
-        'at': now,
-        'processed_at': now.isoformat(),
-        'reminders_sent': reminder_count,
-        'errors': error_count,
-        'total_items_checked': due_items.count()
-    }
 
-    logger.info(f"Reminder check completed: {result}")
-    return result
+            if response is None:
+                logger.warning(f"No response from reminder_due signal for item {item.id}")
+                continue
+
+            responses.append(response)
+        except IndexError as e:
+            logger.error(f"Error processing reminder for item {item.id}: No response from signal: {str(e)}")
+            continue
+
+    return responses
+
 
 
 @shared_task(bind=True, name='task_processor.tasks.send_reminder')
@@ -73,21 +73,21 @@ def send_reminder(self, item_id, reminder_time_str):
     """
     try:
         item = Item.objects.get(id=item_id)
-        reminder_time = datetime.fromisoformat(reminder_time_str.replace('Z', '+00:00'))
+        reminder_at = datetime.fromisoformat(reminder_time_str.replace('Z', '+00:00'))
 
         # This will be implemented by the reminder service
         # For now, just log the reminder
-        logger.info(f"Processing reminder for item: {item.title} (ID: {item.id}) at {reminder_time}")
+        logger.info(f"Processing reminder for item: {item.title} (ID: {item.id}) at {reminder_at}")
         reminder_due.send(
             sender=Item,
             item=item,
-            reminder_time=reminder_time
+            reminder_at=reminder_at
         )
         return {
             'success': True,
             'item_id': item_id,
             'item_title': item.title,
-            'reminder_time': reminder_time_str
+            'reminder_time_str': reminder_time_str
         }
 
     except Item.DoesNotExist:

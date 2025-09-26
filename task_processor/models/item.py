@@ -586,10 +586,11 @@ class ItemReminderLog(models.Model):
     Tracks successful and failed reminder notifications.
     """
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='reminder_logs')
-    reminded_at = models.DateTimeField(auto_now_add=True)
+    reminded_at = models.DateTimeField(default=timezone.now)
     error = models.TextField(blank=True, null=True, help_text="Error message if sending failed")
     nb_retry = models.IntegerField(default=0, help_text="Number of retry attempts")
     active = models.BooleanField(default=True, help_text="Whether to continue retry attempts")
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-reminded_at']

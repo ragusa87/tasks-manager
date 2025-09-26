@@ -9,6 +9,7 @@ from dateutil.rrule import rrulestr
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
+from django.db.models.functions import TruncSecond
 from django.urls import reverse
 from django.utils import timezone
 
@@ -23,7 +24,7 @@ class ReminderService:
     """
 
     @staticmethod
-    def _send_reminder_email(item: Item) -> tuple[bool, Optional[str]]:
+    def send_reminder_email(item: Item) -> bool:
         """
         Send a reminder email for the given item.
 
@@ -39,7 +40,7 @@ class ReminderService:
             recipient_email = item.user.email
 
             if not recipient_email:
-                return False, "User has no email address configured"
+                return False
 
             send_mail(
                 subject=subject,
@@ -50,12 +51,12 @@ class ReminderService:
             )
 
             logger.info(f"Reminder email sent successfully for item {item.id} to {recipient_email}")
-            return True, None
+            return True
 
         except Exception as e:
             error_msg = f"Failed to send reminder email: {str(e)}"
             logger.error(error_msg)
-            return False, error_msg
+            raise e
 
     @staticmethod
     def _build_email_message(item: Item) -> str:
@@ -136,7 +137,7 @@ class ReminderService:
             logger.error(f"Error calculating next reminder for item {item.id}: {str(e)}")
             return None
 
-    def _process_reminder(self, item: Item, reminder_time: datetime) -> ItemReminderLog:
+    def _process_reminder(self, item: Item, reminded_at: datetime) -> ItemReminderLog:
         """
         Process a reminder for an item. This includes:
         1. Creating a reminder log entry
@@ -146,38 +147,49 @@ class ReminderService:
 
         Args:
             item: The Item to send reminder for
-            reminder_time: When the reminder was triggered
+            reminder_at: When the reminder was triggered
 
         Returns:
             ItemReminderLog instance
         """
         with transaction.atomic():
             # Create the initial log entry
-            log_entry, created = ItemReminderLog.objects.get_or_create(
-                item=item,
-                reminded_at=reminder_time,
-                defaults=dict(nb_retry=0, active=True),
-            )
+            created = False
+            log_entry = ItemReminderLog.objects.annotate(
+                reminded_sec=TruncSecond('reminded_at')
+            ).filter(item=item, reminded_sec=reminded_at.replace(microsecond=0)).first()
+            if not log_entry:
+                created = True
+                log_entry = ItemReminderLog.objects.create(
+                    item=item,
+                    reminded_at=reminded_at,
+                )
+
             if not log_entry.active:
                 logger.info(f"Skiping inactive reminder {item.id}")
 
                 return log_entry
 
             # Try to send the reminder
-            success, error_message = self._send_reminder_email(item)
+            try:
+                self.send_reminder_email(item)
 
-            if success:
                 # Email sent successfully - calculate next reminder
                 next_reminder = self._calculate_next_reminder(item)
                 item.remind_at = next_reminder
                 item.save(update_fields=['remind_at'])
 
-                logger.info(f"Reminder processed successfully for item {item.id}")
+                return log_entry
 
-            else:
+
+            except Exception as e:
+                error_message = f"Exception during email send: {str(e)}"
+                logger.error(error_message)
+
                 # Email failed - log the error and check retry logic
                 log_entry.error = error_message
-                log_entry.nb_retry = log_entry.nb_retry + 1
+                if not created:
+                    log_entry.nb_retry = log_entry.nb_retry + 1
 
                 # Check if we should continue retrying
                 if log_entry.nb_retry >= GTDConfig.MAX_REMINDER_THRESHOLD:
@@ -186,11 +198,11 @@ class ReminderService:
                 else:
                     logger.info(f"Reminder failed for item {item.id}. Will retry later. Attempt {log_entry.nb_retry}")
 
-                log_entry.save(update_fields=['error', 'nb_retry', 'active'])
+                log_entry.save()
 
             return log_entry
 
-    def handle_reminder_due(self, sender, item, reminder_time, **kwargs):
+    def handle_reminder_due(self, item, reminder_at, **kwargs) -> ItemReminderLog:
         """
         Signal handler for when a reminder is due.
         This processes the reminder using the ReminderService.
@@ -198,23 +210,15 @@ class ReminderService:
         logger.info(f"Received reminder_due signal for item {item.id}: {item.title}")
 
         try:
-            reminder_log = self._process_reminder(item, reminder_time)
+            reminder_log = self._process_reminder(item, reminder_at)
 
             if reminder_log.is_success:
                 logger.info(f"Reminder processed successfully for item {item.id}")
             else:
                 logger.warning(f"Reminder processing failed for item {item.id}: {reminder_log.error}")
-
+            return reminder_log
         except Exception as e:
             logger.error(f"Error in reminder_due signal handler for item {item.id}: {str(e)}")
-            # Create a failed log entry to track this error
-            ItemReminderLog.objects.create(
-                item=item,
-                reminded_at=reminder_time,
-                error=f"Signal handler error: {str(e)}",
-                nb_retry=0,
-                active=False
-            )
             raise e
 
 

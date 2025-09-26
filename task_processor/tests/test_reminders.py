@@ -9,10 +9,9 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
-from task_processor.constants import GTDStatus
+from task_processor.constants import GTDConfig, GTDStatus
 from task_processor.models.base_models import Area, Context
 from task_processor.models.item import Item, ItemReminderLog
-from task_processor.services import ReminderService
 from task_processor.tasks import check_reminders
 
 
@@ -54,120 +53,176 @@ class ReminderSystemTestCase(TestCase):
         self.assertEqual(item.remind_at, remind_time)
         self.assertEqual(item.rrule, rrule)
 
-    def test_calculate_next_reminder(self):
-        """Test RRULE-based next reminder calculation."""
-        # Create item with daily recurrence
-        item = Item.objects.create(
-            title="Daily Reminder",
-            user=self.user,
-            status=GTDStatus.NEXT_ACTION,
-            remind_at=timezone.now(),
-            rrule="FREQ=DAILY;INTERVAL=1"
-        )
-
-        next_reminder = ReminderService()._calculate_next_reminder(item)
-        self.assertIsNotNone(next_reminder)
-
-        # Should be approximately 1 day later
-        expected_time = item.remind_at + timedelta(days=1)
-        time_diff = abs((next_reminder - expected_time).total_seconds())
-        self.assertLess(time_diff, 60)  # Within 1 minute
-
-    def test_calculate_next_reminder_no_rrule(self):
-        """Test next reminder calculation with no RRULE."""
-        item = Item.objects.create(
-            title="One-time Reminder",
-            user=self.user,
-            status=GTDStatus.NEXT_ACTION,
-            remind_at=timezone.now(),
-            rrule=None
-        )
-
-        next_reminder = ReminderService()._calculate_next_reminder(item)
-        self.assertIsNone(next_reminder)
-
     @patch('task_processor.services.send_mail')
-    def test_send_reminder_email_success(self, mock_send_mail):
-        """Test successful reminder email sending."""
+    def test_reminder_email_integration_success(self, mock_send_mail):
+        """Test successful reminder processing through task integration."""
         mock_send_mail.return_value = True
 
+        # Create item with past reminder time
+        past_time = timezone.now() - timedelta(minutes=10)
         item = Item.objects.create(
             title="Email Test Item",
             description="Testing email functionality",
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
-            area=self.area
+            area=self.area,
+            remind_at=past_time,
+            is_completed=False
         )
         item.contexts.add(self.context)
 
-        success, error = ReminderService._send_reminder_email(item)
+        # Run the reminder check task
+        result: list[ItemReminderLog] = check_reminders.apply().get()
 
-        self.assertTrue(success)
-        self.assertIsNone(error)
+        # Verify task ran successfully
+        self.assertEqual(len(result), 1, "Expected one result from task")
+        self.assertIsNone(result[0].error, "No error expected")
+
+        # Verify email was sent
         mock_send_mail.assert_called_once()
 
+        # Verify reminder log was created
+        log_entries = ItemReminderLog.objects.filter(item=item)
+        self.assertTrue(log_entries.exists())
+
+        latest_log = log_entries.latest('reminded_at')
+        self.assertTrue(latest_log.is_success)
+        self.assertEqual(latest_log.nb_retry, 0)
+
     @patch('task_processor.services.send_mail')
-    def test_send_reminder_email_failure(self, mock_send_mail):
-        """Test reminder email sending failure."""
+    def test_reminder_email_integration_failure(self, mock_send_mail):
+        """Test reminder processing failure through task integration."""
         mock_send_mail.side_effect = Exception("SMTP Error")
 
+        # Create item with past reminder time
+        past_time = timezone.now() - timedelta(minutes=10)
         item = Item.objects.create(
             title="Email Failure Test",
             user=self.user,
-            status=GTDStatus.NEXT_ACTION
+            status=GTDStatus.NEXT_ACTION,
+            remind_at=past_time,
+            is_completed=False
         )
 
-        success, error = ReminderService._send_reminder_email(item)
+        # Run the reminder check task
+        result: list[ItemReminderLog] = check_reminders.apply().get()
 
-        self.assertFalse(success)
-        self.assertIsNotNone(error)
-        self.assertIn("Failed to send reminder email", error)
+        # Verify task processed the reminder (even though email failed)
+        # The task still counts it as "sent"
+        self.assertTrue(len(result) == 1, "Expected one result from task")
+        self.assertIsNotNone(result[0].error, "Sending email should have failed")
 
-    @patch('task_processor.services.ReminderService.send_reminder_email')
-    def test_process_reminder_success(self, mock_send_email):
-        """Test successful reminder processing."""
-        mock_send_email.return_value = (True, None)
+        # Verify reminder log was created with failure
+        log_entries = ItemReminderLog.objects.filter(item=item)
+        self.assertTrue(log_entries.exists())
 
+        latest_log = log_entries.latest('reminded_at')
+        self.assertTrue(latest_log.is_failed)
+        self.assertEqual(latest_log.nb_retry, 0, "Item should not be retried yet")
+        self.assertIsNotNone(latest_log.error)
+
+    @patch('task_processor.services.send_mail')
+    def test_reminder_email_integration_failure_twice(self, mock_send_mail):
+        """Test reminder processing failure through task integration."""
+        mock_send_mail.side_effect = Exception("SMTP Error")
+
+        # Create item with past reminder time
+        past_time = timezone.now() - timedelta(minutes=10)
         item = Item.objects.create(
-            title="Process Test Item",
+            title="Email Failure Test",
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
-            remind_at=timezone.now(),
-            rrule="FREQ=DAILY;INTERVAL=1"
+            remind_at=past_time,
+            is_completed=False
         )
-
-        reminder_time = timezone.now()
-        log_entry = ReminderService()._process_reminder(item, reminder_time)
-
-        self.assertTrue(log_entry.is_success)
-        self.assertEqual(log_entry.item, item)
-        self.assertEqual(log_entry.nb_retry, 0)
-        self.assertTrue(log_entry.active)
-
-        # Item should have updated remind_at
+        # Refresh item to get the exact timestamp from DB
         item.refresh_from_db()
-        self.assertIsNotNone(item.remind_at)
-        self.assertNotEqual(item.remind_at, reminder_time)
 
-    @patch('task_processor.services.ReminderService.send_reminder_email')
-    def test_process_reminder_failure(self, mock_send_email):
-        """Test reminder processing with email failure."""
-        mock_send_email.return_value = (False, "Email failed")
-
-        item = Item.objects.create(
-            title="Failure Test Item",
-            user=self.user,
-            status=GTDStatus.NEXT_ACTION,
-            remind_at=timezone.now()
+        # Create existing log with the exact timestamp that will be used by the task
+        existing_log = ItemReminderLog.objects.create(
+            item=item,
+            error="First error",
+            nb_retry=GTDConfig.MAX_REMINDER_THRESHOLD - 1,
+            active=True,
+            reminded_at=item.remind_at  # Use the exact DB timestamp
         )
 
-        reminder_time = timezone.now()
-        log_entry = ReminderService()._process_reminder(item, reminder_time)
+        # Run the reminder check task
+        result: list[ItemReminderLog] = check_reminders.apply().get()
 
-        self.assertTrue(log_entry.is_failed)
-        self.assertEqual(log_entry.error, "Email failed")
-        self.assertEqual(log_entry.nb_retry, 1)
-        self.assertTrue(log_entry.active)
+        # Verify task processed the reminder
+        self.assertEqual(len(result), 1, "Expected one result from task")
+        self.assertIsNotNone(result[0].error, "Sending email should have failed")
+
+        # Verify the existing log was updated (not a new one created)
+        log_entries = ItemReminderLog.objects.filter(item=item)
+        self.assertEqual(log_entries.count(), 1, "Should have only one log entry")
+
+        # The returned log should be the updated existing one
+        updated_log = log_entries.first()
+        self.assertEqual(updated_log.id, existing_log.id, "Should be the same log entry")
+        self.assertTrue(updated_log.is_failed)
+        self.assertEqual(updated_log.nb_retry, GTDConfig.MAX_REMINDER_THRESHOLD, "nb_retry should be incremented by 1")
+        self.assertIsNotNone(updated_log.error)
+
+    def test_recurring_reminder_reschedule(self):
+        """Test that recurring reminders are rescheduled after processing."""
+        # Create item with past reminder time and daily recurrence
+        past_time = timezone.now() - timedelta(minutes=10)
+        item = Item.objects.create(
+            title="Recurring Reminder Test",
+            user=self.user,
+            status=GTDStatus.NEXT_ACTION,
+            remind_at=past_time,
+            rrule="FREQ=DAILY;INTERVAL=1",
+            is_completed=False
+        )
+
+        original_remind_at = item.remind_at
+
+        with patch('task_processor.services.send_mail', return_value=True):
+            # Run the reminder check task
+            result: list[ItemReminderLog] = check_reminders.apply().get()
+
+            # Verify task ran successfully
+            self.assertEqual(len(result), 1, "Expected one result from task")
+            self.assertIsNone(result[0].error, "No error expected")
+
+        # Refresh item from database
+        item.refresh_from_db()
+
+        # Verify remind_at was updated to next occurrence
+        self.assertIsNotNone(item.remind_at)
+        self.assertNotEqual(item.remind_at, original_remind_at)
+        # Should be later than the original (next scheduled occurrence)
+        self.assertGreater(item.remind_at, original_remind_at)
+
+    def test_one_time_reminder_cleared(self):
+        """Test that one-time reminders are cleared after processing."""
+        # Create item with past reminder time and no recurrence
+        past_time = timezone.now() - timedelta(minutes=10)
+        item = Item.objects.create(
+            title="One-time Reminder Test",
+            user=self.user,
+            status=GTDStatus.NEXT_ACTION,
+            remind_at=past_time,
+            rrule=None,  # No recurrence
+            is_completed=False
+        )
+
+        with patch('task_processor.services.send_mail', return_value=True):
+            # Run the reminder check task
+            result: list[ItemReminderLog] = check_reminders.apply().get()
+
+            # Verify task ran successfully
+            self.assertEqual(len(result), 1, "Expected one result from task")
+            self.assertIsNone(result[0].error, "No error expected")
+
+        # Refresh item from database
+        item.refresh_from_db()
+
+        # Verify remind_at was cleared (no next occurrence)
+        self.assertIsNone(item.remind_at)
 
     def test_check_reminders_task(self):
         """Test the periodic reminder checking task."""
@@ -192,11 +247,10 @@ class ReminderSystemTestCase(TestCase):
         )
 
         with patch('task_processor.tasks.reminder_due.send') as mock_signal:
-            result = check_reminders.apply()
+            result: list[ItemReminderLog] = check_reminders.apply().get()
 
             # Should have found 1 item and sent 1 signal
-            self.assertEqual(result.result['reminders_sent'], 1)
-            self.assertEqual(result.result['errors'], 0)
+            self.assertEqual(len(result), 1, "Expected one result from task")
             mock_signal.assert_called_once()
 
     def test_item_completion_clears_reminders(self):

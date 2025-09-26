@@ -12,6 +12,7 @@ from .services import reminder_service
 logger = logging.getLogger(__name__)
 
 # Custom signal sent when a reminder is due
+# reminder_time="DateTime when the reminder is due", item="The Item instance"
 reminder_due = Signal()
 
 @receiver(post_save, sender=Item)
@@ -59,5 +60,7 @@ def handle_item_deletion(sender, instance, **kwargs):
         logger.info(f"Item {instance.id} being deleted. Will cascade delete {reminder_log_count} reminder logs.")
 
 @receiver(reminder_due)
-def handle_reminder_due(*args, **kwargs):
-    reminder_service.handle_reminder_due(*args, **kwargs)
+def handle_reminder_due(*args, **kwargs) -> ItemReminderLog:
+    item = kwargs.pop('item')
+    reminder_at = kwargs.pop('reminder_at')
+    return reminder_service.handle_reminder_due(*args, reminder_at=reminder_at, item=item, **kwargs)

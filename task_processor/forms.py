@@ -325,7 +325,6 @@ class ItemUpdateForm(BaseItemForm):
     def _adjust_fields_for_status(self):
         """Adjust visible fields based on the item's current status"""
         current_status = self.instance.status if self.instance else None
-        print(current_status)
         # Hide parent_project for project items to prevent circular references
         if current_status == GTDStatus.PROJECT:
             self.fields['parent_project'].widget = forms.HiddenInput()
