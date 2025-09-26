@@ -33,3 +33,14 @@ def sprite_svg():
     path = pathlib.Path(settings.BASE_DIR) / "templates" / "all-sprites.svg"
     with open(path, "r", encoding="utf-8") as f:
         return mark_safe(f.read())
+
+
+@register.filter
+def lookup(dictionary, key):
+    """
+    Template filter to look up a dictionary value by key.
+    Usage: {{ my_dict|lookup:my_key }}
+    """
+    if hasattr(dictionary, 'get'):
+        return dictionary.get(key, [])
+    return []

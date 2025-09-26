@@ -54,7 +54,7 @@ document.addEventListener('click', function(e) {
     let filter = '';
 
     if (target.hasAttribute('data-project')) {
-        filter = `parent:"${target.getAttribute('data-project')}"`;
+        filter = `project:"${target.getAttribute('data-project')}"`;
         removeFilter("in:project")
     } else if (target.hasAttribute('data-area')) {
         filter = `area:"${target.getAttribute('data-area')}"`;
@@ -96,7 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.value = '';
         htmx.trigger(searchInput, 'input');
 
-        updateFilterStates();
         updateUrl('');
     });
 })
@@ -122,27 +121,33 @@ function isFilterActive(filter) {
 
 function addFilter(filter) {
     const searchInput = document.getElementById('search-input');
-    const currentValue = searchInput.value.trim();
 
-    // Check if filter already exists - if so, remove it
-    if (isFilterActive(filter)) {
-        removeFilter(filter);
-        return;
+    // Find the button for this filter and get its pre-calculated next query
+    const button = document.querySelector(`.filter-suggestion[data-filter="${CSS.escape(filter)}"]`);
+    const nextQuery = button?.getAttribute('data-next-query');
+
+    if (nextQuery !== undefined) {
+        // Use the pre-calculated query from the server
+        searchInput.value = nextQuery;
+
+        // Trigger the search
+        htmx.trigger(searchInput, 'input');
+
+        // Update URL
+        updateUrl(nextQuery);
+
+        // Focus back on the input
+        searchInput.focus();
+    } else {
+        // Fallback to old behavior if no next-query available
+        console.warn('No next-query found for filter:', filter);
+        const currentValue = searchInput.value.trim();
+        const newValue = currentValue ? `${currentValue} ${filter}` : filter;
+        searchInput.value = newValue;
+        htmx.trigger(searchInput, 'input');
+        updateUrl(newValue);
+        searchInput.focus();
     }
-
-    // Add the filter with a space if there's existing content
-    const newValue = currentValue ? `${currentValue} ${filter}` : filter;
-    searchInput.value = newValue;
-
-    // Trigger the search
-    htmx.trigger(searchInput, 'input');
-
-    // Update filter button states and URL
-    updateFilterStates();
-    updateUrl(newValue);
-
-    // Focus back on the input
-    searchInput.focus();
 }
 
 function removeFilter(filter) {
@@ -169,33 +174,10 @@ function removeFilter(filter) {
     // Trigger the search
     htmx.trigger(searchInput, 'input');
 
-    // Update filter button states and URL
-    updateFilterStates();
     updateUrl(newValue);
 
     // Focus back on the input
     searchInput.focus();
-}
-
-function updateFilterStates() {
-    document.querySelectorAll('.filter-suggestion').forEach(function(button) {
-        const filter = button.getAttribute('data-filter');
-        const isActive = isFilterActive(filter);
-        const colorCategory = button.getAttribute('data-color') || 'gray';
-
-        // Toggle between inactive and active states
-        // Inactive state classes
-        button.classList.toggle(`bg-${colorCategory}-100`, !isActive);
-        button.classList.toggle(`text-${colorCategory}-700`, !isActive);
-        button.classList.toggle(`hover:bg-${colorCategory}-200`, !isActive);
-
-        // Active state classes
-        button.classList.toggle(`bg-${colorCategory}-600`, isActive);
-        button.classList.toggle('text-white', isActive);
-        button.classList.toggle(`hover:bg-${colorCategory}-700`, isActive);
-        button.classList.toggle('ring-2', isActive);
-        button.classList.toggle(`ring-${colorCategory}-300`, isActive);
-    });
 }
 
 function initializeFilterSuggestions() {
@@ -212,26 +194,13 @@ function initializeFilterSuggestions() {
 document.addEventListener('DOMContentLoaded', function() {
     initializeFilterSuggestions();
 
-    // Initial state update
-    updateFilterStates();
-
-    // Trigger initial search if there's a query in the input
-    const searchInput = document.getElementById('search-input');
-    if (searchInput && searchInput.value.trim()) {
-        htmx.trigger(searchInput, 'input');
-    }
 });
 
-// Update filter states and URL when user types
+// Update URL when user types
 document.getElementById('search-input').addEventListener('input', function() {
-    updateFilterStates();
     updateUrl(this.value);
 });
 
-// Re-initialize filter suggestions when HTMX loads new content
-document.addEventListener('htmx:afterSwap', function() {
-    updateFilterStates()
-});
 
 // Initialize stats filter buttons
 function initializeStatsFilters() {
@@ -259,9 +228,6 @@ function setSearchFilter(filter) {
 
     // Trigger the search
     htmx.trigger(searchInput, 'input');
-
-    // Update filter button states if the function exists
-    updateFilterStates();
 
     // Focus on the search input
     searchInput.focus();

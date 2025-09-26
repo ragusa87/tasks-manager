@@ -8,9 +8,9 @@
                 {% sprite "lucide-search" 24 class="text-gray-500 mr-2" %}
                 Search Results
             </h3>
-            {% if query %}
+            {% if paginator %}
             <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                Found {{ total_results }} result{{ total_results|pluralize }} for "{{ query }}"
+                Found {{ paginator.count }} result{{ paginator.count|pluralize }} {% if search_query %}for "{{ search_query }}"{% endif %}.
             </p>
             {% endif %}
         </div>

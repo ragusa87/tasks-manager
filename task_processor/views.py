@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db.models import Case, Count, IntegerField, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -21,8 +21,10 @@ from django.views.generic import (
 )
 from factory.django import get_model
 
+from .constants import GTDStatus
 from .forms import ItemCreateForm, ItemDetailForm, ItemUpdateForm, ItemUpdateProjectForm
 from .models import Area, Context, Item
+from .search import FilterCategory
 
 
 class ForceHtmxRequestMixin(object):
@@ -151,7 +153,19 @@ class DashboardView(ListView):
     Dashboard view with real-time statistics and insights.
     """
     def get_queryset(self):
-        items = Item.objects.for_user(self.request.user).select_related('area').prefetch_related('contexts').prefetch_related('tags').prefetch_related('parent_project')
+        items = Item.objects.for_user(self.request.user).select_related('area').prefetch_related('contexts').prefetch_related('tags').prefetch_related('parent_project').annotate(
+        status_order=Case(
+            When(status__in=[GTDStatus.COMPLETED.value, GTDStatus.COMPLETED.value], then=Value(-5)),
+            When(status__in=[GTDStatus.CANCELLED], then=Value(-10)),
+            default=Value(0),
+            output_field=IntegerField(),
+        ),
+        parent_order=Case(
+            When(parent_project__pk__isnull=True, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
+        )
+    ).order_by('-parent_order', '-status_order', '-created_at')
 
         from .search import apply_search
         return apply_search(items, self.get_search_query())
@@ -161,7 +175,18 @@ class DashboardView(ListView):
         # Get recent areas and contexts for filter suggestions
         areas = Area.objects.filter(user=self.request.user).order_by('-created_at')
         contexts = Context.objects.filter(user=self.request.user).order_by('-created_at')
+
+        # Create search filter instance
+        from .search import SearchFilter
+        search_filter = SearchFilter(
+            user=self.request.user,
+            areas=areas,
+            contexts=contexts,
+            projects=Item.objects.projects(self.request.user)
+        )
+
         context = super().get_context_data(object_list=object_list, **kwargs)
+
         context.update({
             "stats": {
                 **self._get_statistic_count()
@@ -169,6 +194,11 @@ class DashboardView(ListView):
             'areas': areas,
             'contexts': contexts,
             'search_query': self.get_search_query(),
+            'search_filters': search_filter.get_filters_with_state(self.get_search_query()),
+            'filter_categories': [
+                {'value': category.value, 'label': category.label}
+                for category in FilterCategory
+            ],
             'now': timezone.now(),
         })
         return context

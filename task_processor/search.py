@@ -1,11 +1,38 @@
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List
+from enum import Enum
+from typing import Dict, List, NamedTuple
 
-from django.db.models import Q
+from django.db.models import Q, TextChoices
 
 from task_processor.constants import GTDEnergy
 
+
+class FilterCategory(TextChoices):
+    STATUS = "status", "Status"
+    PRIORITY = "priority", "Priority"
+    DUE = "due", "Due Date"
+    ENERGY = "energy", "Energy"
+    RELATIONSHIP = "relationship", "Relationship"
+    AREA = "area", "Area"
+    CONTEXT = "context", "Context"
+    PROJECT = "project", "Project"
+
+class FilterStrategy(Enum):
+    NORMAL = "normal"          # Additive filters (can combine multiple)
+    EXCLUSIVE = "exclusive"    # Only one filter of this type can be active
+    INVERT = "invert"    # Only one filter of this type can be active
+
+FILTER_STRATEGY_MAP = {
+    FilterCategory.STATUS: FilterStrategy.EXCLUSIVE,
+    FilterCategory.PRIORITY: FilterStrategy.EXCLUSIVE,
+    FilterCategory.DUE: FilterStrategy.EXCLUSIVE,
+    FilterCategory.ENERGY: FilterStrategy.EXCLUSIVE,
+    FilterCategory.RELATIONSHIP: FilterStrategy.NORMAL,
+    FilterCategory.AREA: FilterStrategy.INVERT,
+    FilterCategory.CONTEXT: FilterStrategy.NORMAL,
+    FilterCategory.PROJECT: FilterStrategy.EXCLUSIVE,
+}
 
 @dataclass
 class SearchTokens:
@@ -13,6 +40,204 @@ class SearchTokens:
     included: Dict[str, List[str]] = field(default_factory=dict)
     excluded: Dict[str, List[str]] = field(default_factory=dict)
     query: str = ""
+
+
+class FilterOption(NamedTuple):
+    """Represents a single filter option in the search interface."""
+    label: str
+    filter_query: str
+    icon: str
+    color: str
+    category: FilterCategory
+    active: bool = False
+    inversed: bool = False  # True if this filter is excluded (negated)
+    next_query: str = ""  # The query that would result from clicking this filter
+
+    @property
+    def inactive_classes(self) -> str:
+        """More vibrant inactive state with better contrast and subtle gradients"""
+        color_configs = {
+            'blue': "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 hover:from-blue-200 hover:to-blue-300 ring-1 ring-blue-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'green': "bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 hover:from-emerald-200 hover:to-emerald-300 ring-1 ring-emerald-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'yellow': "bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 hover:from-amber-200 hover:to-amber-300 ring-1 ring-amber-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'red': "bg-gradient-to-r from-red-100 to-red-200 text-red-800 hover:from-red-200 hover:to-red-300 ring-1 ring-red-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'purple': "bg-gradient-to-r from-violet-100 to-violet-200 text-violet-800 hover:from-violet-200 hover:to-violet-300 ring-1 ring-violet-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'pink': "bg-gradient-to-r from-pink-100 to-pink-200 text-pink-800 hover:from-pink-200 hover:to-pink-300 ring-1 ring-pink-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'indigo': "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 hover:from-indigo-200 hover:to-indigo-300 ring-1 ring-indigo-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'orange': "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 hover:from-orange-200 hover:to-orange-300 ring-1 ring-orange-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'teal': "bg-gradient-to-r from-teal-100 to-teal-200 text-teal-800 hover:from-teal-200 hover:to-teal-300 ring-1 ring-teal-400/50 shadow-sm hover:shadow-md transition-all duration-200",
+            'cyan': "bg-gradient-to-r from-cyan-100 to-cyan-200 text-cyan-800 hover:from-cyan-200 hover:to-cyan-300 ring-1 ring-cyan-400/50 shadow-sm hover:shadow-md transition-all duration-200"
+        }
+        return color_configs.get(self.color, color_configs['blue'])
+
+
+    @property
+    def active_classes(self) -> str:
+        """Bold, vibrant active state with strong visual feedback"""
+        color_configs = {
+            'blue': "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 ring-2 ring-blue-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'green': "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 ring-2 ring-emerald-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'yellow': "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 ring-2 ring-amber-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'red': "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 ring-2 ring-red-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'purple': "bg-gradient-to-r from-violet-500 to-violet-600 text-white hover:from-violet-600 hover:to-violet-700 ring-2 ring-violet-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'pink': "bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 ring-2 ring-pink-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'indigo': "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 ring-2 ring-indigo-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'orange': "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 ring-2 ring-orange-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'teal': "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700 ring-2 ring-teal-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
+            'cyan': "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-600 hover:to-cyan-700 ring-2 ring-cyan-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+        }
+        return color_configs.get(self.color, color_configs['blue'])
+
+    @property
+    def inversed_classes(self) -> str:
+        """CSS classes for inversed (excluded) state."""
+        return f"{self.active_classes} line-through"
+
+    @property
+    def current_classes(self) -> str:
+        """CSS classes for current state (active/inactive/inversed)."""
+        if self.active:
+            if self.inversed:
+                return self.inversed_classes
+            else:
+                return self.active_classes
+        else:
+            return self.inactive_classes
+
+
+class SearchFilter:
+    """
+    Generates filter options for the search interface based on user's data.
+
+    This class provides structured filter options that can be used in templates
+    to generate dynamic search suggestions and filters.
+    """
+
+    def __init__(self, user=None, areas=None, contexts=None, projects=None):
+        self.user = user
+        self.areas = areas or []
+        self.contexts = contexts or []
+        self.projects = projects or []
+
+    def get_all_filters(self) -> List[FilterOption]:
+        """Get all filter options."""
+        filters = []
+
+        # Status filters (exclusive)
+        filters.extend([
+            FilterOption("Inbox", "in:inbox", "lucide-inbox", "blue", FilterCategory.STATUS),
+            FilterOption("Next Actions", "in:next", "lucide-zap", "blue", FilterCategory.STATUS),
+            FilterOption("Waiting For", "in:waiting", "lucide-hourglass", "blue", FilterCategory.STATUS),
+            FilterOption("Someday", "in:someday", "lucide-history", "blue", FilterCategory.STATUS),
+            FilterOption("Projects", "in:project", "lucide-briefcase", "blue", FilterCategory.STATUS),
+            FilterOption("Reference", "in:reference", "lucide-archive", "blue", FilterCategory.STATUS),
+            FilterOption("Cancelled", "in:cancelled", "lucide-trash-2", "blue", FilterCategory.STATUS),
+        ])
+
+        # Priority filters
+        filters.extend([
+            FilterOption("Low Priority", "priority:low", "lucide-arrow-down", "red", FilterCategory.PRIORITY),
+            FilterOption("Normal Priority", "priority:normal", "lucide-minus", "red", FilterCategory.PRIORITY),
+            FilterOption("High Priority", "priority:high", "lucide-arrow-up", "red", FilterCategory.PRIORITY),
+            FilterOption("Urgent Priority", "priority:urgent", "lucide-circle-alert", "red", FilterCategory.PRIORITY),
+        ])
+
+        # Due date filters
+        filters.extend([
+            FilterOption("Has Due Date", "has:due", "lucide-calendar-clock", "orange", FilterCategory.DUE),
+            FilterOption("Overdue", "is:overdue", "lucide-triangle-alert", "orange", FilterCategory.DUE),
+            FilterOption("Due Today", "is:due", "lucide-calendar", "orange", FilterCategory.DUE),
+            FilterOption("Due Soon", "is:soon", "lucide-clock", "orange", FilterCategory.DUE),
+        ])
+
+        # Energy filters
+        filters.extend([
+            FilterOption("Low Energy", "energy:low", "lucide-battery-low", "yellow", FilterCategory.ENERGY),
+            FilterOption("Normal Energy", "energy:normal", "lucide-battery", "yellow", FilterCategory.ENERGY),
+            FilterOption("Medium Energy", "energy:medium", "lucide-battery-medium", "yellow", FilterCategory.ENERGY),
+            FilterOption("High Energy", "energy:high", "lucide-battery-full", "yellow", FilterCategory.ENERGY),
+        ])
+
+        # Relationship filters
+        filters.extend([
+            FilterOption("Has Project", "has:project", "lucide-folder", "blue", FilterCategory.RELATIONSHIP),
+            FilterOption("Has Context", "has:context", "lucide-hash", "blue", FilterCategory.RELATIONSHIP),
+            FilterOption("Has Area", "has:area", "lucide-target", "blue", FilterCategory.RELATIONSHIP),
+            FilterOption("Has Description", "has:description", "lucide-file-text", "blue", FilterCategory.RELATIONSHIP),
+        ])
+
+        # Area filters
+        filters.extend([
+            FilterOption(
+                area.name,
+                f'area:"{area.name}"',
+                "lucide-target",
+                "green",
+                FilterCategory.AREA
+            )
+            for area in self.areas
+        ])
+
+        # Context filters
+        filters.extend([
+            FilterOption(
+                context.name,
+                f'context:"{context.name}"',
+                "lucide-hash",
+                "purple",
+                FilterCategory.CONTEXT
+            )
+            for context in self.contexts
+        ])
+
+        # Projects filters
+        filters.extend([
+            FilterOption(
+                project.title,
+                f'project:{project.pk}',
+                "lucide-briefcase",
+                "purple",
+                FilterCategory.PROJECT
+            )
+            for project in self.projects
+        ])
+
+        return filters
+
+    def get_filters_by_category(self, category: FilterCategory = None) -> List[FilterOption]:
+        """Get filter options filtered by category."""
+        all_filters = self.get_all_filters()
+        if category:
+            return [f for f in all_filters if f.category == category]
+        return all_filters
+
+    def get_popular_filters(self) -> List[FilterOption]:
+        """Get commonly used filter options for quick access."""
+        return [
+            FilterOption("Inbox", "in:inbox", "lucide-inbox", "blue", FilterCategory.STATUS),
+            FilterOption("Next Actions", "in:next", "lucide-zap", "blue", FilterCategory.STATUS),
+            FilterOption("Overdue", "is:overdue", "lucide-triangle-alert", "orange", FilterCategory.DUE),
+            FilterOption("Due Today", "is:due", "lucide-calendar", "orange", FilterCategory.DUE),
+            FilterOption("High Priority", "priority:high", "lucide-arrow-up", "red", FilterCategory.PRIORITY),
+            FilterOption("Has Project", "has:project", "lucide-folder", "blue", FilterCategory.RELATIONSHIP),
+        ]
+
+    def get_filters_with_state(self, search_query: str) -> Dict[str, List[FilterOption]]:
+        """Get all filter options with active/inversed state based on current search query."""
+        # Parse the search query to get tokens
+        parser = SearchParser()
+        tokens = parser.parse(search_query)
+
+        # Organize by category
+        filters_by_category = {}
+
+        # Group filters by category
+        for category in FilterCategory:
+            category_filters = self.get_filters_by_category(category)
+            if category_filters:
+                filters_by_category[category.value] = parser.apply_tokens_to_filters(tokens, category_filters, search_query)
+
+        return filters_by_category
 
 
 class SearchParser:
@@ -99,6 +324,255 @@ class SearchParser:
 
         return (cleaned + " " + self.forced_query).strip()
 
+    def apply_tokens_to_filters(self, tokens: SearchTokens, filters: List[FilterOption], current_query: str = "") -> List[FilterOption]:
+        """Apply search tokens to filter options to set their active/inversed state and calculate future queries."""
+        updated_filters = []
+
+        for filter_option in filters:
+            # Check if this filter's query matches any included or excluded tokens
+            active = False
+            inversed = False
+
+            # Parse the filter query to check for matches
+            filter_parts = self._parse_filter_query(filter_option.filter_query)
+
+            for _field, value in filter_parts:
+                # Check included tokens
+                if field in tokens.included:
+                    for token_value in tokens.included[_field]:
+                        if self._matches_filter_value(token_value, value):
+                            active = True
+                            inversed = False
+                            break
+
+                # Check excluded tokens
+                if field in tokens.excluded:
+                    for token_value in tokens.excluded[field]:
+                        if self._matches_filter_value(token_value, value):
+                            active = True
+                            inversed = True
+                            break
+
+                if active:
+                    break
+
+            # Generate future query for this filter
+            next_query = self.generate_future_query(
+                current_query,
+                filter_option,
+                {"active": active, "inversed": inversed}
+            )
+
+            # Create new FilterOption with updated state and future query
+            updated_filters.append(
+                FilterOption(
+                    label=filter_option.label,
+                    filter_query=filter_option.filter_query,
+                    icon=filter_option.icon,
+                    color=filter_option.color,
+                    category=filter_option.category,
+                    active=active,
+                    inversed=inversed,
+                    next_query=next_query
+                )
+            )
+
+        return updated_filters
+
+    def _parse_filter_query(self, query: str) -> List[tuple]:
+        """Parse a filter query into field:value pairs."""
+        parts = []
+        # Handle simple field:value patterns
+        matches = self.FIELD_PATTERN.findall(query)
+        for match in matches:
+            field_name = match[1]  # group 2 is field name
+            field_value = match[2]  # group 3 is field value
+            # Clean quotes from value
+            clean_value = field_value.strip('"').lower()
+            parts.append((field_name, clean_value))
+
+        return parts
+
+    def _normalize_value(self, value: str) -> str:
+        """Normalize a value for consistent comparison and storage."""
+        return value.strip('"\'').strip()
+
+    def _needs_quoting(self, value: str) -> bool:
+        """Determine if a value needs to be quoted in the query."""
+        # Quote if contains spaces, special characters, or starts with @#!
+        return (' ' in value or
+                any(char in value for char in '@#!,:') or
+                value != value.strip())
+
+    def _format_value_for_query(self, value: str) -> str:
+        """Format a value for inclusion in query string."""
+        normalized = self._normalize_value(value)
+        if self._needs_quoting(normalized):
+            return f'"{normalized}"'
+        return normalized
+
+    def _extract_quoted_values(self, field_value: str) -> List[str]:
+        """Extract values from field, handling mixed quoted/unquoted."""
+        if ',' in field_value:
+            # Handle comma-separated values
+            parts = []
+            current = ""
+            in_quotes = False
+
+            for char in field_value:
+                if char == '"' and (not current or current[-1] != '\\'):
+                    in_quotes = not in_quotes
+                    current += char
+                elif char == ',' and not in_quotes:
+                    if current.strip():
+                        parts.append(current.strip())
+                    current = ""
+                else:
+                    current += char
+
+            if current.strip():
+                parts.append(current.strip())
+
+            return [self._normalize_value(part) for part in parts]
+
+        return [self._normalize_value(field_value)]
+
+    def _format_grouped_values(self, values: List[str]) -> str:
+        """Format multiple values for a field with proper quoting."""
+        formatted_values = [self._format_value_for_query(value) for value in values]
+        return ','.join(formatted_values)
+
+    def _matches_filter_value(self, search_value: str, filter_value: str) -> bool:
+        """Compare values ignoring quote differences."""
+        return self._normalize_value(search_value) == self._normalize_value(filter_value)
+
+    def _group_filters_by_field(self, tokens: SearchTokens) -> Dict[str, Dict[str, List[str]]]:
+        """Group included and excluded filters by field for concatenation."""
+        grouped = {
+            'included': {},
+            'excluded': {}
+        }
+
+        # Group included filters
+        for _field, values in tokens.included.items():
+            grouped['included'][_field] = values
+
+        # Group excluded filters
+        for _field, values in tokens.excluded.items():
+            grouped['excluded'][_field] = values
+
+        return grouped
+
+    def _rebuild_query_string(self, tokens: SearchTokens, free_text: str = "") -> str:
+        """Rebuild query string with proper quoting and grouping."""
+        parts = []
+
+        # Process included filters
+        for _field, values in tokens.included.items():
+            if values:
+                formatted_values = self._format_grouped_values(values)
+                parts.append(f"{_field}:{formatted_values}")
+
+        # Process excluded filters
+        for _field, values in tokens.excluded.items():
+            if values:
+                formatted_values = self._format_grouped_values(values)
+                parts.append(f"-{_field}:{formatted_values}")
+
+        # Add free text first if present
+        if free_text.strip():
+            parts.append(free_text.strip())
+
+        return ' '.join(parts)
+
+    def generate_future_query(self, current_query: str, target_filter: FilterOption, current_state: Dict) -> str:
+        """
+        Generate the query that would result from toggling a specific filter.
+
+        Args:
+            current_query: The current search query string
+            target_filter: The FilterOption being toggled
+            current_state: {"active": bool, "inversed": bool}
+
+        Returns:
+            The modified query string with the filter toggled
+        """
+        # Parse current query
+        tokens = self.parse(current_query)
+
+        # Parse target filter to get field and value
+        filter_parts = self._parse_filter_query(target_filter.filter_query)
+        if not filter_parts:
+            return current_query  # Invalid filter, return unchanged
+
+        field, value = filter_parts[0]
+        is_active = current_state.get('active', False)
+        is_inversed = current_state.get('inversed', False)
+
+        # Determine strategy based on category
+        strategy = FILTER_STRATEGY_MAP.get(target_filter.category, FilterStrategy.NORMAL)
+
+        if strategy == FilterStrategy.EXCLUSIVE:
+            self._apply_exclusive_filter_strategy(tokens, field, value, is_active)
+        elif strategy == FilterStrategy.INVERT:
+            self._apply_invert_filter_strategy(tokens, field, value, is_active, is_inversed)
+        else:
+            self._apply_normal_filter_strategy(tokens, field, value, is_active, is_inversed)
+
+        # Rebuild query string
+        return self._rebuild_query_string(tokens, tokens.query)
+
+    def _apply_exclusive_filter_strategy(self, tokens: SearchTokens, field: str, value: str, is_active: bool):
+        """Apply exclusive filter strategy (replace -> remove)."""
+        if is_active:
+            # Remove the active filter completely
+            self._remove_filter_value(tokens, field, value)
+        else:
+            # Replace all existing filters of this field with the new one
+            if field in tokens.included:
+                del tokens.included[field]
+            if field in tokens.excluded:
+                del tokens.excluded[field]
+            # Add the new filter
+            self._add_filter_value(tokens.included, field, value)
+
+    def _apply_normal_filter_strategy(self, tokens: SearchTokens, field: str, value: str, is_active: bool, is_inversed: bool):
+        """Apply normal filter strategy (add -> remove)."""
+        if is_active:
+            # Remove the filter (from included or excluded)
+            self._remove_filter_value(tokens, field, value)
+        else:
+            # Add the filter to included
+            self._add_filter_value(tokens.included, field, value)
+
+    def _apply_invert_filter_strategy(self, tokens: SearchTokens, field: str, value: str, is_active: bool, is_inversed: bool):
+        """Apply invert filter strategy (add -> invert -> remove cycle)."""
+        if not is_active:
+            # Case 1: Not active -> Add the filter to included
+            self._add_filter_value(tokens.included, field, value)
+        elif is_active and not is_inversed:
+            # Case 2: Active and not inverted -> Invert it (move to excluded)
+            self._remove_filter_value(tokens, field, value)
+            self._add_filter_value(tokens.excluded, field, value)
+        else:
+            # Case 3: Active and inverted -> Remove it completely
+            self._remove_filter_value(tokens, field, value)
+
+    def _remove_filter_value(self, tokens: SearchTokens, field: str, value: str):
+        """Remove a filter value from both included and excluded tokens."""
+        for collection in [tokens.included, tokens.excluded]:
+            if field in collection and value in collection[field]:
+                collection[field].remove(value)
+                if not collection[field]:
+                    del collection[field]
+
+    def _add_filter_value(self, collection: Dict[str, List[str]], field: str, value: str):
+        """Add a filter value to a collection (included or excluded)."""
+        if field not in collection:
+            collection[field] = []
+        if value not in collection[field]:
+            collection[field].append(value)
+
 def apply_search(queryset, query: str, **kwargs):
     """
     Apply advanced search filters to a queryset based on parsed search tokens.
@@ -111,7 +585,7 @@ def apply_search(queryset, query: str, **kwargs):
     - has:due, has:project, has:context, has:area, has:description
     - priority:low, priority:normal, priority:high, priority:urgent
     - due:today, due:tomorrow, due:+3days, due:-1week
-    - project:"Project Name"
+    - project:"Project Name" or project:123 (id)
     - context:"@office", area:"Work"
     - waiting:"Person Name"
     """
@@ -289,8 +763,13 @@ def _build_field_filter(field_name: str, values: list) -> Q:
                     pass
 
         elif field_name == "project":
-            # Project name search
-            field_q |= Q(parent_project__title__icontains=value)
+            # Project name search or id
+            try:
+                item_id = int(value)
+                field_q |= Q(id=item_id, status=GTDStatus.PROJECT)
+                field_q |= Q(parent_project__id=item_id)
+            except (ValueError, TypeError):
+                field_q |= Q(parent_project__title__icontains=value)
         elif field_name == "tag":
             # Project name search
             field_q |= Q(tags__name=value)
