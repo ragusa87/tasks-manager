@@ -56,6 +56,15 @@ class TestSearchFunctionality(TestCase):
             user=self.user
         )
 
+        self.project_task = Item.objects.create(
+            title="Design homepage",
+            status=GTDStatus.NEXT_ACTION,
+            parent_project=self.project,
+            priority=Priority.NORMAL,  # Different priority
+            area=None,  # No area assigned directly
+            user=self.user
+        )
+
         self.waiting_item = Item.objects.create(
             title="Waiting for approval",
             status=GTDStatus.WAITING_FOR,
@@ -137,9 +146,12 @@ class TestSearchFunctionality(TestCase):
         result = apply_search(Item.objects.for_user(self.user), 'priority:high area:"Work"')
         self.assertEqual(list(result), [self.next_action])
 
-        # Search with exclusion
+        # Search with exclusion - this should exclude the overdue item which has urgent priority
         result = apply_search(Item.objects.for_user(self.user), 'in:next -priority:urgent')
-        self.assertEqual(list(result), [self.next_action])
+        result_list = list(result)
+        self.assertIn(self.next_action, result_list)
+        self.assertIn(self.project_task, result_list)  # Also has status NEXT_ACTION
+        self.assertNotIn(self.overdue_item, result_list)  # Has urgent priority, should be excluded
 
     def test_has_filters(self):
         """Test 'has:' existence filters"""
@@ -178,3 +190,48 @@ class TestSearchFunctionality(TestCase):
         result_list = list(result)
         self.assertIn(complex_item, result_list)
         self.assertNotIn(self.inbox_item, result_list)
+
+    def test_project_search_by_name(self):
+        """Test searching by project name"""
+        result = apply_search(Item.objects.for_user(self.user), 'project:"Website redesign"')
+        self.assertEqual(list(result), [self.project_task])
+
+    def test_project_search_by_id(self):
+        """Test searching by project ID"""
+        result = apply_search(Item.objects.for_user(self.user), f'project:{self.project.pk}')
+        result_list = list(result)
+        # Should find both the project itself and tasks within it
+        self.assertIn(self.project, result_list)
+        self.assertIn(self.project_task, result_list)
+
+    def test_project_search_partial_name(self):
+        """Test searching by partial project name"""
+        result = apply_search(Item.objects.for_user(self.user), 'project:"Website"')
+        self.assertEqual(list(result), [self.project_task])
+
+    def test_has_project_filter(self):
+        """Test has:project filter"""
+        result = apply_search(Item.objects.for_user(self.user), "has:project")
+        self.assertEqual(list(result), [self.project_task])
+
+    def test_project_status_filter(self):
+        """Test filtering for items that are projects themselves"""
+        result = apply_search(Item.objects.for_user(self.user), "in:project")
+        self.assertEqual(list(result), [self.project])
+
+    def test_excluded_project_filter(self):
+        """Test excluding items from specific project"""
+        # First add another task not in the project
+        non_project_task = Item.objects.create(
+            title="Standalone task",
+            status=GTDStatus.NEXT_ACTION,
+            user=self.user
+        )
+
+        result = apply_search(Item.objects.for_user(self.user), f'-project:{self.project.pk}')
+        result_list = list(result)
+
+        # Should exclude both project and its tasks
+        self.assertNotIn(self.project, result_list)
+        self.assertNotIn(self.project_task, result_list)
+        self.assertIn(non_project_task, result_list)
