@@ -16,10 +16,10 @@
                            value="{{ search_query|default:'' }}"
                            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                            placeholder="Search items..."
-                           hx-get="{% url 'dashboard_search' %}"
-                           hx-target="#search-results"
-                           hx-swap="outerHTML"
-                           hx-trigger="input changed delay:300ms, search, load"
+                           hx-get="{% url 'dashboard' %}"
+                           hx-target="body"
+                           hx-swap="none"
+                           hx-trigger="input changed delay:300ms, search"
                            hx-sync="#search-input:queue"
                            autocomplete="off">
                 </div>
@@ -33,7 +33,7 @@
         </div>
 
         <!-- Filter Suggestions -->
-        <div class="mt-4">
+        <div class="mt-4" hx-swap-oob="true" id="filter_container">
             <div class="flex flex-wrap gap-2">
                 <!-- Quick Filters - Blue -->
                 <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200" data-filter="in:inbox" data-color="blue">
@@ -110,8 +110,8 @@
                 </button>
 
                 <!-- Areas - Green -->
-                {% if recent_areas %}
-                    {% for area in recent_areas %}
+                {% if areas %}
+                    {% for area in areas %}
                         <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200" data-filter="area:&quot;{{ area.name }}&quot;" data-color="green">
                             {% sprite "lucide-target" 12 class="mr-1" %}
                             {{ area.name }}
@@ -120,8 +120,8 @@
                 {% endif %}
 
                 <!-- Contexts - Purple -->
-                {% if recent_contexts %}
-                    {% for context in recent_contexts %}
+                {% if contexts %}
+                    {% for context in contexts %}
                         <button type="button" class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200" data-filter="context:&quot;{{ context.name }}&quot;" data-color="purple">
                             {% sprite "lucide-hash" 12 class="mr-1" %}
                             {{ context.name }}
@@ -152,6 +152,6 @@
 </div>
 
 <!-- Search Results Container -->
-<div id="search-results-container" class="mb-8">
-    {% include 'partials/search_results.html' with item_secondary_classes=item_secondary_classes|default:'' %}
+<div id="search-results-container" class="mb-8" hx-swap-oob="true">
+    {% include './search_results.html' with item_secondary_classes=item_secondary_classes|default:'' %}
 </div>

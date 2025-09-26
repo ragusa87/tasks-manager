@@ -7,19 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
     {% block extra_head %}
-    <style>
-        .expand-target::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          left: 0;
-        }
-        </style>
         {% vite_hmr_client %}
-        {% vite_asset 'frontend/js/base.js' %}
-        {% vite_asset 'frontend/css/main.css' %}
     {% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -28,7 +16,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center">
-                        <h1 class="text-xl font-semibold text-gray-900">Dashboard</h1>
+                        <h1 class="text-xl font-semibold text-gray-900">{% block header_title %}Dashboard{% endblock %}</h1>
                     </div>
                     {% if user.is_authenticated %}
                     <div class="flex items-center space-x-4">
@@ -54,5 +42,9 @@
         {% endblock %}
     </main>
     {% sprite_svg %}
+    {% block extra_body %}
+        {% vite_asset 'frontend/js/base.js' %}
+        {% vite_asset 'frontend/css/main.css' %}
+    {% endblock %}
 </body>
 </html>

@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Frontend assets for tasks-proto Django application",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite -l info",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "vite": "vite"
   },
   "type": "module",
   "devDependencies": {

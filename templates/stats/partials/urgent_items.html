@@ -1,10 +1,7 @@
 {% load sprite_tags %}
 <!-- Urgent Items Section -->
 {% if urgent_items.overdue or urgent_items.due_today or urgent_items.follow_ups %}
-<div class="bg-white shadow overflow-hidden sm:rounded-lg mb-4"
-     hx-get="{% url 'dashboard_urgent' %}"
-     hx-trigger="every 60s"
-     hx-swap="outerHTML">
+<div class="bg-white shadow overflow-hidden sm:rounded-lg mb-4" >
     <div class="border-t border-gray-200">
         {% if urgent_items.overdue %}
         <div class="px-4 py-3 bg-red-50">
@@ -46,12 +43,5 @@
         </div>
         {% endif %}
     </div>
-</div>
-{% else %}
-<!-- Empty state for urgent items -->
-<div class="hidden"
-     hx-get="{% url 'dashboard_urgent' %}"
-     hx-trigger="every 60s"
-     hx-swap="outerHTML">
 </div>
 {% endif %}

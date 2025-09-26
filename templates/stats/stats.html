@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load sprite_tags django_vite %}
+
+{% block title %}Statistics{% endblock %}
+{% block header_title %}Statistics{% endblock %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block extra_body %}
+    {{ block.super }}
+    {% vite_asset 'frontend/js/charts.js' %}
+{% endblock %}
+
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <a href="{% url 'item_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                {% sprite "lucide-circle-plus" 24 class="mr-2" %}
+                Create Item
+            </a>
+            <a href="{% url 'dashboard' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                {% sprite "lucide-chevron-left" 24 class="mr-2" %}
+                Back to dashboard
+            </a>
+        </div>
+    </div>
+    <!-- Charts Section Partial -->
+    {% include "./partials/charts_section.html" %}
+
+    <!-- Urgent Items Partial -->
+    {% include "./partials/urgent_items.html" %}
+
+    <!-- Recent Items Partial -->
+    {% include "./partials/recent_items.html" %}
+</div>
+
+{% endblock %}

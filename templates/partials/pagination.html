@@ -38,16 +38,49 @@
                 </span>
                 {% endif %}
 
-                <!-- Page numbers -->
-                {% for page_num in paginator.page_range %}
-                    {% if page_num == page_obj.number %}
-                    <span aria-current="page" class="relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{{ page_num }}</span>
-                    {% elif page_num == paginator.ELLIPSIS %}
-                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">...</span>
+                <!-- Page numbers with smart grouping -->
+                {% with current_page=page_obj.number total_pages=paginator.num_pages %}
+
+                    <!-- Always show page 1 -->
+                    {% if current_page != 1 %}
+                        <a href="?page=1" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">1</a>
                     {% else %}
-                    <a href="?page={{ page_num }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
+                        <span aria-current="page" class="relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">1</span>
                     {% endif %}
-                {% endfor %}
+
+                    <!-- Left ellipsis -->
+                    {% if current_page > 4 %}
+                        <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-500 ring-1 ring-inset ring-gray-300">...</span>
+                    {% endif %}
+
+                    <!-- Pages around current page -->
+                    {% for page_num in paginator.page_range %}
+                        {% if page_num != 1 and page_num != total_pages %}
+                            {% if page_num >= current_page|add:'-2' and page_num <= current_page|add:'2' %}
+                                {% if page_num == current_page %}
+                                    <span aria-current="page" class="relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{{ page_num }}</span>
+                                {% else %}
+                                    <a href="?page={{ page_num }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- Right ellipsis -->
+                    {% if current_page < total_pages|add:'-3' %}
+                        <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-500 ring-1 ring-inset ring-gray-300">...</span>
+                    {% endif %}
+
+                    <!-- Always show last page if more than 1 page -->
+                    {% if total_pages > 1 %}
+                        {% if current_page != total_pages %}
+                            <a href="?page={{ total_pages }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ total_pages }}</a>
+                        {% else %}
+                            <span aria-current="page" class="relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{{ total_pages }}</span>
+                        {% endif %}
+                    {% endif %}
+
+                {% endwith %}
 
                 <!-- Next button -->
                 {% if page_obj.has_next %}

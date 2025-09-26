@@ -1,29 +1,25 @@
 {% load sprite_tags %}
-<!-- Quick Stats Grid -->
-<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8"
-     hx-get="{% url 'dashboard_stats' %}"
-     hx-trigger="every 30s"
-     hx-swap="outerHTML">
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
     <!-- Inbox -->
-    <a href="{% url 'inbox' %}" class="block hover:bg-gray-50 transition-colors duration-150">
-        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 {% if stats.inbox_count > 0 %}border-red-400{% else %}border-gray-300{% endif %}">
+    <button class="block hover:bg-gray-50 transition-colors duration-150" data-filter="in:inbox">
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 {% if stats.count_status_inbox > 0 %}border-red-400{% else %}border-gray-300{% endif %}">
             <div class="p-5">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="h-8 w-8 {% if stats.inbox_count > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
+                        <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
                             {% sprite "lucide-archive" 24 %}
                         </div>
                     </div>
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Inbox</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.inbox_count }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_inbox|default:"0" }}</dd>
                         </dl>
                     </div>
                 </div>
             </div>
         </div>
-    </a>
+    </button>
 
     <!-- Next Actions -->
     <button type="button"
@@ -40,7 +36,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Next Actions</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.next_actions_count }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_next_action|default:"0" }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -63,7 +59,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.projects_count }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_project|default:"0" }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -86,7 +82,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.waiting_for_count }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_waiting_for|default:"0" }}</dd>
                         </dl>
                     </div>
                 </div>

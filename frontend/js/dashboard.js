@@ -16,14 +16,6 @@ function refreshDashboard() {
     htmx.trigger(document.body, 'refresh-dashboard');
 }
 
-// Keyboard shortcut for refresh (Ctrl+R or Cmd+R)
-document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        refreshDashboard();
-    }
-});
-
 // Connection status indicator
 window.isOnline = navigator.onLine;
 document.addEventListener('htmx:responseError', function(evt) {

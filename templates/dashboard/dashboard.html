@@ -3,14 +3,6 @@
 
 {% block title %}Dashboard{% endblock %}
 
-{% block extra_head %}
-    {{ block.super }}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    {% vite_asset 'frontend/js/dashboard.js' %}
-{% endblock %}
-
-
-
 {% block content %}
 <div class="px-4 py-6 sm:px-0" hx-ext="morph" id="dashboard-body">
     <!-- Welcome Section -->
@@ -23,7 +15,12 @@
                     <span class="text-xs text-gray-500">Last updated: <span id="last-updated">{{ now|date:"H:i" }}</span></span>
                 </div>
             </div>
-            <div>
+            <div class="flex items-center justify-between">
+                <a href="{% url 'dashboard_stats' %}" class="mr-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% sprite "lucide-target" 24 class="mr-2" %}
+                    Statistics
+                </a>
+
                 <a href="{% url 'item_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     {% sprite "lucide-circle-plus" 24 class="mr-2" %}
                     Create Item
@@ -33,19 +30,14 @@
     </div>
 
     <!-- Stats Cards Partial -->
-    {% include "partials/stats_cards.html" %}
+    {% include "./partials/stats_cards.html" %}
 
     <!-- Search Box Partial -->
-    {% include "partials/search_box.html" with item_secondary_classes="cursor-pointer" %}
-
-    <!-- Charts Section Partial -->
-    {% include "partials/charts_section.html" %}
-
-    <!-- Urgent Items Partial -->
-    {% include "partials/urgent_items.html" %}
-
-    <!-- Recent Activity Partial -->
-    {% include "partials/recent_activity.html" with item_secondary_classes="cursor-pointer" %}
+    {% include "./partials/search_box.html" with item_secondary_classes="cursor-pointer" %}
 </div>
 
+{% endblock %}
+{% block extra_body %}
+    {{ block.super }}
+    {% vite_asset 'frontend/js/dashboard.js' %}
 {% endblock %}

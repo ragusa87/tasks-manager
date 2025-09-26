@@ -46,3 +46,10 @@ DJANGO_VITE["default"]["dev_server_host"] = get_env_variable("DJANGO_VITE_DEV_SE
 DJANGO_VITE["default"]["dev_server_port"] = get_env_variable("DJANGO_VITE_DEV_SERVER_PORT", "443") # 5173
 DJANGO_VITE["default"]["dev_server_protocol"] = get_env_variable("DJANGO_VITE_DEV_SERVER_PROTOCOL", "https")
 DJANGO_VITE["default"]["static_url_prefix"] = ""
+
+SHOW_DJANGO_DEBUG_TOOLBAR = DEBUG
+DEBUG_TOOLBAR_CONFIG = {
+    "INTERCEPT_REDIRECTS": False,
+    "SHOW_COLLAPSED": True,
+    "SHOW_TOOLBAR_CALLBACK": lambda request: SHOW_DJANGO_DEBUG_TOOLBAR,
+}

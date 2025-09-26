@@ -87,10 +87,11 @@ services:
       - traefik.http.services.web-import.loadbalancer.server.port=8000
       - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
       - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
-    command: >
-      sh -c "uv run python manage.py migrate &&
-             uv run python manage.py collectstatic --noinput &&
-             env WATCHFILES_FORCE_POLLING="on" uv run uvicorn core.asgi:application --host 0.0.0.0 --port 8000 --reload --reload-include="*.py" --reload-include="*.html" --reload-include=".env""
+    command: sh -c 'while true; do ./manage.py runserver 0.0.0.0:8000; sleep 1; done'
+    #command: >
+      # sh -c "uv run python manage.py migrate &&
+      #       uv run python manage.py collectstatic --noinput &&
+      #       env WATCHFILES_FORCE_POLLING="on" uv run uvicorn core.asgi:application --host 0.0.0.0 --port 8000 --lifespan off --reload --reload-include="*.py" --reload-include="*.html" --reload-include=".env""
 
   celery:
     <<: *django-service

@@ -18,9 +18,10 @@ export default defineConfig({
     rollupOptions: {
       // Define entry points
       input: {
-        // 'main': resolve('./frontend/css/main.css'),
-        // 'base': resolve('./frontend/js/base.js'),
-        // 'dashboard': resolve('./frontend/js/dashboard.js')
+        'main': resolve('./frontend/css/main.css'),
+        'base': resolve('./frontend/js/base.js'),
+        'dashboard': resolve('./frontend/js/dashboard.js'),
+        'charts': resolve('./frontend/js/charts.js'),
       }
     }
   },

@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -12,11 +11,18 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.http import is_same_domain
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import CreateView, FormView, UpdateView, View
+from django.views.generic import (
+    CreateView,
+    FormView,
+    ListView,
+    TemplateView,
+    UpdateView,
+    View,
+)
 from factory.django import get_model
 
 from .forms import ItemCreateForm, ItemDetailForm, ItemUpdateForm, ItemUpdateProjectForm
-from .models import Item
+from .models import Area, Context, Item
 
 
 class ForceHtmxRequestMixin(object):
@@ -38,131 +44,37 @@ class ReturnRefererMixin(object):
         return self.request.GET.get('returnUrl', self.fallback_url)
 
 @method_decorator(login_required, name='dispatch')
-class DashboardStatsView(View):
-    """
-    HTMX endpoint for dashboard statistics cards.
-    """
-
-    def get(self, request):
-        Item = get_model('task_processor', 'Item')
-
-        stats = {
-            'inbox_count': Item.objects.inbox_items(request.user).count(),
-            'next_actions_count': Item.objects.next_actions(request.user).count(),
-            'projects_count': Item.objects.projects(request.user).count(),
-            'waiting_for_count': Item.objects.waiting_for(request.user).count(),
-            'someday_maybe_count': Item.objects.someday_maybe(request.user).count(),
-            'completed_count': Item.objects.for_user(request.user).filter(is_completed=True).count(),
-        }
-
-        return render(request, 'partials/stats_cards.html', {'stats': stats})
-
-
-@method_decorator(login_required, name='dispatch')
-class DashboardChartsView(View):
+class DashboardStatsView(TemplateView):
+    template_name = 'stats/stats.html'
     """
     HTMX endpoint for dashboard charts section.
     """
 
-    def get(self, request):
-        Item = get_model('task_processor', 'Item')
-        user_items = Item.objects.for_user(request.user)
-
-        # Calculate priority distribution
-        priority_stats = user_items.filter(is_completed=False).values('priority').annotate(
-            count=Count('id')
-        ).order_by('-priority')
+    def get_context_data(self, **kwargs):
+        user_items = Item.objects.for_user(self.request.user)
 
         # Recent activity (last 7 days)
         week_ago = timezone.now() - timedelta(days=7)
-        recent_activity = {
-            'completed_this_week': user_items.filter(completed_at__gte=week_ago).count(),
-            'created_this_week': user_items.filter(created_at__gte=week_ago).count(),
+
+        return {
+            **self._get_statistic_count(),
+            'completed_count': Item.objects.for_user(self.request.user).filter(is_completed=True).count(),
+            'priority_stats': user_items.filter(is_completed=False).values('priority').annotate(
+                count=Count('id')
+            ).order_by('-priority'),
+            'recent_activity': {
+                'completed_this_week': user_items.filter(completed_at__gte=week_ago).count(),
+                'created_this_week': user_items.filter(created_at__gte=week_ago).count(),
+                'someday_maybe_count': Item.objects.someday_maybe(self.request.user).count(),
+            },
+            'recent_items': user_items.order_by('-updated_at')[:10],
         }
 
-        stats = {
-            'someday_maybe_count': Item.objects.someday_maybe(request.user).count(),
-        }
+    def _get_statistic_count(self):
+        result = Item.objects.filter(user=self.request.user).values('status').annotate(total=Count('id'))
 
-        context = {
-            'priority_stats': priority_stats,
-            'recent_activity': recent_activity,
-            'stats': stats,
-        }
+        return {f"status_{result[status]}": result[status]['total'] for status in range(len(result))}
 
-        return render(request, 'partials/charts_section.html', context)
-
-
-@method_decorator(login_required, name='dispatch')
-class DashboardUrgentView(View):
-    """
-    HTMX endpoint for urgent items section.
-    """
-
-    def get(self, request):
-        Item = get_model('task_processor', 'Item')
-
-        urgent_items = {
-            'overdue': Item.objects.overdue(request.user)[:5],
-            'due_today': Item.objects.due_today(request.user)[:5],
-            'follow_ups': Item.objects.waiting_for(request.user, needs_follow_up=True)[:5],
-        }
-
-        return render(request, 'partials/urgent_items.html', {'urgent_items': urgent_items})
-
-
-@method_decorator(login_required, name='dispatch')
-class DashboardActivityView(View):
-    """
-    HTMX endpoint for recent activity section.
-    """
-
-    def get(self, request):
-        Item = get_model('task_processor', 'Item')
-        user_items = Item.objects.for_user(request.user)
-
-        recent_items = user_items.order_by('-updated_at')[:10]
-
-        return render(request, 'partials/recent_activity.html', {'recent_items': recent_items})
-
-
-@method_decorator(login_required, name='dispatch')
-class DashboardSearchView(ForceHtmxRequestMixin, View):
-    """
-    HTMX endpoint for search functionality with pagination.
-    """
-    def get(self, request):
-        Item = get_model('task_processor', 'Item')
-        query = request.GET.get('q', '').strip()
-        page = request.GET.get('page', 1)
-
-        if query:
-            # Apply advanced search using the search parser
-            from .search import apply_search
-            items = Item.objects.for_user(request.user).select_related('area').prefetch_related('contexts')
-            items = apply_search(items, query)
-            items = items.order_by('-updated_at')
-        else:
-            items = Item.objects.none()
-
-        # Pagination
-        paginator = Paginator(items, 10)  # 10 items per page
-        page_obj = paginator.get_page(page)
-
-        # Get recent areas and contexts for filter suggestions
-        from .models import Area, Context
-        recent_areas = Area.objects.filter(user=request.user).order_by('-created_at')[:5]
-        recent_contexts = Context.objects.filter(user=request.user).order_by('-created_at')[:5]
-
-        context = {
-            'items': page_obj,
-            'query': query,
-            'total_results': paginator.count if query else 0,
-            'recent_areas': recent_areas,
-            'recent_contexts': recent_contexts,
-        }
-
-        return render(request, 'partials/search_results.html', context)
 
 
 class LoginView(View):
@@ -225,7 +137,48 @@ class LogoutView(View):
 
 
 @method_decorator(login_required, name='dispatch')
-class DashboardView(View):
+class DashboardView(ListView):
+    template_name = 'dashboard/dashboard.html'
+    paginate_by = 50
+    page_kwarg = "page"
+
+    def get_page(self):
+        return self.kwargs.get(self.page_kwarg) or self.request.GET.get(self.page_kwarg) or 1
+
+    def get_search_query(self):
+        return self.request.GET.get("q",'in:next in:-completed in:-cancelled').strip()
+    """
+    Dashboard view with real-time statistics and insights.
+    """
+    def get_queryset(self):
+        items = Item.objects.for_user(self.request.user).select_related('area').prefetch_related('contexts').prefetch_related('tags').prefetch_related('parent_project')
+
+        from .search import apply_search
+        return apply_search(items, self.get_search_query())
+
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        # Get recent areas and contexts for filter suggestions
+        areas = Area.objects.filter(user=self.request.user).order_by('-created_at')
+        contexts = Context.objects.filter(user=self.request.user).order_by('-created_at')
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context.update({
+            "stats": {
+                **self._get_statistic_count()
+            },
+            'areas': areas,
+            'contexts': contexts,
+            'search_query': self.get_search_query(),
+            'now': timezone.now(),
+        })
+        return context
+
+    def _get_statistic_count(self):
+        result = Item.objects.for_user(self.request.user).values('status').annotate(total=Count('id'))
+        return {f"count_status_{r['status']}": r['total'] for r in result}
+
+@method_decorator(login_required, name='dispatch')
+class StatsView(View):
     """
     Dashboard view with real-time statistics and insights.
     """
@@ -273,54 +226,15 @@ class DashboardView(View):
         # Get recent items for the activity feed
         recent_items = user_items.order_by('-updated_at')[:10]
 
-        # Get recent areas and contexts for filter suggestions
-        from .models import Area, Context
-        recent_areas = Area.objects.filter(user=request.user).order_by('-created_at')[:5]
-        recent_contexts = Context.objects.filter(user=request.user).order_by('-created_at')[:5]
-
-        # Get search query from URL parameter
-        search_query = request.GET.get("q",'in:next in:-completed in:-cancelled').strip()
-
         context = {
             'stats': stats,
             'priority_stats': priority_stats,
             'urgent_items': urgent_items,
             'recent_activity': recent_activity,
             'recent_items': recent_items,
-            'recent_areas': recent_areas,
-            'recent_contexts': recent_contexts,
-            'search_query': search_query,
-            'now': timezone.now(),
         }
 
-        return render(request, 'dashboard.html', context)
-
-
-@method_decorator(login_required, name='dispatch')
-class InboxView(View):
-    """
-    Inbox view for unprocessed GTD items with pagination.
-    """
-
-    def get(self, request):
-        Item = get_model('task_processor', 'Item')
-
-        # Get all inbox items for the current user
-        inbox_items = Item.objects.inbox_items(request.user).order_by('-created_at')
-
-        # Paginate the inbox items
-        paginator = Paginator(inbox_items, 20)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-
-        context = {
-            'inbox_items': page_obj,
-            'inbox_count': inbox_items.count(),
-            'page_obj': page_obj,
-            'paginator': paginator,
-        }
-
-        return render(request, 'inbox.html', context)
+        return render(request, 'task_processor/stats/stats.html', context)
 
 
 @method_decorator(login_required, name='dispatch')

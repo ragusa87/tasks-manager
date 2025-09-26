@@ -1,54 +1,6 @@
-{% load sprite_tags %}
-<!-- Charts and Analytics Row -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
-     hx-get="{% url 'dashboard_charts' %}"
-     hx-trigger="every 60s"
-     hx-swap="outerHTML">
-    <!-- Priority Distribution Chart -->
-    <div class="bg-white shadow rounded-lg p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Priority Distribution</h3>
-        <div class="relative h-48 mb-4">
-            <canvas id="priorityChart"
-                    data-priority-stats="{% for priority in priority_stats %}{{ priority.priority }}:{{ priority.count }}{% if not forloop.last %},{% endif %}{% endfor %}"></canvas>
-            <div id="priorityChartPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500 text-lg hidden">
-                No data
-            </div>
-        </div>
-        <!-- Custom Legend with Icons -->
-        <div id="priorityLegend" class="grid grid-cols-2 gap-2 text-sm"></div>
-    </div>
-
-    <!-- Weekly Progress -->
-    <div class="bg-white shadow rounded-lg p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">This Week's Progress</h3>
-        <div class="space-y-4">
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-700">Completed</span>
-                <span class="text-2xl font-bold text-green-600">{{ recent_activity.completed_this_week }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-700">New Items</span>
-                <span class="text-2xl font-bold text-blue-600">{{ recent_activity.created_this_week }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-700">Someday/Maybe</span>
-                <span class="text-2xl font-bold text-gray-600">{{ stats.someday_maybe_count }}</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
 // Priority Distribution Chart
 document.addEventListener('DOMContentLoaded', function() {
     initializePriorityChart();
-});
-
-// Re-initialize chart after HTMX swap
-document.addEventListener('htmx:afterSwap', function(evt) {
-    if (evt.detail.target.querySelector('#priorityChart')) {
-        initializePriorityChart();
-    }
 });
 
 function initializePriorityChart() {
@@ -139,7 +91,6 @@ function createCustomLegend(chartData, labels, colors) {
 
     labels.forEach((label, index) => {
         const count = chartData[index];
-        const color = colors[index];
         const icon = priorityIcons[index];
         const colorClass = priorityColorClasses[index];
 
@@ -157,4 +108,3 @@ function createCustomLegend(chartData, labels, colors) {
         legendContainer.appendChild(legendItem);
     });
 }
-</script>
