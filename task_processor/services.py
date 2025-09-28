@@ -112,7 +112,7 @@ class ReminderService:
 
             # Get the next occurrence after the current remind_at time
             # If remind_at is None, use current time
-            start_time = item.remind_at or timezone.now()
+            start_time = timezone.now()
 
             # Convert to naive datetime for rrule calculation if needed
             if timezone.is_aware(start_time):

@@ -26,13 +26,6 @@ class Context(models.Model):
     def __str__(self):
         return self.name
 
-    def clean(self):
-        # Ensure context names start with a prefix if configured
-        if not any(self.name.startswith(prefix) for prefix in GTDConfig.CONTEXT_PREFIXES):
-            # Auto-add @ prefix if none exists
-            if not self.name.startswith(tuple(GTDConfig.CONTEXT_PREFIXES)):
-                self.name = f"{GTDConfig.CONTEXT_PREFIXES[0]}{self.name}"
-
 
 class Area(models.Model):
     """

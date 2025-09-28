@@ -17,6 +17,8 @@ Including another URLconf
 from django.urls import path
 
 from .views import (
+    AutocompleteView,
+    CreateFieldView,
     DashboardStatsView,
     DashboardView,
     ItemCreateView,
@@ -36,4 +38,6 @@ urlpatterns = [
     path("item/<int:item_id>/update/", ItemUpdateView.as_view(), name="item_update"),
     path("item/<int:item_id>/transition/<str:transition_slug>/", ItemTransitionView.as_view(), name="item_transition"),
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard_stats"),
+    path("api/autocomplete/<str:field_type>/", AutocompleteView.as_view(), name="autocomplete"),
+    path("api/create/<str:field_type>/", CreateFieldView.as_view(), name="create_field"),
 ]

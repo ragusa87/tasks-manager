@@ -9,7 +9,13 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from viewflow import fsm
 
-from task_processor.constants import GTDConfig, GTDEnergy, GTDStatus, Priority
+from task_processor.constants import (
+    GTDConfig,
+    GTDDuration,
+    GTDEnergy,
+    GTDStatus,
+    Priority,
+)
 
 from .base_models import Area, Context, Tag
 
@@ -162,7 +168,7 @@ class Item(models.Model):
     # Time-related fields
     due_date = models.DateTimeField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
-    estimated_duration = models.DurationField(null=True, blank=True, help_text="Estimated time to complete")
+    estimated_duration = models.CharField(max_length=10, choices=GTDDuration.choices, null=True, blank=True, help_text="Estimated time duration")
 
     # Reminder fields
     remind_at = models.DateTimeField(null=True, blank=True, help_text="Next reminder occurrence")

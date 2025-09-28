@@ -171,7 +171,7 @@ class SearchFilter:
             FilterOption(
                 area.name,
                 f'area:"{area.name}"',
-                "lucide-target",
+                "lucide-at-sign",
                 "green",
                 FilterCategory.AREA
             )

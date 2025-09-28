@@ -239,7 +239,7 @@ class TestSearchFilter(TestCase):
         work_filter = next(f for f in area_filters if f.label == "Work")
         self.assertEqual(work_filter.filter_query, 'area:"Work"')
         self.assertEqual(work_filter.color, "green")
-        self.assertEqual(work_filter.icon, "lucide-target")
+        self.assertEqual(work_filter.icon, "at-sign")
 
     def test_context_filters_generation(self):
         """Test that context filters are generated correctly"""
@@ -255,7 +255,7 @@ class TestSearchFilter(TestCase):
         office_filter = next(f for f in context_filters if f.label == "office")
         self.assertEqual(office_filter.filter_query, 'context:"office"')
         self.assertEqual(office_filter.color, "purple")
-        self.assertEqual(office_filter.icon, "lucide-hash")
+        self.assertEqual(office_filter.icon, "lucide-at-sign")
 
     def test_project_filters_generation(self):
         """Test that project filters are generated correctly"""
@@ -410,7 +410,7 @@ class TestFilterStrategy(TestCase):
         area_filter = FilterOption(
             label="Work",
             filter_query='area:"Work"',
-            icon="lucide-target",
+            icon="at-sign",
             color="green",
             category=FilterCategory.AREA
         )

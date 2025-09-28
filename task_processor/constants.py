@@ -18,6 +18,13 @@ class GTDEnergy(models.TextChoices):
     LOW = 'low', 'Low Energy'
 
 
+class GTDDuration(models.TextChoices):
+    QUICK = 'quick', 'Quick (≤2 min)'
+    SHORT = 'short', 'Short (15-30 min)'
+    MEDIUM = 'medium', 'Medium (1-2 hours)'
+    LONG = 'long', 'Long (3+ hours)'
+
+
 class Priority(models.IntegerChoices):
     """Task Priority Levels"""
     LOW = 1, 'Low'
@@ -47,13 +54,11 @@ class GTDConfig:
         GTDStatus.PROJECT,
         GTDStatus.REFERENCE,
     ]
-    # Context prefixes
-    CONTEXT_PREFIXES = ['@']
 
     # Default contexts
     DEFAULT_CONTEXTS = [
-        '@home', '@office', '@phone', '@computer',
-        '@errands', '@online', '@agenda'
+        'home', 'office', 'phone', 'computer',
+        'errands', 'online', 'agenda'
     ]
 
     # Default areas

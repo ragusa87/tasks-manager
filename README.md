@@ -6,6 +6,8 @@
 - New transition: Convert whole project to references
 - Email inbox via https://maileroo.com/docs/inbound-routing/
 - Add Hierarchy in view
+- Check:Rrule reminder should use "after" in order to have the next occurrences in the
+future.
 ### Linting and Formatting
 
 ```bash

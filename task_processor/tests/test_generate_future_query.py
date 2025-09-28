@@ -105,7 +105,7 @@ class TestGenerateFutureQuery(TestCase):
         target_filter = FilterOption(
             label="Work Area",
             filter_query='area:"Work"',
-            icon="lucide-target",
+            icon="at-sign",
             color="green",
             category=FilterCategory.AREA
         )
@@ -120,7 +120,7 @@ class TestGenerateFutureQuery(TestCase):
         target_filter = FilterOption(
             label="Work Area",
             filter_query='area:"Work"',
-            icon="lucide-target",
+            icon="at-sign",
             color="green",
             category=FilterCategory.AREA
         )
@@ -135,7 +135,7 @@ class TestGenerateFutureQuery(TestCase):
         target_filter = FilterOption(
             label="Work Area",
             filter_query='area:"Work"',
-            icon="lucide-target",
+            icon="at-sign",
             color="green",
             category=FilterCategory.AREA
         )
@@ -165,7 +165,7 @@ class TestGenerateFutureQuery(TestCase):
         target_filter = FilterOption(
             label="Office Context",
             filter_query='context:"@office"',
-            icon="lucide-hash",
+            icon="lucide-at-sign",
             color="purple",
             category=FilterCategory.CONTEXT
         )
@@ -303,7 +303,7 @@ class TestGenerateFutureQuery(TestCase):
         target_filter = FilterOption(
             label="Office Context",
             filter_query='context:"@office"',
-            icon="lucide-hash",
+            icon="lucide-at-sign",
             color="purple",
             category=FilterCategory.CONTEXT
         )

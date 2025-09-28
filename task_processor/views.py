@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, Count, IntegerField, Value, When
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -21,9 +22,9 @@ from django.views.generic import (
 )
 from factory.django import get_model
 
-from .constants import GTDStatus
+from .constants import GTDConfig, GTDStatus
 from .forms import ItemCreateForm, ItemDetailForm, ItemUpdateForm, ItemUpdateProjectForm
-from .models import Area, Context, Item
+from .models import Area, Context, Item, Tag
 from .search import FilterCategory
 
 
@@ -388,6 +389,15 @@ class ItemCreateView(ReturnRefererMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Create New Item'
+
+        # Add empty initial values for autocomplete fields (for consistency)
+        context.update({
+            'tags_initial_values': '',
+            'contexts_initial_values': '',
+            'area_initial_values': '',
+            'parent_initial_values': '',
+        })
+
         return context
 
     def form_valid(self, form):
@@ -422,10 +432,186 @@ class ItemUpdateView(ReturnRefererMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = f'Update "{self.object.title}"'
+
+        # Add initial values for autocomplete fields
+        form = context.get('form')
+        if form and hasattr(form, 'get_initial_values_for_field'):
+            context.update({
+                'tags_initial_values': form.get_initial_values_for_field('tags'),
+                'contexts_initial_values': form.get_initial_values_for_field('contexts'),
+                'area_initial_values': form.get_initial_values_for_field('area'),
+                'parent_initial_values': form.get_initial_values_for_field('parent'),
+            })
+
         return context
 
     def form_valid(self, form):
         super().form_valid(form)
         messages.success(self.request, f"Item '{self.object.title}' updated successfully!")
         return redirect('dashboard')
+
+
+class AutocompleteView(View):
+    """
+    API endpoint for autocomplete functionality.
+    Supports tags, areas, contexts, and parent projects based on field_type.
+    """
+
+    # Field type configuration mapping
+    FIELD_CONFIG = {
+        'tags': {
+            'model': Tag,
+            'search_field': 'name',
+            'display_field': 'name',
+            'order_field': 'created_at',
+            'format_result': lambda item: {'id': item.id, 'text': item.name}
+        },
+        'areas': {
+            'model': Area,
+            'search_field': 'name',
+            'display_field': 'name',
+            'order_field': 'created_at',
+            'format_result': lambda item: {'id': item.id, 'text': item.name}
+        },
+        'contexts': {
+            'model': Context,
+            'search_field': 'name',
+            'display_field': 'name',
+            'order_field': 'created_at',
+            'format_result': lambda item: {'id': item.id, 'text': item.name}
+        },
+        'parent': {
+            'model': Item,
+            'search_field': 'title',
+            'display_field': 'title',
+            'order_field': 'updated_at',
+            'format_result': lambda item: {'id': item.id, 'text': f"{item.title} ({item.get_status_display()})"},
+            'extra_filters': {
+                'status__in': GTDConfig.STATUS_WITH_PARENT_ALLOWED,
+                'parent__isnull': True
+            }
+        }
+    }
+
+    def get(self, request, field_type):
+        try:
+            # Check authentication
+            if not request.user.is_authenticated:
+                return JsonResponse({'error': 'Authentication required'}, status=401)
+
+            query = request.GET.get('q', '').strip()
+            ids_param = request.GET.get('ids', '').strip()
+
+            # Check if field_type is supported
+            if field_type not in self.FIELD_CONFIG:
+                return JsonResponse({'error': f'Unsupported field type: {field_type}'}, status=400)
+
+            config = self.FIELD_CONFIG[field_type]
+            model = config['model']
+            search_field = config['search_field']
+            order_field = config['order_field']
+            format_result = config['format_result']
+
+            # Build base queryset
+            queryset = model.objects.filter(user=request.user)
+
+            # Apply extra filters if specified
+            if 'extra_filters' in config:
+                queryset = queryset.filter(**config['extra_filters'])
+
+            # Handle specific IDs request (for loading selected items)
+            if ids_param:
+                try:
+                    ids = [int(id.strip()) for id in ids_param.split(',') if id.strip().isdigit()]
+                    if ids:
+                        queryset = queryset.filter(id__in=ids)
+                    else:
+                        queryset = queryset.none()
+                except ValueError:
+                    queryset = queryset.none()
+            # Apply search query if provided
+            elif len(query) > 0:
+                # For better search results, prioritize items that start with the query
+                # and include items that contain the query anywhere
+                from django.db.models import Case, IntegerField, Value, When
+
+                search_filter = {f'{search_field}__icontains': query}
+                queryset = queryset.filter(**search_filter).annotate(
+                    search_priority=Case(
+                        When(**{f'{search_field}__istartswith': query}, then=Value(1)),
+                        When(**{f'{search_field}__icontains': query}, then=Value(2)),
+                        default=Value(3),
+                        output_field=IntegerField()
+                    )
+                ).order_by('search_priority', search_field)
+            else:
+                # When no query, show recent items first
+                queryset = queryset.order_by(f'-{order_field}')
+
+            # Handle special case for parent field - exclude current item
+            if field_type == 'parent':
+                item_id = request.GET.get('item_id')
+                if item_id:
+                    queryset = queryset.exclude(id=item_id)
+
+            # Get results and format them (more results for better search experience)
+            limit = 15 if query else 10  # Show more results when searching
+            items = queryset[:limit]
+            results = [format_result(item) for item in items]
+
+            return JsonResponse({'results': results})
+
+        except Exception as e:
+            # Log the error and return a proper JSON error response
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Autocomplete error for {field_type}: {str(e)}')
+            return JsonResponse({'error': f'Internal server error: {str(e)}'}, status=500)
+
+
+@method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
+class CreateFieldView(View):
+    """
+    API endpoint for creating new field values on the fly.
+    Supports tags, areas, and contexts based on field_type.
+    """
+
+    def post(self, request, field_type):
+        try:
+            import json
+            data = json.loads(request.body)
+            field_name = data.get('name', '').strip()
+
+            if not field_name:
+                return JsonResponse({'error': f'{field_type.capitalize()} name is required'}, status=400)
+
+            new_item = None
+
+            if field_type == 'tags':
+                existing_item = Tag.objects.filter(user=request.user, name=field_name).first()
+                if not existing_item:
+                    new_item = Tag.objects.create(user=request.user, name=field_name)
+
+            elif field_type == 'areas':
+                existing_item = Area.objects.filter(user=request.user, name=field_name).first()
+                if not existing_item:
+                    new_item = Area.objects.create(user=request.user, name=field_name)
+
+            elif field_type == 'contexts':
+                existing_item = Context.objects.filter(user=request.user, name=field_name).first()
+                if not existing_item:
+                    new_item = Context.objects.create(user=request.user, name=field_name)
+
+            else:
+                return JsonResponse({'error': f'Unsupported field type: {field_type}'}, status=400)
+
+            # Return existing or new item
+            item = existing_item or new_item
+            return JsonResponse({'id': item.id, 'text': item.name})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 

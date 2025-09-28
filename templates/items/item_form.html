@@ -59,7 +59,7 @@
                         Title <span class="text-red-500">*</span>
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.title }}
+                        <input type="text" name="{{ form.title.name }}" value="{{ form.title.value|default:'' }}" id="{{ form.title.id_for_label }}" class="p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Enter item title" {% if form.title.field.required %}required{% endif %}>
                         {% if form.title.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.title.errors.0 }}</p>
                         {% endif %}
@@ -72,7 +72,7 @@
                         Description
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.description }}
+                        <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" rows="4" class="p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Enter description">{{ form.description.value|default:'' }}</textarea>
                         {% if form.description.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.description.errors.0 }}</p>
                         {% endif %}
@@ -89,7 +89,11 @@
                             Priority
                         </label>
                         <div class="mt-1 sm:mt-0 sm:col-span-2">
-                            {{ form.priority }}
+                            <select name="{{ form.priority.name }}" id="{{ form.priority.id_for_label }}" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                {% for value, label in form.priority.field.choices %}
+                                    <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
                             {% if form.priority.errors %}
                                 <p class="mt-2 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
                             {% endif %}
@@ -100,15 +104,23 @@
                     <!-- Contexts Field -->
                     {% if form.contexts %}
                     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                        <label for="{{ form.contexts.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                             Contexts
                         </label>
                         <div class="mt-1 sm:mt-0 sm:col-span-2">
-                            {{ form.contexts }}
+                            <div class="autocomplete-container relative" data-field-type="contexts" data-allow-multiple="true" data-allow-create="true"
+                                 data-initial-values="{{ contexts_initial_values|escapejs }}">
+                                <div class="min-h-[42px] w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus-within:ring-blue-500 focus-within:border-blue-500 bg-white">
+                                    <div class="selected-items flex flex-wrap gap-1"></div>
+                                    <input type="text" class="autocomplete-input border-0 outline-0 focus:ring-0 p-0 w-full text-sm placeholder-gray-400" placeholder="Search or create contexts...">
+                                </div>
+                                <input type="hidden" name="{{ form.contexts.name }}" class="autocomplete-hidden" value="{% if form.contexts.value %}{% for context_id in form.contexts.value %}{% if not forloop.first %},{% endif %}{{ context_id }}{% endfor %}{% endif %}">
+                                <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                            </div>
                             {% if form.contexts.errors %}
                                 <p class="mt-2 text-sm text-red-600">{{ form.contexts.errors.0 }}</p>
                             {% endif %}
-                            <p class="mt-2 text-sm text-gray-500">Where or how will you work on this? (Hold Ctrl/Cmd to select multiple)</p>
+                            <p class="mt-2 text-sm text-gray-500">Where or how will you work on this? Type to search or create new contexts.</p>
                         </div>
                     </div>
                     {% endif %}
@@ -116,11 +128,16 @@
                     <!-- Area Field -->
                     {% if form.area %}
                     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                        <label for="{{ form.area.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                             Area
                         </label>
                         <div class="mt-1 sm:mt-0 sm:col-span-2">
-                            {{ form.area }}
+                            <div class="autocomplete-container relative" data-field-type="areas" data-allow-multiple="false" data-allow-create="true"
+                                 data-initial-values="{{ area_initial_values|escapejs }}">
+                                <input type="text" class="autocomplete-input px-3 py-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Search areas..." value="{% if form.area.value and form.area.value != '' %}{% for choice in form.area.field.queryset %}{% if choice.pk == form.area.value %}{{ choice }}{% endif %}{% endfor %}{% endif %}">
+                                <input type="hidden" name="{{ form.area.name }}" class="autocomplete-hidden" value="{{ form.area.value|default:'' }}">
+                                <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                            </div>
                             {% if form.area.errors %}
                                 <p class="mt-2 text-sm text-red-600">{{ form.area.errors.0 }}</p>
                             {% endif %}
@@ -132,15 +149,44 @@
                     <!-- Parent Project Field -->
                     {% if form.parent %}
                     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                        <label for="{{ form.parent.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                             Parent Project
                         </label>
                         <div class="mt-1 sm:mt-0 sm:col-span-2">
-                            {{ form.parent }}
+                            <div class="autocomplete-container relative" data-field-type="parent" data-allow-multiple="false" data-allow-create="false"
+                                 data-initial-values="{{ parent_initial_values|escapejs }}">
+                                <input type="text" class="autocomplete-input px-3 py-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Search projects..." value="{% if form.parent.value and form.parent.value != '' %}{% for choice in form.parent.field.queryset %}{% if choice.pk == form.parent.value %}{{ choice }}{% endif %}{% endfor %}{% endif %}">
+                                <input type="hidden" name="{{ form.parent.name }}" class="autocomplete-hidden" value="{{ form.parent.value|default:'' }}">
+                                <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                            </div>
                             {% if form.parent.errors %}
                                 <p class="mt-2 text-sm text-red-600">{{ form.parent.errors.0 }}</p>
                             {% endif %}
-                            <p class="mt-2 text-sm text-gray-500">Is this part of a larger project?</p>
+                            <p class="mt-2 text-sm text-gray-500">Is this part of a larger project or another reference ?</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Tags Field -->
+                    {% if form.tags %}
+                    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                        <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                            Tags
+                        </label>
+                        <div class="mt-1 sm:mt-0 sm:col-span-2">
+                            <div class="autocomplete-container relative" data-field-type="tags" data-allow-multiple="true" data-allow-create="true"
+                                 data-initial-values="{{ tags_initial_values|escapejs }}">
+                                <div class="min-h-[42px] w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus-within:ring-blue-500 focus-within:border-blue-500 bg-white">
+                                    <div class="selected-items flex flex-wrap gap-1"></div>
+                                    <input type="text" class="autocomplete-input border-0 outline-0 focus:ring-0 p-0 w-full text-sm placeholder-gray-400" placeholder="Search or create tags...">
+                                </div>
+                                <input type="hidden" name="{{ form.tags.name }}" class="autocomplete-hidden" value="{% if form.tags.value %}{% for tag_id in form.tags.value %}{% if not forloop.first %},{% endif %}{{ tag_id }}{% endfor %}{% endif %}">
+                                <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                            </div>
+                            {% if form.tags.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.tags.errors.0 }}</p>
+                            {% endif %}
+                            <p class="mt-2 text-sm text-gray-500">Add tags to categorize this item. Type to search or create new tags.</p>
                         </div>
                     </div>
                     {% endif %}
@@ -155,7 +201,7 @@
                         Due Date
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.due_date }}
+                        <input type="date" name="{{ form.due_date.name }}" value="{{ form.due_date.value|default:'' }}" id="{{ form.due_date.id_for_label }}" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                         {% if form.due_date.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.due_date.errors.0 }}</p>
                         {% endif %}
@@ -171,7 +217,7 @@
                         Start Date
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.start_date }}
+                        <input type="date" name="{{ form.start_date.name }}" value="{{ form.start_date.value|default:'' }}" id="{{ form.start_date.id_for_label }}" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                         {% if form.start_date.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.start_date.errors.0 }}</p>
                         {% endif %}
@@ -183,15 +229,51 @@
                 <!-- Estimated Duration Field -->
                 {% if form.estimated_duration %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                    <label for="{{ form.estimated_duration.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                    <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                         Estimated Duration
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.estimated_duration }}
+                        <div class="grid grid-cols-2 gap-3 custom-radio-group">
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.estimated_duration.name }}" value="" {% if not form.estimated_duration.value or form.estimated_duration.value == "" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                                    {% sprite "lucide-message-circle-question-mark" 18 %}
+                                    <span class="text-sm">Not specified</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.estimated_duration.name }}" value="quick" {% if form.estimated_duration.value == "quick" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                                    {% sprite "lucide-zap" 18 %}
+                                    <span class="text-sm">Quick (≤2 min)</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.estimated_duration.name }}" value="short" {% if form.estimated_duration.value == "short" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                                    {% sprite "lucide-clock" 18 %}
+                                    <span class="text-sm">Short (15-30 min)</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.estimated_duration.name }}" value="medium" {% if form.estimated_duration.value == "medium" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                                    {% sprite "lucide-clock-4" 18 %}
+                                    <span class="text-sm">Medium (1-2 hours)</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.estimated_duration.name }}" value="long" {% if form.estimated_duration.value == "long" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                                    {% sprite "lucide-clock-8" 18 %}
+                                    <span class="text-sm">Long (3+ hours)</span>
+                                </div>
+                            </label>
+                        </div>
                         {% if form.estimated_duration.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.estimated_duration.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-2 text-sm text-gray-500">How long will this take? (HH:MM format)</p>
+                        <p class="mt-2 text-sm text-gray-500">Choose duration category based on GTD methodology</p>
                     </div>
                 </div>
                 {% endif %}
@@ -199,15 +281,44 @@
                 <!-- Energy -->
                 {% if form.energy %}
                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                    <label for="{{ form.estimated_duration.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
-                        Energy
+                    <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Energy Level
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.energy }}
+                        <div class="flex gap-4 custom-radio-group">
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.energy.name }}" value="" {% if not form.energy.value or form.energy.value == "" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                                    {% sprite "lucide-battery" 20 %}
+                                    <span class="text-sm">None</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.energy.name }}" value="low" {% if form.energy.value == "low" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                                    {% sprite "lucide-battery-low" 20 %}
+                                    <span class="text-sm">Low</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.energy.name }}" value="medium" {% if form.energy.value == "medium" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                                    {% sprite "lucide-battery" 20 %}
+                                    <span class="text-sm">Medium</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center cursor-pointer custom-radio-option">
+                                <input type="radio" name="{{ form.energy.name }}" value="high" {% if form.energy.value == "high" %}checked{% endif %} class="sr-only">
+                                <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                                    {% sprite "lucide-battery-full" 20 %}
+                                    <span class="text-sm">High</span>
+                                </div>
+                            </label>
+                        </div>
                         {% if form.energy.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.energy.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-2 text-sm text-gray-500">How much energy do you need ?</p>
+                        <p class="mt-2 text-sm text-gray-500">How much energy do you need?</p>
                     </div>
                 </div>
                 {% endif %}
@@ -218,11 +329,43 @@
                         Waiting for:
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.waiting_for_person }}
+                        <input type="text" name="{{ form.waiting_for_person.name }}" value="{{ form.waiting_for_person.value|default:'' }}" id="{{ form.waiting_for_person.id_for_label }}" class="p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Bob and Alice">
                         {% if form.waiting_for_person.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.waiting_for_person.errors.0 }}</p>
                         {% endif %}
                         <p class="mt-2 text-sm text-gray-500">Waiting for who/what ?</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Follow-up Date Field (for waiting_for items) -->
+                {% if form.follow_up_date %}
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.follow_up_date.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Follow-up Date
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        <input type="date" name="{{ form.follow_up_date.name }}" value="{{ form.follow_up_date.value|default:'' }}" id="{{ form.follow_up_date.id_for_label }}" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        {% if form.follow_up_date.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.follow_up_date.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">When to follow up on this waiting item</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Review Frequency Field (for someday_maybe items) -->
+                {% if form.review_frequency_days %}
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                    <label for="{{ form.review_frequency_days.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        Review Frequency (Days)
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        <input type="number" name="{{ form.review_frequency_days.name }}" value="{{ form.review_frequency_days.value|default:'' }}" id="{{ form.review_frequency_days.id_for_label }}" min="1" max="365" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        {% if form.review_frequency_days.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.review_frequency_days.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">How often to review this someday/maybe item (in days)</p>
                     </div>
                 </div>
                 {% endif %}
@@ -248,7 +391,7 @@
                         Next Reminder
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.remind_at }}
+                        <input type="datetime-local" name="{{ form.remind_at.name }}" value="{{ form.remind_at.value|default:'' }}" id="{{ form.remind_at.id_for_label }}" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                         {% if form.remind_at.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.remind_at.errors.0 }}</p>
                         {% endif %}
@@ -264,7 +407,7 @@
                         Recurrence Pattern
                     </label>
                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                        {{ form.rrule }}
+                        <input type="text" name="{{ form.rrule.name }}" value="{{ form.rrule.value|default:'' }}" id="{{ form.rrule.id_for_label }}" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="e.g., FREQ=DAILY;INTERVAL=2 (every 2 days)">
                         {% if form.rrule.errors %}
                             <p class="mt-2 text-sm text-red-600">{{ form.rrule.errors.0 }}</p>
                         {% endif %}
