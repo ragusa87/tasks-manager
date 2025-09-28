@@ -66,7 +66,7 @@ migrate:
 alias f := fixturize
 # Reset the database and load the fixtures
 fixturize *args:
-  docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py fixturize -y "$@"
+  docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py fixturize "$@"
 
 npm *args:
   docker compose exec {{FRONTEND_CONTAINER}} npm "$@"

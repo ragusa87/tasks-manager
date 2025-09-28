@@ -3,11 +3,18 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 
-from task_processor.constants import GTDConfig, GTDStatus, Priority, ReviewType
-from task_processor.models import Area, Context, Item, Review
+from task_processor.constants import (
+    GTDConfig,
+    GTDDuration,
+    GTDEnergy,
+    GTDStatus,
+    Priority,
+    ReviewType,
+)
+from task_processor.models import Area, Context, Item, Review, Tag
 
 
 class Command(BaseCommand):
@@ -43,7 +50,7 @@ class Command(BaseCommand):
             users = self.create_users(options['users'])
             for user in users:
                 self.stdout.write(f'Creating data for user: {user.username}')
-                self.create_contexts_and_areas(user)
+                self.create_contexts_areas_and_tags(user)
                 self.create_items(user, options['items_per_user'])
                 self.create_reviews(user)
 
@@ -53,14 +60,25 @@ class Command(BaseCommand):
             )
         )
 
+    def reset_sequence(self, model):
+        table = model._meta.db_table
+        pk = model._meta.pk.column
+        seq = f"{table}_{pk}_seq"
+
+        with connection.cursor() as cursor:
+            cursor.execute(f"SELECT COALESCE(MAX({pk}), 0) + 1 FROM {table}")
+            next_val = cursor.fetchone()[0]
+            cursor.execute(f"ALTER SEQUENCE {seq} RESTART WITH {next_val}")
+
     def clear_data(self):
         """Clear existing GTD data"""
-        Item.objects.all().delete()
-        Review.objects.all().delete()
-        Context.objects.all().delete()
-        Area.objects.all().delete()
+        for model in [Item, Review, Context, Area, Tag]:
+            model.objects.all().delete()
+            self.reset_sequence(model)
+        # Users: keep
         # Don't delete superusers
         User.objects.filter(is_superuser=False).delete()
+        self.reset_sequence(User)
 
     def create_users(self, count):
         """Create sample users"""
@@ -84,8 +102,8 @@ class Command(BaseCommand):
             users.append(user)
         return users
 
-    def create_contexts_and_areas(self, user):
-        """Create contexts and areas for user"""
+    def create_contexts_areas_and_tags(self, user):
+        """Create contexts, areas, and tags for user"""
         # Create contexts
         for context_name in GTDConfig.DEFAULT_CONTEXTS:
             Context.objects.update_or_create(
@@ -97,10 +115,23 @@ class Command(BaseCommand):
         # Create areas
         Area.create_defaults_for_user(user)
 
+        # Create sample tags
+        sample_tags = [
+            'transport', 'read', 'watch', 'phone-call',
+            'meeting', 'creative', 'planning', 'admin', 'review',
+            'personal', 'work', 'learning', 'health', 'finance'
+        ]
+        for tag_name in sample_tags:
+            Tag.objects.get_or_create(
+                name=tag_name,
+                user=user
+            )
+
     def create_items(self, user, count):
         """Create various GTD items for user"""
         contexts = list(Context.objects.filter(user=user))
         areas = list(Area.objects.filter(user=user))
+        tags = list(Tag.objects.filter(user=user))
 
         # Templates for different types of items
         inbox_items = [
@@ -179,7 +210,8 @@ class Command(BaseCommand):
                 user,
                 random.choice(project_templates) + f" {i+1}",
                 contexts,
-                areas
+                areas,
+                tags
             )
             projects.append(project)
             items_created += 1
@@ -194,6 +226,7 @@ class Command(BaseCommand):
                 random.choice(next_action_templates) + (f" {i+1}" if not parent else ""),
                 contexts,
                 areas,
+                tags,
                 parent
             )
             items_created += 1
@@ -205,7 +238,8 @@ class Command(BaseCommand):
                 user,
                 random.choice(inbox_items) + f" {i+1}",
                 contexts,
-                areas
+                areas,
+                tags
             )
             items_created += 1
 
@@ -218,7 +252,8 @@ class Command(BaseCommand):
                 title + f" {i+1}",
                 person,
                 contexts,
-                areas
+                areas,
+                tags
             )
             items_created += 1
 
@@ -229,16 +264,17 @@ class Command(BaseCommand):
                 user,
                 random.choice(someday_maybe_templates) + f" {i+1}",
                 contexts,
-                areas
+                areas,
+                tags
             )
             items_created += 1
 
         # Fill remaining with random items
         remaining = count - items_created
         for i in range(remaining):
-            self.create_random_item(user, contexts, areas, i+1)
+            self.create_random_item(user, contexts, areas, tags, i+1)
 
-    def create_project_item(self, user, title, contexts, areas):
+    def create_project_item(self, user, title, contexts, areas, tags):
         """Create a project item"""
         project = Item.objects.create(
             title=title,
@@ -246,20 +282,27 @@ class Command(BaseCommand):
             status=GTDStatus.PROJECT,
             priority=random.choice([Priority.NORMAL, Priority.HIGH]),
             user=user,
-            area=random.choice(areas) if random.random() < 0.8 else None,
+            area=random.choice(areas) if random.random() < 0.95 else None,
             due_date=self.random_future_date() if random.random() < 0.6 else None,
-            estimated_duration=timedelta(hours=random.randint(5, 40))
+            estimated_duration=random.choice(list(GTDDuration)) if random.random() < 0.7 else None,
+            energy=random.choice(list(GTDEnergy)) if random.random() < 0.6 else None
         )
 
         # Add contexts after creation (ManyToMany field)
-        if random.random() < 0.7 and contexts:
-            # Sometimes add 1-2 contexts
+        if random.random() < 0.85 and contexts:
+            # Usually add 1-2 contexts
             selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
             project.contexts.set(selected_contexts)
 
+        # Add tags after creation (ManyToMany field)
+        if random.random() < 0.6 and tags:
+            # Sometimes add 1-3 tags
+            selected_tags = random.sample(tags, min(random.randint(1, 3), len(tags)))
+            project.tags.set(selected_tags)
+
         return project
 
-    def create_next_action_item(self, user, title, contexts, areas, parent=None):
+    def create_next_action_item(self, user, title, contexts, areas, tags, parent=None):
         """Create a next action item"""
         item = Item.objects.create(
             title=title,
@@ -268,17 +311,24 @@ class Command(BaseCommand):
             priority=random.choice(list(Priority)),
             user=user,
             parent=parent,
-            area=random.choice(areas) if random.random() < 0.7 else None,
+            area=random.choice(areas) if random.random() < 0.85 else None,
             due_date=self.random_future_date() if random.random() < 0.4 else None,
-            estimated_duration=timedelta(minutes=random.randint(15, 180)),
+            estimated_duration=random.choice(list(GTDDuration)) if random.random() < 0.8 else None,
+            energy=random.choice(list(GTDEnergy)) if random.random() < 0.7 else None,
             is_completed=random.random() < 0.2  # 20% completed
         )
 
         # Add contexts after creation (ManyToMany field)
-        if random.random() < 0.9 and contexts:
-            # Usually add 1 context, sometimes 2
+        if random.random() < 0.95 and contexts:
+            # Almost always add 1 context, sometimes 2
             selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
             item.contexts.set(selected_contexts)
+
+        # Add tags after creation (ManyToMany field)
+        if random.random() < 0.8 and tags:
+            # Frequently add 1-2 tags
+            selected_tags = random.sample(tags, min(random.randint(1, 2), len(tags)))
+            item.tags.set(selected_tags)
 
         # Set completion date for completed items
         if item.is_completed:
@@ -288,17 +338,33 @@ class Command(BaseCommand):
 
         return item
 
-    def create_inbox_item(self, user, title, contexts, areas):
+    def create_inbox_item(self, user, title, contexts, areas, tags):
         """Create an inbox item"""
-        return Item.objects.create(
+        item = Item.objects.create(
             title=title,
             description=f"Unprocessed item: {title}",
             status=GTDStatus.INBOX,
             priority=Priority.NORMAL,
             user=user,
+            # Inbox items occasionally get assigned area during capture
+            area=random.choice(areas) if random.random() < 0.3 else None,
         )
 
-    def create_waiting_for_item(self, user, title, person, contexts, areas):
+        # Add contexts after creation (ManyToMany field)
+        if random.random() < 0.2 and contexts:
+            # Rarely add contexts to inbox items (some people pre-categorize)
+            selected_contexts = random.sample(contexts, min(1, len(contexts)))
+            item.contexts.set(selected_contexts)
+
+        # Add tags after creation (ManyToMany field)
+        if random.random() < 0.3 and tags:
+            # Rarely add tags to inbox items
+            selected_tags = random.sample(tags, min(1, len(tags)))
+            item.tags.set(selected_tags)
+
+        return item
+
+    def create_waiting_for_item(self, user, title, person, contexts, areas, tags):
         """Create a waiting for item"""
         item = Item.objects.create(
             title=title,
@@ -306,34 +372,54 @@ class Command(BaseCommand):
             status=GTDStatus.WAITING_FOR,
             priority=random.choice([Priority.NORMAL, Priority.HIGH]),
             user=user,
-            area=random.choice(areas) if random.random() < 0.6 else None,
+            area=random.choice(areas) if random.random() < 0.75 else None,
             waiting_for_person=person,
             date_requested=self.random_past_date(days=30),
             follow_up_date=self.random_future_date(days=14)
         )
 
         # Add contexts after creation (ManyToMany field)
-        if random.random() < 0.5 and contexts:
-            # Less frequently add contexts for waiting items
+        if random.random() < 0.7 and contexts:
+            # Usually add contexts for waiting items
             selected_contexts = random.sample(contexts, min(1, len(contexts)))
             item.contexts.set(selected_contexts)
 
+        # Add tags after creation (ManyToMany field)
+        if random.random() < 0.4 and tags:
+            # Sometimes add tags to waiting items
+            selected_tags = random.sample(tags, min(random.randint(1, 2), len(tags)))
+            item.tags.set(selected_tags)
+
         return item
 
-    def create_someday_maybe_item(self, user, title, contexts, areas):
+    def create_someday_maybe_item(self, user, title, contexts, areas, tags):
         """Create a someday/maybe item"""
-        return Item.objects.create(
+        item = Item.objects.create(
             title=title,
             description=f"Someday/maybe: {title}",
             status=GTDStatus.SOMEDAY_MAYBE,
             priority=random.choice([Priority.LOW, Priority.NORMAL]),
             user=user,
-            area=random.choice(areas) if random.random() < 0.9 else None,
+            area=random.choice(areas) if random.random() < 0.95 else None,
             last_reviewed=self.random_past_date(days=180) if random.random() < 0.7 else None,
             review_frequency_days=random.choice([30, 60, 90, 180])
         )
 
-    def create_random_item(self, user, contexts, areas, index):
+        # Add contexts after creation (ManyToMany field)
+        if random.random() < 0.6 and contexts:
+            # Sometimes add contexts to someday/maybe items
+            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            item.contexts.set(selected_contexts)
+
+        # Add tags after creation (ManyToMany field)
+        if random.random() < 0.5 and tags:
+            # Sometimes add tags to someday/maybe items
+            selected_tags = random.sample(tags, min(random.randint(1, 2), len(tags)))
+            item.tags.set(selected_tags)
+
+        return item
+
+    def create_random_item(self, user, contexts, areas, tags, index):
         """Create a random item of any type"""
         status = random.choice([
             GTDStatus.NEXT_ACTION,
@@ -348,16 +434,22 @@ class Command(BaseCommand):
             status=status,
             priority=random.choice(list(Priority)),
             user=user,
-            area=random.choice(areas) if random.random() < 0.7 else None,
+            area=random.choice(areas) if random.random() < 0.8 else None,
             due_date=self.random_future_date() if random.random() < 0.3 else None,
             is_completed=status == GTDStatus.COMPLETED
         )
 
         # Add contexts after creation (ManyToMany field)
-        if random.random() < 0.6 and contexts:
-            # Randomly add 1-2 contexts
+        if random.random() < 0.75 and contexts:
+            # Usually add 1-2 contexts
             selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
             item.contexts.set(selected_contexts)
+
+        # Add tags after creation (ManyToMany field)
+        if random.random() < 0.5 and tags:
+            # Sometimes add tags to random items
+            selected_tags = random.sample(tags, min(random.randint(1, 2), len(tags)))
+            item.tags.set(selected_tags)
 
         return item
 
