@@ -40,4 +40,7 @@
 {% block extra_body %}
     {{ block.super }}
     {% vite_asset 'frontend/js/dashboard.js' %}
+    <div id="modal-container">
+        <div id="modal" style="display: none"></div>
+    </div>
 {% endblock %}

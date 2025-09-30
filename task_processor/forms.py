@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 
 from dateutil.rrule import rrulestr
@@ -5,19 +6,28 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-from .constants import GTDConfig, GTDDuration, GTDEnergy, GTDStatus
+from .constants import GTDConfig, GTDDuration, GTDEnergy, GTDStatus, Priority
 from .models.base_models import Area, Context, Tag
 from .models.item import Item, ItemFlow
 
 
-class NativeDateInput(forms.DateInput):
-    input_type = "date"
+class AirDatepickerMixin:
+    date_format_js = 'yyyy-MM-dd'
+    time_format_js = 'H:mm'
+    timepicker = False
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = (base_attrs or {}).copy()
+        attrs['data-airdatepicker'] = json.dumps({'locale': 'fr', "firstDay":1,"dateFormat" : self.date_format_js, "timeFormat": self.time_format_js, "timepicker": self.timepicker})
+        return super().build_attrs(attrs, extra_attrs)
 
+class CustomDateInput(AirDatepickerMixin, forms.DateInput):
+    input_type = "date"
     def __init__(self, *args, **kwargs):
         super().__init__(format=settings.DATE_INPUT_FORMAT, *args, **kwargs)
 
-class NativeDateTimeInput(forms.DateInput):
+class CustomDateTimeInput(AirDatepickerMixin, forms.DateInput):
     input_type = "datetime-local"
+    timepicker = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(format=settings.DATETIME_INPUT_FORMAT, *args, **kwargs)
@@ -148,135 +158,6 @@ class RecurrenceWidget(forms.TextInput):
             default_attrs.update(attrs)
         super().__init__(default_attrs)
 
-class BaseItemForm(forms.ModelForm):
-    estimated_duration = NativeDurationInput(required=False)
-    energy = forms.ChoiceField(
-        choices=[("", "----")] + GTDEnergy.choices,
-        required=False,
-        widget=forms.Select(attrs={
-            'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
-        })
-    )
-
-    # Reminder fields
-    remind_at = forms.DateTimeField(
-        required=False,
-        widget=NativeDateTimeInput(attrs={
-            'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'
-        }),
-        help_text='When to send the first reminder'
-    )
-
-    rrule = RecurrenceField(
-        widget=RecurrenceWidget(),
-        help_text='Recurrence pattern using RRULE format. Leave empty for one-time reminder.'
-    )
-
-    class Meta:
-        model = Item
-        fields = [
-            'title', 'description', 'priority', 'parent', 'contexts', 'area',
-            'due_date', 'start_date', 'estimated_duration', 'energy', 'waiting_for_person',
-            'remind_at', 'rrule'
-        ]
-        widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'placeholder': 'Enter item title'
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'rows': 4,
-                'placeholder': 'Enter description'
-            }),
-            'priority': forms.Select(attrs={
-                'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
-            }),
-            'parent': forms.Select(attrs={
-                'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
-            }),
-            'contexts': forms.SelectMultiple(attrs={
-                'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm',
-                'size': '4'
-            }),
-            'area': forms.Select(attrs={
-                'class': 'mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
-            }),
-            'due_date': NativeDateInput(attrs={
-                'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-            }),
-            'start_date': NativeDateInput(attrs={
-                'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-            }),
-            'waiting_for_person': forms.TextInput(attrs={
-                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'placeholder': 'Bob and Alice'
-            }),
-        }
-
-    def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
-        self.item_flow = item_flow
-        super().__init__(*args, **kwargs)
-
-        # Apply styling to duration widget
-        duration_widget_attrs = {
-            'class': 'focus:ring-blue-500 focus:border-blue-500 w-16 shadow-sm sm:text-sm border-gray-300 rounded-md text-center'
-        }
-        self.fields['estimated_duration'].widget = NativeDurationWidget(attrs=duration_widget_attrs)
-
-        # parent relationship is only valid for projects/references
-        current_status = self.instance.status if self.instance and self.instance.status else None
-        if current_status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
-            current_status = GTDConfig.STATUS_WITH_PARENT_ALLOWED[0] if len(GTDConfig.STATUS_WITH_PARENT_ALLOWED) > 0 else None
-
-        # set user-specific querysets
-        if user:
-            self.fields['parent'].queryset = Item.objects.filter(
-                user=user,
-                status=current_status,
-                parent__pk=None,
-            )
-            self.fields['contexts'].queryset = Context.objects.filter(user=user)
-            self.fields['area'].queryset = Area.objects.filter(user=user)
-        else:
-            del self.fields['parent']
-            # No user available, show empty querysets
-            self.fields['contexts'].queryset = Context.objects.none()
-            self.fields['area'].queryset = Area.objects.none()
-
-        if not self.instance.is_waiting_for:
-            del self.fields['waiting_for_person']
-
-    def clean_title(self):
-        title = self.cleaned_data.get('title')
-        if title and len(title.strip()) == 0:
-            raise ValidationError("Title cannot be empty or just whitespace.")
-        return title.strip() if title else title
-
-    def clean_parent(self):
-        parent = self.cleaned_data.get('parent')
-        if parent:
-            # Check if parent is actually a project
-            if parent.status != 'project':
-                raise ValidationError("Parent must be a project.")
-
-        return parent
-
-
-
-
-
-class ItemCreateForm(BaseItemForm):
-    def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
-        super().__init__(item_flow, user, *args, **kwargs)
-        self.fields['title'].required = True
-
-    def save(self, commit=True):
-        item = super().save(commit=False)
-        if commit:
-            item.save()
-        return item
-
 
 class WaitingForForm(forms.Form):
     """
@@ -294,30 +175,7 @@ class WaitingForForm(forms.Form):
     )
 
 
-class ItemDetailForm(forms.ModelForm):
-    def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
-        self.item_flow = item_flow
-        self.user = user
-        super().__init__(*args, **kwargs)
 
-    class Meta:
-        model = Item
-        fields = [
-            'title', 'description'
-        ]
-        widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'placeholder': 'Enter item title'
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md',
-                'rows': 4,
-                'placeholder': 'Enter description'
-            }),
-        }
-class ItemUpdateProjectForm(ItemDetailForm):
-    pass
 
 class ItemUpdateForm(forms.ModelForm):
     estimated_duration = forms.ChoiceField(
@@ -334,7 +192,7 @@ class ItemUpdateForm(forms.ModelForm):
     # Reminder fields
     remind_at = forms.DateTimeField(
         required=False,
-        widget=NativeDateTimeInput(),
+        widget=CustomDateTimeInput(),
         help_text='When to send the first reminder'
     )
 
@@ -368,11 +226,11 @@ class ItemUpdateForm(forms.ModelForm):
             'priority': forms.Select(),
             'parent': forms.Select(),
             'area': forms.Select(),
-            'due_date': NativeDateInput(),
-            'start_date': NativeDateInput(),
+            'due_date': CustomDateInput(),
+            'start_date': CustomDateInput(),
             'waiting_for_person': forms.TextInput(),
             'review_frequency_days': forms.NumberInput(attrs={'min': '1', 'max': '365'}),
-            'follow_up_date': NativeDateInput(),
+            'follow_up_date': CustomDateInput(),
         }
 
     def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
@@ -513,6 +371,23 @@ class ItemUpdateForm(forms.ModelForm):
 
         return tags_value
 
+    def clean(self):
+        from django.utils import timezone
+        cleaned_data = super().clean()
+        priority = cleaned_data.get('priority')
+        due_date = cleaned_data.get('due_date')
+        remind_at = cleaned_data.get('remind_at')
+
+        # Check if priority is URGENT and due_date is not set
+        if priority == Priority.URGENT and not due_date:
+            self.add_error('due_date', "Urgent items should have a due date")
+
+        # Check if remind_at is in the past
+        if remind_at and remind_at < timezone.now():
+            self.add_error('remind_at', "Reminder date must be in the future")
+
+        return cleaned_data
+
     def save(self, commit=True):
         item = super().save(commit=False)
         if commit:
@@ -532,3 +407,19 @@ class ItemUpdateForm(forms.ModelForm):
             else:
                 item.contexts.clear()
         return item
+
+class ItemCreateForm(ItemUpdateForm):
+    def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
+        super().__init__(item_flow, user, *args, **kwargs)
+        self.fields['title'].required = True
+
+    def save(self, commit=True):
+        item = super().save(commit=False)
+        if commit:
+            item.save()
+
+class ItemDetailForm(ItemUpdateForm):
+    pass
+
+class ItemUpdateProjectForm(ItemUpdateForm):
+    pass

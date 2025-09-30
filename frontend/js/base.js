@@ -1,5 +1,17 @@
+import AirDatepicker from 'air-datepicker';
+import 'air-datepicker/air-datepicker.css';
+import localeEn from 'air-datepicker/locale/en';
+import localeFr from 'air-datepicker/locale/fr';
 import htmx from 'htmx.org';
 window.htmx = htmx
+htmx.config.responseHandling = [
+    {code: "204", swap: false},
+    {code: "[23]..", swap: true},
+    {code: "[5]..", swap: false, error: true},
+    {code: "[4]..", swap: true, error: false},
+    {code: "...", swap: false}
+]
+
 // Simple dropdown toggle functionality
 function initializeDropdowns() {
     // Remove existing listeners to avoid duplicates
@@ -78,18 +90,14 @@ document.addEventListener('click', function(e) {
 
 // Custom radio button group functionality
 function initializeCustomRadioGroups() {
-    // Remove existing listeners to avoid duplicates
-    document.querySelectorAll('.custom-radio-group').forEach(function(group) {
-        const options = group.querySelectorAll('.custom-radio-option');
-        options.forEach(function(option) {
-            // Clone option to remove existing listeners
-            const newOption = option.cloneNode(true);
-            option.parentNode.replaceChild(newOption, option);
-        });
-    });
-
     // Initialize custom radio groups
     document.querySelectorAll('.custom-radio-group').forEach(function(group) {
+        // Skip if already initialized to avoid duplicates
+        if (group.hasAttribute('data-radio-initialized')) {
+            return;
+        }
+        group.setAttribute('data-radio-initialized', 'true');
+
         const options = group.querySelectorAll('.custom-radio-option');
 
         // Set initial selection state
@@ -110,15 +118,12 @@ function initializeCustomRadioGroups() {
             });
         }
 
-        // Handle clicks
+        // Also listen for direct radio button changes
         options.forEach(function(option) {
-            option.addEventListener('click', function(e) {
-                const input = this.querySelector('input[type="radio"]');
-                if (input) {
-                    input.checked = true;
-                    updateSelection();
-                }
-            });
+            const input = option.querySelector('input[type="radio"]');
+            if (input) {
+                input.addEventListener('change', updateSelection);
+            }
         });
 
         // Initial selection update
@@ -132,8 +137,53 @@ document.addEventListener('DOMContentLoaded', initializeCustomRadioGroups);
 // Re-initialize when HTMX loads new content
 document.addEventListener('htmx:afterSwap', initializeCustomRadioGroups);
 
+// Also initialize when content is settled (for modals and complex updates)
+document.addEventListener('htmx:afterSettle', initializeCustomRadioGroups);
+
+// Initialize when any new content is loaded
+document.addEventListener('htmx:load', initializeCustomRadioGroups);
+
+// Event delegation for radio groups (works with htmx-loaded content)
+document.addEventListener('click', function(e) {
+    // Check if clicked element is a custom radio option
+    const radioOption = e.target.closest('.custom-radio-option');
+    if (radioOption && radioOption.closest('.custom-radio-group')) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const input = radioOption.querySelector('input[type="radio"]');
+        if (input) {
+            // Uncheck all radios in the same group first
+            const groupName = input.name;
+            document.querySelectorAll(`input[name="${groupName}"]`).forEach(function(radio) {
+                radio.checked = false;
+                const parentOption = radio.closest('.custom-radio-option');
+                if (parentOption) {
+                    const visual = parentOption.querySelector('.custom-radio-visual');
+                    if (visual) {
+                        visual.classList.remove('bg-blue-50', 'border-blue-500');
+                        visual.classList.add('border-gray-300');
+                    }
+                }
+            });
+
+            // Check this radio and update visual
+            input.checked = true;
+            const visual = radioOption.querySelector('.custom-radio-visual');
+            if (visual) {
+                visual.classList.add('bg-blue-50', 'border-blue-500');
+                visual.classList.remove('border-gray-300');
+            }
+
+            // Trigger change event for any listening code
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+});
+
 // Autocomplete functionality
 function initializeAutocomplete() {
+    console.log("Initializing autocomplete fields");
     // Remove existing listeners to avoid duplicates
     document.querySelectorAll('.autocomplete-container').forEach(function(container) {
         const input = container.querySelector('.autocomplete-input');
@@ -363,8 +413,91 @@ function initializeAutocomplete() {
     });
 }
 
-// Initialize autocomplete on page load
-document.addEventListener('DOMContentLoaded', initializeAutocomplete);
 
-// Re-initialize when HTMX loads new content
-document.addEventListener('htmx:afterSwap', initializeAutocomplete);
+
+// Accordion functionality
+function initializeAccordions() {
+    console.log("Initializing accordions");
+
+    // Remove existing listeners to avoid duplicates
+    document.querySelectorAll('.accordion-header').forEach(function(header) {
+        const newHeader = header.cloneNode(true);
+        header.parentNode.replaceChild(newHeader, header);
+    });
+
+    // Initialize accordion headers
+    document.querySelectorAll('.accordion-header').forEach(function(header) {
+        header.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const accordionItem = this.closest('.accordion-item');
+            const content = accordionItem.querySelector('.accordion-content');
+            const icon = this.querySelector('.accordion-icon');
+
+            // Toggle accordion
+            const isOpen = !content.classList.contains('hidden');
+
+            if (isOpen) {
+                // Close
+                content.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            } else {
+                // Open
+                content.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            }
+        });
+    });
+
+    // Check if there are non-field errors
+    const hasNonFieldErrors = document.querySelector('.rounded-md.bg-red-50') !== null;
+
+    // Auto-open accordions with errors or on modal open
+    document.querySelectorAll('.accordion-item').forEach(function(item) {
+        const hasErrors = item.dataset.hasErrors === 'true';
+        const content = item.querySelector('.accordion-content');
+        const icon = item.querySelector('.accordion-icon');
+
+        if (hasErrors || hasNonFieldErrors) {
+            // Open if has errors or if there are non-field errors
+            content.classList.remove('hidden');
+            if (icon) {
+                icon.classList.add('rotate-180');
+            }
+        } else {
+            // Close by default
+            content.classList.add('hidden');
+            if (icon) {
+                icon.classList.remove('rotate-180');
+            }
+        }
+    });
+}
+
+function initializeDatePicker(){
+    const elements = document.querySelectorAll("input[data-airdatepicker]")
+    elements.forEach(el => {
+        if (typeof el._airDatepicker != "undefined") {
+            el._airDatepicker.destroy();
+        }
+        el.type = 'INPUT';
+        const config = JSON.parse(el.getAttribute('data-airdatepicker'))
+        const map = {'en': localeEn, 'fr': localeFr}
+        const desired_locale = config['locale'] || 'en'
+        config['locale'] = map[desired_locale] || localeEn
+        new AirDatepicker(el,config);
+    })
+}
+
+// Initialize on page load
+const init = () => {
+    initializeAutocomplete();
+    initializeAccordions();
+    initializeDatePicker();
+}
+document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('htmx:afterSwap', init);
+document.addEventListener('htmx:afterSettle', init);
+document.addEventListener('htmx:load', init);
+document.addEventListener('openmodal', init);

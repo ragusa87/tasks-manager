@@ -1,79 +1,3 @@
-// Update last updated timestamp
-document.addEventListener('htmx:afterSwap', function(evt) {
-    const lastUpdated = document.getElementById('last-updated');
-    if (lastUpdated) {
-        const now = new Date();
-        lastUpdated.textContent = now.toLocaleTimeString('en-US', {
-            hour12: false,
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-});
-
-// Global refresh function
-function refreshDashboard() {
-    htmx.trigger(document.body, 'refresh-dashboard');
-}
-
-// Connection status indicator
-window.isOnline = navigator.onLine;
-document.addEventListener('htmx:responseError', function(evt) {
-    if (!navigator.onLine) {
-        // Show offline indicator
-        const offlineIndicator = document.createElement('div');
-        offlineIndicator.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        offlineIndicator.textContent = 'Connection lost - Updates paused';
-        offlineIndicator.id = 'offline-indicator';
-        document.body.appendChild(offlineIndicator);
-    }
-});
-
-window.addEventListener('online', function() {
-    window.isOnline = true;
-    const indicator = document.getElementById('offline-indicator');
-    if (indicator) {
-        indicator.remove();
-    }
-    // Refresh dashboard when coming back online
-    refreshDashboard();
-});
-
-window.addEventListener('offline', function() {
-    window.isOnline = false;
-});
-
-// Clickable data attributes for filtering
-document.addEventListener('click', function(e) {
-    const target = e.target.closest('[data-project], [data-area], [data-context], [data-energy], [data-tag]');
-    if (!target) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    let filter = '';
-
-    if (target.hasAttribute('data-project')) {
-        filter = `project:"${target.getAttribute('data-project')}"`;
-        removeFilter("in:project")
-    } else if (target.hasAttribute('data-area')) {
-        filter = `area:"${target.getAttribute('data-area')}"`;
-    } else if (target.hasAttribute('data-context')) {
-        filter = `context:"${target.getAttribute('data-context')}"`;
-    } else if (target.hasAttribute('data-energy')) {
-        filter = `energy:"${target.getAttribute('data-energy')}"`;
-    } else if (target.hasAttribute('data-tag')) {
-        filter = `tag:"${target.getAttribute('data-tag')}"`;
-    }
-
-    if (filter) {
-        // Find the search input
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            addFilter(filter);
-        }
-    }
-});
 
 // URL management
 function updateUrl(query) {
@@ -100,100 +24,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 })
 
-function isFilterActive(filter) {
+// Add event listeners for filters
+document.addEventListener('click', function(e) {
+    const target = e.target.closest('[data-filter]');
+    if (!target) return;
+
+    const value = target.getAttribute('data-next-query') || target.getAttribute('data-filter')
+    if (!value) return;
+
     const searchInput = document.getElementById('search-input');
-    const currentValue = searchInput.value.trim();
-
-    // Escape special regex characters
-    const escapedFilter = filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    // For quoted filters (area/context), use more flexible matching
-    if (filter.includes('"')) {
-        // Match the filter surrounded by word boundaries or spaces
-        const regex = new RegExp('(^|\\s)' + escapedFilter + '(\\s|$)');
-        return regex.test(currentValue);
-    } else {
-        // Use word boundary for simple filters
-        const regex = new RegExp('\\b' + escapedFilter + '\\b');
-        return regex.test(currentValue);
-    }
-}
-
-function addFilter(filter) {
-    const searchInput = document.getElementById('search-input');
-
-    // Find the button for this filter and get its pre-calculated next query
-    const button = document.querySelector(`.filter-suggestion[data-filter="${CSS.escape(filter)}"]`);
-    const nextQuery = button?.getAttribute('data-next-query');
-
-    if (nextQuery !== undefined) {
-        // Use the pre-calculated query from the server
-        searchInput.value = nextQuery;
-
-        // Trigger the search
-        htmx.trigger(searchInput, 'input');
-
-        // Update URL
-        updateUrl(nextQuery);
-
-        // Focus back on the input
-        searchInput.focus();
-    } else {
-        // Fallback to old behavior if no next-query available
-        console.warn('No next-query found for filter:', filter);
-        const currentValue = searchInput.value.trim();
-        const newValue = currentValue ? `${currentValue} ${filter}` : filter;
-        searchInput.value = newValue;
-        htmx.trigger(searchInput, 'input');
-        updateUrl(newValue);
-        searchInput.focus();
-    }
-}
-
-function removeFilter(filter) {
-    const searchInput = document.getElementById('search-input');
-    const currentValue = searchInput.value.trim();
-
-    // Escape special regex characters
-    const escapedFilter = filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    // Remove the filter using appropriate regex based on whether it's quoted
-    let regex;
-    if (filter.includes('"')) {
-        // For quoted filters, match with flexible spacing
-        regex = new RegExp('\\s*(^|\\s)' + escapedFilter + '(\\s|$)\\s*', 'g');
-    } else {
-        // Use word boundary for simple filters
-        regex = new RegExp('\\s*\\b' + escapedFilter + '\\b\\s*', 'g');
-    }
-
-    const newValue = currentValue.replace(regex, ' ').replace(/\s+/g, ' ').trim();
-
-    searchInput.value = newValue;
-
-    // Trigger the search
+    searchInput.value = value;
     htmx.trigger(searchInput, 'input');
-
-    updateUrl(newValue);
-
-    // Focus back on the input
     searchInput.focus();
-}
-
-function initializeFilterSuggestions() {
-    document.addEventListener('click', function(e) {
-        const target = e.target.closest('.filter-suggestion');
-        if (!target) return;
-        const filter = target.getAttribute('data-filter');
-        if (!filter) return;
-        addFilter(filter);
-    })
-}
-
-// Add event listeners for filter suggestions
-document.addEventListener('DOMContentLoaded', function() {
-    initializeFilterSuggestions();
-
 });
 
 // Update URL when user types
@@ -201,166 +43,51 @@ document.getElementById('search-input').addEventListener('input', function() {
     updateUrl(this.value);
 });
 
-
-// Initialize stats filter buttons
-function initializeStatsFilters() {
-    document.querySelectorAll('.stats-filter-btn').forEach(function(button) {
-        // Remove existing listeners to avoid duplicates
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-
-        // Add new listener
-        newButton.addEventListener('click', function() {
-           const filter = this.getAttribute('data-filter');
-           setSearchFilter(filter);
-        });
-    });
-}
-
-function setSearchFilter(filter) {
-    const searchInput = document.getElementById('search-input');
-    if (!searchInput) return;
-
-    console.log("Set search filter",filter)
-
-    // Replace the entire search query with this filter
-    searchInput.value = filter;
-
-    // Trigger the search
-    htmx.trigger(searchInput, 'input');
-
-    // Focus on the search input
-    searchInput.focus();
-
-    // Scroll to search results if they exist
-    const searchContainer = document.getElementById('search-results-container');
-    if (searchContainer) {
-        searchContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+const modal_selector = "modal"
+const get_modal = () => document.getElementById(modal_selector);
+function closeItemModal() {
+    const modal = get_modal();
+    if (modal) {
+        console.log("Closing modal");
+        modal.style.display = 'none';
+        modal.remove();
     }
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    initializeStatsFilters();
-});
-
-// Re-initialize when HTMX loads new content
-document.addEventListener('htmx:afterSwap', function(evt) {
-    if (evt.target.matches('[hx-get*="dashboard_stats"]')) {
-        initializeStatsFilters();
+let modalIsOpen = () => get_modal() && get_modal().style.display!=='hidden';
+document.addEventListener("click", function(e) {
+    if (modalIsOpen() && (e.target === get_modal() || e.target.id === 'close-modal' || e.target.id === 'close-modal-btn')) {
+        closeItemModal();
+    }
+})
+// Close on escape key
+document.addEventListener('keydown', function escapeHandler(e) {
+    if (e.key === 'Escape') {
+        closeItemModal();
     }
 });
-
 // Modal functionality for item details
 function openItemModal(url) {
-    console.log("open modal", url);
-
-    function closeItemModal() {
-        const modal = document.getElementById('item-detail-modal');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.remove();
-        }
-    }
-
-    fetch(url, {
+    console.log("open modal", url, document.querySelector('#modal-container'));
+    fetch(url,{
           headers: {
             'HX-Request': 'true',
-            'Referer': location.href
           }
     })
-        .then(response => response.text())
-        .then(html => {
-            // Remove existing modal if any
-            const existingModal = document.getElementById('item-detail-modal');
-            if (existingModal) {
-                existingModal.remove();
-            }
-
-            // Add new modal to body
-            document.body.insertAdjacentHTML('beforeend', html);
-
-            // Show modal
-            const modal = document.getElementById('item-detail-modal');
+    .then(response => response.text())
+    .then(html => {
+        document.querySelector('#modal-container').innerHTML = html;
+        const modal = get_modal()
+        if(modal) {
             modal.style.display = 'block';
-
-            // Process HTMX attributes on the new modal content
             htmx.process(modal);
-
-            // Add event listeners for closing
-            const closeButtons = modal.querySelectorAll('#close-modal, #close-modal-btn');
-            closeButtons.forEach(button => {
-                button.addEventListener('click', closeItemModal);
-            });
-
-            // Close on outside click
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    closeItemModal();
-                }
-            });
-
-            // Handle HTMX events
-            modal.addEventListener('htmx:beforeSwap', function(e) {
-                console.log('HTMX beforeSwap:', e.detail);
-            });
-
-            modal.addEventListener('htmx:afterSwap', function(e) {
-                console.log('HTMX afterSwap:', e.detail);
-
-                // Re-process HTMX on the swapped content
-                htmx.process(modal);
-
-                // Re-attach close button listeners after swap
-                const newCloseButtons = modal.querySelectorAll('#close-modal, #close-modal-btn');
-                newCloseButtons.forEach(button => {
-                    button.removeEventListener('click', closeItemModal); // Remove old listeners
-                    button.addEventListener('click', closeItemModal);
-                });
-
-                // Check if form was successfully submitted (no form in response means success)
-                if (e.detail.xhr.status === 200 && modal.querySelector('form')) {
-                    // Success - close modal and refresh
-                    setTimeout(() => {
-                        closeItemModal();
-                        console.log("Reloading page to reflect changes");
-                        window.location.reload();
-                    }, 500);
-                }
-            });
-
-            modal.addEventListener('htmx:responseError', function(e) {
-                console.error('HTMX response error:', e.detail);
-            });
-
-            modal.addEventListener('htmx:sendError', function(e) {
-                console.error('HTMX send error:', e.detail);
-            });
-
-            // Handle form submission manually if HTMX doesn't work
-            const form = modal.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    console.log('Form submit event triggered');
-                    // Let HTMX handle it, but log for debugging
-                });
-            }
-
-            // Close on escape key
-            document.addEventListener('keydown', function escapeHandler(e) {
-                if (e.key === 'Escape') {
-                    closeItemModal();
-                    document.removeEventListener('keydown', escapeHandler);
-                }
-            });
-
-        })
-        .catch(error => {
-            console.error('Error loading item details:', error);
-        });
+            document.dispatchEvent(new CustomEvent("openmodal"));
+        }
+    }).catch((error) => {
+        console.error('Modal request failed:', error);
+    });
 }
-
-// Add click handler for items with data-detail-url attribute
+// Open modal via [data-detail-url]
 document.addEventListener('click', function(e) {
     const itemElement = e.target.closest('[data-detail-url]');
     if (!itemElement) {
@@ -369,4 +96,11 @@ document.addEventListener('click', function(e) {
     e.preventDefault();
     const url = itemElement.getAttribute('data-detail-url');
     openItemModal(url);
+});
+
+// Refresh the dashboard after modal actions
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.matches("#" + modal_selector) && evt.detail.xhr.status === 200) {
+        document.getElementById('search-input').dispatchEvent(new Event('search'));
+    }
 });

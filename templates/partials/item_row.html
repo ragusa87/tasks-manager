@@ -31,6 +31,27 @@
                     <div class="mt-1 flex items-center flex-wrap gap-x-4 gap-y-1 text-xs">
                         <span class="text-gray-500">Created {{ item.created_at|date:"M j, Y" }}</span>
 
+                        {% if item.remind_at %}
+                        <span class="inline-flex items-center text-gray-600">
+                            {% sprite "lucide-bell" 12 class="mr-1" %}
+                            <span>Reminder {{ item.remind_at|date:"M j, Y H:i" }}</span>
+                        </span>
+                        {% endif %}
+
+                        {% if item.start_date %}
+                        <span class="inline-flex items-center text-green-600">
+                            {% sprite "lucide-calendar-clock" 12 class="mr-1" %}
+                            <span>Start {{ item.start_date|date:"M j, Y" }}</span>
+                        </span>
+                        {% endif %}
+
+                        {% if item.due_date %}
+                        <span class="inline-flex items-center text-orange-600">
+                            {% sprite "lucide-calendar" 12 class="mr-1" %}
+                            <span>Due {{ item.due_date|date:"M j, Y" }}</span>
+                        </span>
+                        {% endif %}
+
                         {% if item.priority != 2 %}
                         <span class="inline-flex items-center {{ item.priority_color }}">
                             {% sprite item.priority_icon 12 class="mr-1 {{ item.priority_color }}" %}
@@ -39,7 +60,7 @@
                         {% endif %}
 
                         {% if item.area %}
-                        <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-area="{{ item.area.pk }}">
+                        <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter="area:{{ item.area.pk }}">
                             {% sprite "lucide-target" 12 class="mr-1" %}
                             {{ item.area.name }}
                         </span>
@@ -49,7 +70,7 @@
                         <span class="inline-flex items-center text-purple-600">
                             {% sprite "lucide-hash" 12 class="mr-1" %}
                             {% for context in item.contexts.all %}
-                                <span data-context="{{context.name}}" class="{{item_secondary_classes}}">{{ context.name }}</span>
+                                <span data-filter="context:{{context.name}}" class="{{item_secondary_classes}}">{{ context.name }}</span>
                                 {% if not forloop.last %}, {% endif %}
                             {% endfor %}
                         </span>
@@ -57,30 +78,30 @@
 
                         {% if item.parent %}
                             {% if item.parent.is_reference %}
-                                <span class="inline-flex items-center text-blue-600 {{item_secondary_classes}}" data-project="{{ item.parent.pk }}">
+                                <span class="inline-flex items-center text-blue-600 {{item_secondary_classes}}" data-filter="project:{{ item.parent.pk }}">
                                     {% sprite "lucide-archive" 12 class="mr-1" %}
                                     {{ item.parent.title }}
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-project="{{ item.parent.pk }}">
+                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter="project:{{ item.parent.pk }}">
                                     {% sprite "lucide-folder" 12 class="mr-1" %}
                                     {{ item.parent.title }}
                                 </span>
                             {% endif %}
                         {% endif %}
                         {% if item.is_project %}
-                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-project="{{ item.pk }}">
+                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter="project:{{ item.pk }}">
                                     {% sprite "lucide-folder" 12 class="mr-1" %}
                                     {{ item.title }}
                                 </span>
                         {% endif %}
 
                         {% if item.energy %}
-                            <span data-energy="{{ item.energy }}" class="{{item_secondary_classes}}">{{item.get_energy_display}}</span>
+                            <span data-filter="energy:{{ item.energy }}" class="{{item_secondary_classes}}">{{item.get_energy_display}}</span>
                         {% endif %}
 
                         {% for tag in item.tags.all %}
-                            <span data-tag="{{tag.name}}" class="{{item_secondary_classes}}">{{ tag.name }}</span>
+                            <span data-filter="tag:{{tag.name}}" class="{{item_secondary_classes}}">{{ tag.name }}</span>
                             {% if not forloop.last %}, {% endif %}
                         {% endfor %}
 
@@ -88,11 +109,11 @@
                 </div>
             </div>
         </div>
-        <div class="flex-shrink-0 flex space-x-2">
+        <div class="flex-shrink-0">
             <!-- Edit Button -->
-            <a href="{% url 'item_update' item_id=item.id %}" class="inline-flex items-center px-1.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Edit item">
-                {% sprite "lucide-pencil" 24 %}
-            </a>
+<!--            <a href="{% url 'item_update' item_id=item.id %}" class="inline-flex items-center px-1.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Edit item">-->
+<!--                {% sprite "lucide-pencil" 24 %}-->
+<!--            </a>-->
             <!-- Process Actions - Desktop only -->
             <div class="hidden sm:block">
                 {% include "partials/item_dropdown.html" with item=item %}

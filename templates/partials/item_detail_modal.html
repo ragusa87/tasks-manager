@@ -1,234 +1,35 @@
 {% load sprite_tags %}
 
 <!-- Modal overlay -->
-<div id="item-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: none;">
+<div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" {% if not form or not form.errors %}style="display: none;"{% endif %}>
     <!-- Modal container -->
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-white">
         <div id="modal-content">
-            {% if form %}
-                <form method="post" action="{% url 'item_detail' item_id=item.id %}" hx-post="{% url 'item_detail' item_id=item.id %}" hx-target="#modal-content" hx-swap="innerHTML">
-                    {% csrf_token %}
-            {% endif %}
-        <!-- Modal header -->
-        <div class="flex items-center justify-between pb-3 border-b">
-            <div class="flex items-center space-x-3">
-                <div class="h-8 w-8 text-gray-400" title="{{ item.get_status_display }}">
-                    {% sprite item.flow.sprite|default:"archive" 32 %}
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900">{{ item.title }}</h3>
-            </div>
-            <button id="close-modal" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center">
-                {% sprite "lucide-x" 24 %}
-            </button>
-        </div>
+            <form method="post" action="{% url 'item_detail' item_id=item.id %}" hx-post="{% url 'item_detail' item_id=item.id %}" hx-target="#modal" hx-swap="outerHTML">
+                {% csrf_token %}
+                {% include "partials/item_form_detail.html" %}
 
-        <!-- Modal body -->
-        <div class="py-4 space-y-4">
-            <!-- Item metadata -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                    <span class="font-medium text-gray-700">Status:</span>
-                    <span class="ml-2 inline-flex items-center">
-                        {% sprite item.flow.sprite|default:"archive" 16 class="mr-1" %}
-                        {{ item.get_status_display }}
-                    </span>
-                </div>
-
-                {% if item.priority != 2 %}
-                <div>
-                    <span class="font-medium text-gray-700">Priority:</span>
-                    <span class="ml-2 inline-flex items-center {{ item.priority_color }}">
-                        {% sprite item.priority_icon 16 class="mr-1" %}
-                        {{ item.get_priority_display }}
-                    </span>
-                </div>
-                {% endif %}
-
-                {% if item.area %}
-                <div>
-                    <span class="font-medium text-gray-700">Area:</span>
-                    <span class="ml-2 inline-flex items-center text-green-600">
-                        {% sprite "lucide-at-sign" 16 class="mr-1" %}
-                        {{ item.area.name }}
-                    </span>
-                </div>
-                {% endif %}
-
-                {% if item.contexts.exists %}
-                <div>
-                    <span class="font-medium text-gray-700">Contexts:</span>
-                    <span class="ml-2 inline-flex items-center text-purple-600">
-                        {% sprite "lucide-hash" 16 class="mr-1" %}
-                        {% for context in item.contexts.all %}
-                            {{ context.name }}{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
-                    </span>
-                </div>
-                {% endif %}
-
-                {% if item.parent %}
-                <div>
-                    <span class="font-medium text-gray-700">Parent:</span>
-                    <span class="ml-2 inline-flex items-center {% if item.parent.is_reference %}text-blue-600{% else %}text-green-600{% endif %}">
-                        {% if item.parent.is_reference %}
-                            {% sprite "lucide-archive" 16 class="mr-1" %}
-                        {% else %}
-                            {% sprite "lucide-folder" 16 class="mr-1" %}
-                        {% endif %}
-                        {{ item.parent.title }}
-                    </span>
-                </div>
-                {% endif %}
-
-                {% if item.energy %}
-                <div>
-                    <span class="font-medium text-gray-700">Energy:</span>
-                    <span class="ml-2">{{ item.get_energy_display }}</span>
-                </div>
-                {% endif %}
-
-                {% if item.due_date %}
-                <div>
-                    <span class="font-medium text-gray-700">Due Date:</span>
-                    <span class="ml-2 {% if item.is_overdue %}text-red-600{% elif item.is_due_today %}text-orange-600{% endif %}">
-                        {{ item.due_date|date:"M j, Y H:i" }}
-                        {% if item.is_overdue %}(Overdue){% elif item.is_due_today %}(Due Today){% endif %}
-                    </span>
-                </div>
-                {% endif %}
-
-                {% if item.estimated_duration %}
-                <div>
-                    <span class="font-medium text-gray-700">Estimated Duration:</span>
-                    <span class="ml-2">{{ item.estimated_duration }}</span>
-                </div>
-                {% endif %}
-
-                {% if item.remind_at %}
-                <div>
-                    <span class="font-medium text-gray-700">Next Reminder:</span>
-                    <span class="ml-2 inline-flex items-center align-bottom">
-                        {% sprite "lucide-bell" 16 class="mr-1" %}
-                        {{ item.remind_at|date:"M j, Y H:i" }}
-                        {% now "Y-m-d" as today %}
-                        {% if item.remind_at|date:"Y-m-d" < today %}
-                            <span class="ml-1 text-red-600">(Past Due)</span>
-                        {% elif item.remind_at|date:"Y-m-d" == today %}
-                            <span class="ml-1 text-orange-600">(Today)</span>
-                        {% else %}
-                            <span class="ml-1 text-orange-600">(Future)</span>
-                        {% endif %}
-                    </span>
-                </div>
-                {% endif %}
-
-                {% if item.rrule %}
-                <div>
-                    <span class="font-medium text-gray-700">Recurrence:</span>
-                    <span class="ml-2 inline-flex items-center text-purple-600">
-                        {% sprite "lucide-repeat" 16 class="mr-1" %}
-                        <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{ item.rrule }}</code>
-                    </span>
-                </div>
-                {% endif %}
-
-                {% if item.is_waiting_for %}
-                <div>
-                    <span class="font-medium text-gray-700">Waiting For:</span>
-                    <span class="ml-2">{{ item.waiting_for_person }}</span>
-                </div>
-                {% endif %}
-
-                {% if item.is_waiting_for and item.follow_up_date %}
-                <div>
-                    <span class="font-medium text-gray-700">Follow Up Date:</span>
-                    <span class="ml-2 {% if item.needs_follow_up %}text-red-600{% endif %}">
-                        {{ item.follow_up_date|date:"M j, Y" }}
-                        {% if item.needs_follow_up %}(Needs Follow Up){% endif %}
-                    </span>
-                </div>
-                {% endif %}
-
-                <div>
-                    <span class="font-medium text-gray-700">Created:</span>
-                    <span class="ml-2">{{ item.created_at|date:"M j, Y H:i" }}</span>
-                </div>
-
-                <div>
-                    <span class="font-medium text-gray-700">Updated:</span>
-                    <span class="ml-2">{{ item.updated_at|date:"M j, Y H:i" }}</span>
-                </div>
-            </div>
-
-            {% if item.tags.exists %}
-            <div>
-                <span class="font-medium text-gray-700">Tags:</span>
-                <div class="mt-2 flex flex-wrap gap-2">
-                    {% for tag in item.tags.all %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {{ tag.name }}
-                        </span>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Title field -->
-            {% if form %}
-            <div>
-                <label for="{{ form.title.id_for_label }}" class="font-medium text-gray-700 block mb-2">Title:</label>
-                {{ form.title }}
-                {% if form.title.errors %}
-                    <div class="text-red-600 text-sm mt-1">{{ form.title.errors }}</div>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            <!-- Large description area -->
-            <div>
-                <span class="font-medium text-gray-700 block mb-2">Description:</span>
-                {% if form %}
-                    {{ form.description }}
-                    {% if form.description.errors %}
-                        <div class="text-red-600 text-sm mt-1">{{ form.description.errors }}</div>
+                <!-- Modal footer -->
+                <div class="flex items-center justify-end pt-3 border-t space-x-2">
+                    <button id="close-modal-btn"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Close
+                    </button>
+                    {% if not form %}
+                    <a href="{% url 'item_update' item_id=item.id %}"
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {% sprite "lucide-pencil" 16 class="mr-2" %}
+                        Edit
+                    </a>
+                    {% else %}
+                        <button type="submit"
+                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md focus:outline-none text-white bg-blue-600 hover:bg-blue-700  focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            {% sprite "lucide-save" 16 class="mr-2" %}
+                            Save
+                        </button>
                     {% endif %}
-                {% elif item.description %}
-                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[200px] max-h-[400px] overflow-y-auto">
-                        <div class="whitespace-pre-wrap text-sm text-gray-900">{{ item.description }}</div>
-                    </div>
-                {% else %}
-                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[200px] flex items-center justify-center">
-                        <span class="text-gray-500 text-sm italic">No description available</span>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Modal footer -->
-        <div class="flex items-center justify-end pt-3 border-t space-x-2">
-            <button id="close-modal-btn"
-                    class="inline-flex items-center px-4 py-2 border border-gray-300 border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                Close
-            </button>
-            {% if not form %}
-            <a href="{% url 'item_update' item_id=item.id %}"
-               class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                {% sprite "lucide-pencil" 16 class="mr-2" %}
-                Edit
-            </a>
-            {% else %}
-                <button type="submit"
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md focus:outline-none text-white bg-blue-600 hover:bg-blue-700  focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    {% sprite "lucide-save" 16 class="mr-2" %}
-                    Save
-                </button>
-            {% endif %}
-
-        </div>
-
-            {% if form %}
-                </form>
-            {% endif %}
+                </div>
+            </form>
         </div>
     </div>
 </div>

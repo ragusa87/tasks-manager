@@ -363,10 +363,6 @@ class Item(models.Model):
             if self._check_circular_reference(self.parent):
                 raise ValidationError(f"Circular project reference detected: {self.parent.pk}")
 
-        # Validate priority for urgent items
-        if self.priority == Priority.URGENT and not self.due_date:
-            raise ValidationError("Urgent items should have a due date")
-
     def _check_circular_reference(self, potential_parent):
         """Check for circular references in project hierarchy"""
         if potential_parent == self:

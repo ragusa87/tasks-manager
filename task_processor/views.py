@@ -348,7 +348,7 @@ class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
     model = Item
     pk_url_kwarg = "item_id"
     template_name = "partials/item_detail_modal.html"
-    form_class = ItemDetailForm
+    form_class = ItemUpdateForm
     context_object_name = "item"
 
     def get_form_kwargs(self):
@@ -362,6 +362,9 @@ class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
         self.object = form.save()
         # Return the updated modal content after successful save
         return self.render_to_response(self.get_context_data())
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form), status=400)
 
     def get_queryset(self):
         return Item.objects.for_user(self.request.user)
@@ -414,7 +417,7 @@ class ItemUpdateView(ReturnRefererMixin, UpdateView):
     """
     pk_url_kwarg = "item_id"
     model = Item
-    form_class = ItemUpdateForm
+    form_class = ItemDetailForm
     template_name = "items/item_form.html"
 
     def get_form_class(self):
