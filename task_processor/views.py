@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Case, Count, IntegerField, Value, When
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -154,6 +154,10 @@ class DashboardView(ListView):
     Dashboard view with real-time statistics and insights.
     """
     def get_queryset(self):
+        from django.db import models as django_models
+        from django.db.models.functions import Cast
+
+        today = timezone.now().date()
         items = Item.objects.for_user(self.request.user).select_related('area').prefetch_related('contexts').prefetch_related('tags').prefetch_related('parent').annotate(
         status_order=Case(
             When(status__in=[GTDStatus.COMPLETED.value, GTDStatus.COMPLETED.value], then=Value(-5)),
@@ -165,8 +169,31 @@ class DashboardView(ListView):
             When(parent__pk__isnull=True, then=Value(1)),
             default=Value(0),
             output_field=IntegerField(),
-        )
-    ).order_by('-parent_order', '-status_order', '-created_at')
+        ),
+        can_start=Case(
+            When(Q(start_date=None) | Q(start_date__lte=timezone.now()), then=Value(-5)),
+                 default=Value(-10),
+                 output_field=IntegerField()
+         ),
+        due_date_boost=Case(
+            # Overdue items (negative days) get maximum boost
+            When(due_date__lt=today, then=Value(1000)),
+            # Due today gets very high boost
+            When(due_date=today, then=Value(100)),
+            # Due tomorrow
+            When(due_date=Cast(Value(today) + timedelta(days=1), output_field=django_models.DateField()), then=Value(50)),
+            # Due in 2 days
+            When(due_date=Cast(Value(today) + timedelta(days=2), output_field=django_models.DateField()), then=Value(25)),
+            # Due in 3 days
+            When(due_date=Cast(Value(today) + timedelta(days=3), output_field=django_models.DateField()), then=Value(12)),
+            # Due in 4-7 days
+            When(Q(due_date__gte=Cast(Value(today) + timedelta(days=4), output_field=django_models.DateField())) &
+                 Q(due_date__lte=Cast(Value(today) + timedelta(days=7), output_field=django_models.DateField())), then=Value(5)),
+            # No due date or far future
+            default=Value(0),
+            output_field=IntegerField(),
+        ),
+    ).order_by('-parent_order', '-status_order', '-due_date_boost', '-can_start', '-priority', '-created_at')
 
         from .search import apply_search
         return apply_search(items, self.get_search_query())
