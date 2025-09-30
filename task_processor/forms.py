@@ -1,5 +1,4 @@
 import json
-from datetime import timedelta
 
 from dateutil.rrule import rrulestr
 from django import forms
@@ -31,80 +30,6 @@ class CustomDateTimeInput(AirDatepickerMixin, forms.DateInput):
 
     def __init__(self, *args, **kwargs):
         super().__init__(format=settings.DATETIME_INPUT_FORMAT, *args, **kwargs)
-
-
-class NativeDurationWidget(forms.MultiWidget):
-    def __init__(self, attrs=None):
-        hours_attrs = {'placeholder': 'Hours', 'min': '0', 'max': '999', 'step': '1'}
-        minutes_attrs = {'placeholder': 'Minutes', 'min': '0', 'max': '59', 'step': '1'}
-
-        if attrs:
-            hours_attrs.update(attrs)
-            minutes_attrs.update(attrs)
-
-        widgets = [
-            forms.NumberInput(attrs=hours_attrs),
-            forms.NumberInput(attrs=minutes_attrs),
-        ]
-        super().__init__(widgets, attrs)
-
-    def decompress(self, value):
-        if value:
-            if isinstance(value, timedelta):
-                total_seconds = int(value.total_seconds())
-                hours = total_seconds // 3600
-                minutes = (total_seconds % 3600) // 60
-                return [hours, minutes]
-            elif isinstance(value, str):
-                try:
-                    # Try to parse HH:MM format
-                    parts = value.split(':')
-                    if len(parts) >= 2:
-                        return [int(parts[0]), int(parts[1])]
-                except (ValueError, IndexError):
-                    pass
-        return [None, None]
-
-    def format_output(self, rendered_widgets):
-        return '<div class="flex items-center space-x-2">{} <span class="text-sm text-gray-500">h</span> {} <span class="text-sm text-gray-500">min</span></div>'.format(
-            rendered_widgets[0], rendered_widgets[1]
-        )
-
-    def value_from_datadict(self, data, files, name):
-        hours = data.get(f'{name}_0', '')
-        minutes = data.get(f'{name}_1', '')
-
-        if hours == '' and minutes == '':
-            return None
-
-        try:
-            hours = int(hours) if hours else 0
-            minutes = int(minutes) if minutes else 0
-            return timedelta(hours=hours, minutes=minutes)
-        except (ValueError, TypeError):
-            return None
-
-
-class NativeDurationInput(forms.Field):
-    widget = NativeDurationWidget
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def to_python(self, value):
-        if value in self.empty_values:
-            return None
-        if isinstance(value, timedelta):
-            return value
-        return value
-
-    def validate(self, value):
-        super().validate(value)
-        if value and isinstance(value, timedelta):
-            if value.total_seconds() < 0:
-                raise ValidationError("Duration cannot be negative.")
-            if value.total_seconds() > 24 * 3600 * 999:  # Max 999 days
-                raise ValidationError("Duration is too large.")
 
 
 class RecurrenceField(forms.CharField):
@@ -175,9 +100,7 @@ class WaitingForForm(forms.Form):
     )
 
 
-
-
-class ItemUpdateForm(forms.ModelForm):
+class ItemForm(forms.ModelForm):
     estimated_duration = forms.ChoiceField(
         choices=[("", "Not specified")] + GTDDuration.choices,
         required=False,
@@ -407,19 +330,3 @@ class ItemUpdateForm(forms.ModelForm):
             else:
                 item.contexts.clear()
         return item
-
-class ItemCreateForm(ItemUpdateForm):
-    def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
-        super().__init__(item_flow, user, *args, **kwargs)
-        self.fields['title'].required = True
-
-    def save(self, commit=True):
-        item = super().save(commit=False)
-        if commit:
-            item.save()
-
-class ItemDetailForm(ItemUpdateForm):
-    pass
-
-class ItemUpdateProjectForm(ItemUpdateForm):
-    pass

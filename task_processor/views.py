@@ -23,7 +23,7 @@ from django.views.generic import (
 from factory.django import get_model
 
 from .constants import GTDConfig, GTDStatus
-from .forms import ItemCreateForm, ItemDetailForm, ItemUpdateForm, ItemUpdateProjectForm
+from .forms import ItemForm
 from .models import Area, Context, Item, Tag
 from .search import FilterCategory
 
@@ -375,7 +375,7 @@ class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
     model = Item
     pk_url_kwarg = "item_id"
     template_name = "partials/item_detail_modal.html"
-    form_class = ItemUpdateForm
+    form_class = ItemForm
     context_object_name = "item"
 
     def get_form_kwargs(self):
@@ -403,7 +403,7 @@ class ItemCreateView(ReturnRefererMixin, CreateView):
     View for creating new GTD items.
     """
     model = Item
-    form_class = ItemCreateForm
+    form_class = ItemForm
     template_name = "items/item_form.html"
 
     def get_form_kwargs(self):
@@ -444,12 +444,10 @@ class ItemUpdateView(ReturnRefererMixin, UpdateView):
     """
     pk_url_kwarg = "item_id"
     model = Item
-    form_class = ItemDetailForm
+    form_class = ItemForm
     template_name = "items/item_form.html"
 
     def get_form_class(self):
-        if self.object and self.object.is_project:
-            return ItemUpdateProjectForm
         return self.form_class
 
     def get_form_kwargs(self):
