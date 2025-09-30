@@ -22,9 +22,10 @@ class FilterStrategy(Enum):
     NORMAL = "normal"          # Additive filters (can combine multiple)
     EXCLUSIVE = "exclusive"    # Only one filter of this type can be active
     INVERT = "invert"    # Only one filter of this type can be active
+    REPLACE = "replace"    # Single filter, will remove other
 
 FILTER_STRATEGY_MAP = {
-    FilterCategory.STATUS: FilterStrategy.EXCLUSIVE,
+    FilterCategory.STATUS: FilterStrategy.REPLACE,
     FilterCategory.PRIORITY: FilterStrategy.EXCLUSIVE,
     FilterCategory.DUE: FilterStrategy.EXCLUSIVE,
     FilterCategory.ENERGY: FilterStrategy.EXCLUSIVE,
@@ -515,6 +516,14 @@ class SearchParser:
         if strategy == FilterStrategy.EXCLUSIVE:
             self._apply_exclusive_filter_strategy(tokens, field, value, is_active)
         elif strategy == FilterStrategy.INVERT:
+            self._apply_invert_filter_strategy(tokens, field, value, is_active, is_inversed)
+        elif strategy == FilterStrategy.REPLACE:
+            if is_inversed:
+                tokens.included = {}
+                tokens.excluded = {field: [value]}
+            else:
+                tokens.included = {field: [value]}
+                tokens.excluded = {}
             self._apply_invert_filter_strategy(tokens, field, value, is_active, is_inversed)
         else:
             self._apply_normal_filter_strategy(tokens, field, value, is_active, is_inversed)
