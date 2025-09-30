@@ -161,7 +161,7 @@ class DashboardView(ListView):
         items = Item.objects.for_user(self.request.user).select_related('area').prefetch_related('contexts').prefetch_related('tags').prefetch_related('parent').annotate(
         status_order=Case(
             When(status__in=[GTDStatus.COMPLETED.value, GTDStatus.COMPLETED.value], then=Value(-5)),
-            When(status__in=[GTDStatus.CANCELLED], then=Value(-10)),
+            When(status__in=[GTDStatus.CANCELLED.value], then=Value(-10)),
             default=Value(0),
             output_field=IntegerField(),
         ),
