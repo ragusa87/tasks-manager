@@ -1,13 +1,13 @@
 ### TODOS
 - Tests & Pipeline
-- Use select2 for forms autocompletion
 - Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)
 - Bach actions support: `tag<->area` conversion, `+tag`, `-tag`, `+area`, `-area` etc
 - New transition: Convert whole project to references
 - Email inbox via https://maileroo.com/docs/inbound-routing/
-- Add Hierarchy in view
-- Check:Rrule reminder should use "after" in order to have the next occurrences in the
-future.
+- Add custom *rrule* JS picker.
+- New views/action: `create a new project` , `delete an area`, `delete a tag` 
+- DateTime picker could respect the user's locale.
+
 ### Linting and Formatting
 
 ```bash
