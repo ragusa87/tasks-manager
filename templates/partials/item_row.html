@@ -60,7 +60,7 @@
                         {% endif %}
 
                         {% if item.area %}
-                        <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter="area:{{ item.area.pk }}">
+                        <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter='area:"{{ item.area.name }}"'>
                             {% sprite "lucide-target" 12 class="mr-1" %}
                             {{ item.area.name }}
                         </span>
