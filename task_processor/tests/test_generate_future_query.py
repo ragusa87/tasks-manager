@@ -1,6 +1,11 @@
 from django.test import TestCase
 
-from task_processor.search import FilterCategory, FilterOption, SearchParser
+from task_processor.search import (
+    FilterCategory,
+    FilterOption,
+    FilterStrategy,
+    SearchParser,
+)
 
 
 class TestGenerateFutureQuery(TestCase):
@@ -39,7 +44,10 @@ class TestGenerateFutureQuery(TestCase):
         current_state = {"active": True, "inversed": False}
 
         result = self.parser.generate_future_query(
-            current_query, target_filter, current_state
+            current_query,
+            target_filter,
+            current_state,
+            strategy=FilterStrategy.EXCLUSIVE,
         )
         self.assertEqual(result, "")
 
@@ -262,7 +270,10 @@ class TestGenerateFutureQuery(TestCase):
         current_state = {"active": False, "inversed": False}
 
         result = self.parser.generate_future_query(
-            current_query, target_filter, current_state
+            current_query,
+            target_filter,
+            current_state,
+            strategy=FilterStrategy.EXCLUSIVE,
         )
         # Should replace in:inbox with in:next, keep others
         self.assertEqual(
@@ -353,3 +364,75 @@ class TestGenerateFutureQuery(TestCase):
             current_query, target_filter, current_state
         )
         self.assertEqual(result, 'context:"@home","@office"')
+
+    def test_replace_filter_strategy_inactive_to_active(self):
+        """Test REPLACE strategy: activating filter replaces all others"""
+        current_query = "priority:high has:project area:Work"
+        target_filter = FilterOption(
+            label="Inbox",
+            filter_query="in:inbox",
+            icon="lucide-inbox",
+            color="blue",
+            category=FilterCategory.STATUS,
+        )
+        current_state = {"active": False, "inversed": False}
+
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state, strategy=FilterStrategy.REPLACE
+        )
+        # REPLACE strategy should clear all other filters and only keep this one
+        self.assertEqual(result, "in:inbox")
+
+    def test_replace_filter_strategy_active_to_inverted(self):
+        """Test REPLACE strategy: toggling active filter inverts it"""
+        current_query = "in:inbox"
+        target_filter = FilterOption(
+            label="Inbox",
+            filter_query="in:inbox",
+            icon="lucide-inbox",
+            color="blue",
+            category=FilterCategory.STATUS,
+        )
+        current_state = {"active": True, "inversed": False}
+
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state, strategy=FilterStrategy.REPLACE
+        )
+        # REPLACE strategy with invert behavior: active -> inverted
+        self.assertEqual(result, "-in:inbox")
+
+    def test_replace_filter_strategy_inverted_to_inactive(self):
+        """Test REPLACE strategy: toggling inverted filter removes it"""
+        current_query = "-in:inbox"
+        target_filter = FilterOption(
+            label="Inbox",
+            filter_query="in:inbox",
+            icon="lucide-inbox",
+            color="blue",
+            category=FilterCategory.STATUS,
+        )
+        current_state = {"active": True, "inversed": True}
+
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state, strategy=FilterStrategy.REPLACE
+        )
+        # REPLACE strategy with invert behavior: inverted -> removed
+        self.assertEqual(result, "")
+
+    def test_replace_filter_strategy_preserves_free_text(self):
+        """Test REPLACE strategy: free text is preserved when replacing filters"""
+        current_query = "in:inbox priority:high search terms"
+        target_filter = FilterOption(
+            label="Next Actions",
+            filter_query="in:next",
+            icon="lucide-zap",
+            color="blue",
+            category=FilterCategory.STATUS,
+        )
+        current_state = {"active": False, "inversed": False}
+
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state, strategy=FilterStrategy.REPLACE
+        )
+        # REPLACE strategy replaces all filters but keeps free text
+        self.assertEqual(result, "in:next search terms")

@@ -246,7 +246,7 @@ class TestSearchFilter(TestCase):
         work_filter = next(f for f in area_filters if f.label == "Work")
         self.assertEqual(work_filter.filter_query, 'area:"Work"')
         self.assertEqual(work_filter.color, "green")
-        self.assertEqual(work_filter.icon, "at-sign")
+        self.assertEqual(work_filter.icon, "lucide-at-sign")
 
     def test_context_filters_generation(self):
         """Test that context filters are generated correctly"""
@@ -264,7 +264,7 @@ class TestSearchFilter(TestCase):
         office_filter = next(f for f in context_filters if f.label == "office")
         self.assertEqual(office_filter.filter_query, 'context:"office"')
         self.assertEqual(office_filter.color, "purple")
-        self.assertEqual(office_filter.icon, "lucide-at-sign")
+        self.assertEqual(office_filter.icon, "lucide-hash")
 
     def test_project_filters_generation(self):
         """Test that project filters are generated correctly"""
@@ -384,8 +384,8 @@ class TestFilterStrategy(TestCase):
         self.assertEqual(FilterStrategy.INVERT.value, "invert")
 
     def test_exclusive_strategy(self):
-        """Test exclusive filter strategy behavior"""
-        # Create a status filter (exclusive strategy)
+        """Test EXCLUSIVE filter strategy behavior"""
+        # Create a status filter
         status_filter = FilterOption(
             label="Inbox",
             filter_query="in:inbox",
@@ -394,15 +394,18 @@ class TestFilterStrategy(TestCase):
             category=FilterCategory.STATUS,
         )
 
-        # Test that toggling an active exclusive filter removes it
+        # Test that toggling an active EXCLUSIVE filter removes it
         current_query = "in:inbox"
         current_state = {"active": True, "inversed": False}
 
         next_query = self.parser.generate_future_query(
-            current_query, status_filter, current_state
+            current_query,
+            status_filter,
+            current_state,
+            strategy=FilterStrategy.EXCLUSIVE,
         )
 
-        # Should remove the filter (empty or just remaining text)
+        # EXCLUSIVE strategy removes the filter when active
         self.assertEqual(next_query.strip(), "")
 
     def test_normal_strategy(self):

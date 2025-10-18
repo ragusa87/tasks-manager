@@ -20,10 +20,30 @@ class FilterCategory(TextChoices):
 
 
 class FilterStrategy(Enum):
-    NORMAL = "normal"  # Additive filters (can combine multiple)
-    EXCLUSIVE = "exclusive"  # Only one filter of this type can be active
-    INVERT = "invert"  # Only one filter of this type can be active
-    REPLACE = "replace"  # Single filter, will remove other
+    """
+    Defines how filters behave when toggled in the search interface.
+
+    NORMAL: Additive strategy - filters can be combined.
+            Toggling: inactive -> active -> inactive
+            Example: has:project, has:context can both be active
+
+    EXCLUSIVE: Mutually exclusive - only one filter of the same field can be active.
+               Toggling: inactive -> active (replaces others) -> inactive
+               Example: priority:high replaces priority:low
+
+    INVERT: Three-state cycle with negation support.
+            Toggling: inactive -> active (included) -> inverted (excluded) -> inactive
+            Example: area:Work -> -area:Work -> removed
+
+    REPLACE: Replaces ALL filters (not just same field).
+             Toggling: inactive -> active (clears all) -> inverted -> inactive
+             Example: in:inbox clears priority:high, has:project, etc.
+    """
+
+    NORMAL = "normal"
+    EXCLUSIVE = "exclusive"
+    INVERT = "invert"
+    REPLACE = "replace"
 
 
 FILTER_STRATEGY_MAP = {
@@ -669,7 +689,11 @@ class SearchParser:
         return " ".join(parts)
 
     def generate_future_query(
-        self, current_query: str, target_filter: FilterOption, current_state: Dict
+        self,
+        current_query: str,
+        target_filter: FilterOption,
+        current_state: Dict,
+        strategy: FilterStrategy = None,
     ) -> str:
         """
         Generate the query that would result from toggling a specific filter.
@@ -678,6 +702,7 @@ class SearchParser:
             current_query: The current search query string
             target_filter: The FilterOption being toggled
             current_state: {"active": bool, "inversed": bool}
+            strategy: Optional FilterStrategy to use. If None, uses FILTER_STRATEGY_MAP based on category.
 
         Returns:
             The modified query string with the filter toggled
@@ -694,10 +719,11 @@ class SearchParser:
         is_active = current_state.get("active", False)
         is_inversed = current_state.get("inversed", False)
 
-        # Determine strategy based on category
-        strategy = FILTER_STRATEGY_MAP.get(
-            target_filter.category, FilterStrategy.NORMAL
-        )
+        # Determine strategy: use provided strategy or look up from category
+        if strategy is None:
+            strategy = FILTER_STRATEGY_MAP.get(
+                target_filter.category, FilterStrategy.NORMAL
+            )
 
         if strategy == FilterStrategy.EXCLUSIVE:
             self._apply_exclusive_filter_strategy(tokens, field, value, is_active)
