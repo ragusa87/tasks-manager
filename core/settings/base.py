@@ -229,3 +229,15 @@ EMAIL_USE_SSL = email_config["EMAIL_USE_SSL"]
 FRONTEND_URL= get_env_variable("FRONTEND_URL", "https://tasks.docker.test")
 
 SHOW_DJANGO_DEBUG_TOOLBAR = False
+
+
+
+CUSTOM_AUTHENTICATION_BACKEND = str(
+    os.environ.get("CUSTOM_AUTHENTICATION_BACKEND", "")
+).strip()
+
+if CUSTOM_AUTHENTICATION_BACKEND == "authcrunch":
+    AUTHENTICATION_BACKENDS = [
+        "core.auth.remote_user_backend.AuthcrunchRemoteUserBackend"
+    ]
+    MIDDLEWARE += ["core.auth.remote_user_backend.AuthcrunchRemoteUserMiddleware"]

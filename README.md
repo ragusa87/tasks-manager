@@ -36,9 +36,28 @@ Requirements:
 - justfile (optional)
 
 #### Initialize the project 
+
+Just run:
+```
+docker compose up -d
+```
+
+You need to wait for the container to be ready before accessing the web interface.
+You can check the logs using: `docker compose logs -f web`
+
+#### Production setup
+
+For production, you need to generate the config files first:
+
 ```bash
 ./bin/init.sh
 ```
 The command above will create a docker-compose.override.yaml file for you (based on docker-compose.override.example.yaml).
 
-WARNING: If you re-run the command again, all existing data in your database will be lost!
+WARNING: If you re-run the command again, all existing data in your database will be lost (we recreate the database volume).
+
+##### Reverse proxy Authentication
+You can configure django to use the reverse proxy for authentication.
+* Set `CUSTOM_AUTHENTICATION_BACKEND=authcrunch` in your docker-compose.override.yaml file and restart your containers.
+* Configure your reverse proxy to set the `X-Token-User-Name` and `X-Token-User-Roles` so that django can identify the user.
+* You need a role "authp/admin" to be super-admin.

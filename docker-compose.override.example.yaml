@@ -16,6 +16,7 @@ services:
       - DB_PASSWORD=your-secure-database-password-here
       - ALLOWED_HOSTS=tasks.example.com
       - IS_DEMO=False
+      # - CUSTOM_AUTHENTICATION_BACKEND=authcrunch
     ports:
       - "8000:8000"
     labels:
