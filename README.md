@@ -4,7 +4,6 @@ This is a pet projet, goal is to do some code-flow with IA.
 I don't intent to maintain this project in the long term.
 
 ### TODOS
-- Tests & Pipeline
 - Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)
 - Bach actions support: `tag<->area` conversion, `+tag`, `-tag`, `+area`, `-area` etc
 - New transition: Convert whole project to references
