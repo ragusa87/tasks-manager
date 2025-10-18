@@ -3,10 +3,7 @@ Production settings for core project.
 """
 
 from .base import * # noqa
-# Sentry for error tracking
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
+
 import os
 DEBUG = False
 
@@ -36,6 +33,10 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 
 if os.getenv("SENTRY_DSN"):
+    # Sentry for error tracking
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
     sentry_sdk.init(
         dsn=os.getenv("SENTRY_DSN"),
         integrations=[

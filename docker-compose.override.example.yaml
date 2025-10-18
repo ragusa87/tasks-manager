@@ -16,6 +16,7 @@ services:
       - DB_PASSWORD=your-secure-database-password-here
       - ALLOWED_HOSTS=tasks.example.com
       - IS_DEMO=False
+      - DJANGO_SETTINGS_MODULE=core.settings.production
       # - CUSTOM_AUTHENTICATION_BACKEND=authcrunch
     ports:
       - "8000:8000"
@@ -29,6 +30,7 @@ services:
     environment:
       - SECRET_KEY=your-custom-secret-key-here-min-50-chars-random-string
       - DB_PASSWORD=your-secure-database-password-here
+      - DJANGO_SETTINGS_MODULE=core.settings.production
       - DEBUG=False
   celery-beat:
     build:
@@ -38,6 +40,7 @@ services:
     environment:
       - SECRET_KEY=your-custom-secret-key-here-min-50-chars-random-string
       - DB_PASSWORD=your-secure-database-password-here
+      - DJANGO_SETTINGS_MODULE=core.settings.production
       - DEBUG=False
   celery-admin:
     build:
