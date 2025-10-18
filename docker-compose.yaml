@@ -28,8 +28,7 @@ x-django-service: &django-service
     - REDIS_CHANNEL_URL=redis://redis:6379/1
     - CELERY_RESULT_BACKEND=redis://redis:6379/0
     - CACHE_URL=redis://redis:6379/1
-    - ALLOWED_HOSTS=tasks.docker.test celeri-admin.docker.test docling.docker.test
-    - REMOTE_FILE_SHARE=smb://smbuser:smbpassword@remoteshare/samba
+    - ALLOWED_HOSTS=tasks.docker.test celeri-admin.docker.test
     - EMAIL_URL=smtp://mailpit:1025
   volumes: &django-volumes
     - .:/app
@@ -88,11 +87,6 @@ services:
       - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
       - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
     command: sh -c 'while true; do ./manage.py runserver 0.0.0.0:8000; sleep 1; done'
-    #command: >
-      # sh -c "uv run python manage.py migrate &&
-      #       uv run python manage.py collectstatic --noinput &&
-      #       env WATCHFILES_FORCE_POLLING="on" uv run uvicorn core.asgi:application --host 0.0.0.0 --port 8000 --lifespan off --reload --reload-include="*.py" --reload-include="*.html" --reload-include=".env""
-
   celery:
     <<: *django-service
     # command: uv run celery -A task_processor worker -l info

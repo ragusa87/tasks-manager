@@ -56,6 +56,9 @@ celerybeat.pid
 .python-version
 
 # Docker
-docker-compose.override.yml
+docker-compose.override.yaml
+docker-compose.override.yaml.backup
 .docker/
+
+# Dumps and exports
 Nirvana_Export_*.json

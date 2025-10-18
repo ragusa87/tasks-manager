@@ -186,9 +186,6 @@ LOGGING = {
 
 ALLOWED_TYPES = ["application/pdf"]
 
-# Remote file system configuration
-REMOTE_FILE_SHARE = os.getenv("REMOTE_FILE_SHARE", "")
-
 
 # Django Channels configuration
 CHANNEL_LAYERS = {

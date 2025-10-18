@@ -26,3 +26,19 @@ uv run ruff format .
 - **Development**: `core.settings.development`
 - **Testing**: `core.settings.test` (auto-selected when running tests)
 - **Production**: `core.settings.production`
+
+
+### Setup
+
+Requirements:
+- docker & docker-compose
+- traefik (optional, only if you want to use it as reverse-proxy)
+- justfile (optional)
+
+#### Initialize the project 
+```bash
+./bin/init.sh
+```
+The command above will create a docker-compose.override.yaml file for you (based on docker-compose.override.example.yaml).
+
+WARNING: If you re-run the command again, all existing data in your database will be lost!
