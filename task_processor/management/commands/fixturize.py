@@ -2,6 +2,7 @@ import random
 from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.core import management
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
 from django.utils import timezone
@@ -39,10 +40,18 @@ class Command(BaseCommand):
             help="Clear existing data before generating new data",
         )
 
+    def run_migrations(self):
+        self.stdout.write("Running migrations... ")
+        from io import StringIO
+
+        management.call_command("migrate", "--noinput", stdout=StringIO())
+
     def handle(self, *args, **options):
         if options["clear"]:
             self.stdout.write("Clearing existing data...")
             self.clear_data()
+
+        self.run_migrations()
 
         self.stdout.write("Generating sample data...")
 
@@ -71,14 +80,20 @@ class Command(BaseCommand):
             cursor.execute(f"ALTER SEQUENCE {seq} RESTART WITH {next_val}")
 
     def clear_data(self):
-        """Clear existing GTD data"""
-        for model in [Item, Review, Context, Area, Tag]:
-            model.objects.all().delete()
-            self.reset_sequence(model)
-        # Users: keep
-        # Don't delete superusers
-        User.objects.filter(is_superuser=False).delete()
-        self.reset_sequence(User)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+            )
+            all_tables = [row[0] for row in cursor.fetchall()]
+
+            # Exclude system tables
+            tables_to_drop = [
+                t
+                for t in all_tables
+                if t not in {"spatial_ref_sys"} and not t.startswith("temp_")
+            ]
+            for table in tables_to_drop:
+                cursor.execute(f'DROP TABLE "{table}" CASCADE')
 
     def create_users(self, count):
         """Create sample users"""
@@ -476,30 +491,34 @@ class Command(BaseCommand):
         # Create some past reviews
         for i in range(4):  # Last 4 weeks
             review_date = timezone.now().date() - timedelta(weeks=i + 1)
-            Review.objects.create(
+            Review.objects.get_or_create(
+                user=user,
                 review_type=ReviewType.WEEKLY,
                 review_date=review_date,
-                user=user,
-                notes=f"Weekly review - Week {i + 1}",
-                inbox_items_processed=random.randint(5, 15),
-                projects_reviewed=random.randint(2, 8),
-                next_actions_identified=random.randint(3, 12),
-                someday_maybe_reviewed=random.randint(1, 5),
-                waiting_for_followed_up=random.randint(0, 3),
+                defaults=dict(
+                    notes=f"Weekly review - Week {i + 1}",
+                    inbox_items_processed=random.randint(5, 15),
+                    projects_reviewed=random.randint(2, 8),
+                    next_actions_identified=random.randint(3, 12),
+                    someday_maybe_reviewed=random.randint(1, 5),
+                    waiting_for_followed_up=random.randint(0, 3),
+                ),
             )
 
         # Create a monthly review
         review_date = timezone.now().date() - timedelta(days=30)
-        Review.objects.create(
+        Review.objects.get_or_create(
+            user=user,
             review_type=ReviewType.MONTHLY,
             review_date=review_date,
-            user=user,
-            notes="Monthly review - Comprehensive system review",
-            inbox_items_processed=random.randint(20, 40),
-            projects_reviewed=random.randint(8, 15),
-            next_actions_identified=random.randint(15, 30),
-            someday_maybe_reviewed=random.randint(5, 15),
-            waiting_for_followed_up=random.randint(2, 8),
+            defaults=dict(
+                notes="Monthly review - Comprehensive system review",
+                inbox_items_processed=random.randint(20, 40),
+                projects_reviewed=random.randint(8, 15),
+                next_actions_identified=random.randint(15, 30),
+                someday_maybe_reviewed=random.randint(5, 15),
+                waiting_for_followed_up=random.randint(2, 8),
+            ),
         )
 
     def random_future_date(self, days=30):

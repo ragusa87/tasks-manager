@@ -146,3 +146,7 @@ jobs:
           files: ./coverage.xml
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Run fixturize
+        run: |
+          uv run python manage.py fixturize --clear
