@@ -14,16 +14,15 @@ from .models.review import ItemStateLog, Review
 # Make sure Django can find all models
 __all__ = [
     # Constants and Enums
-    'GTDStatus',
-    'Priority',
-    'ReviewType',
-    'GTDConfig',
-
+    "GTDStatus",
+    "Priority",
+    "ReviewType",
+    "GTDConfig",
     # Models
-    'Context',
-    'Area',
-    'Tag',
-    'Item',
-    'Review',
-    'ItemStateLog',
+    "Context",
+    "Area",
+    "Tag",
+    "Item",
+    "Review",
+    "ItemStateLog",
 ]

@@ -25,7 +25,7 @@ class TestFilterOption(TestCase):
             category=FilterCategory.STATUS,
             active=False,
             inversed=False,
-            next_query=""
+            next_query="",
         )
 
     def test_filter_option_creation(self):
@@ -81,7 +81,7 @@ class TestFilterOption(TestCase):
             category=FilterCategory.STATUS,
             active=True,
             inversed=False,
-            next_query=""
+            next_query="",
         )
         classes = active_filter.current_classes
         self.assertEqual(classes, active_filter.active_classes)
@@ -96,7 +96,7 @@ class TestFilterOption(TestCase):
             category=FilterCategory.STATUS,
             active=True,
             inversed=True,
-            next_query=""
+            next_query="",
         )
         classes = inversed_filter.current_classes
         self.assertEqual(classes, inversed_filter.inversed_classes)
@@ -105,11 +105,11 @@ class TestFilterOption(TestCase):
         """Test that different colors produce different CSS classes"""
         # Test a few specific color mappings that we know exist
         color_mappings = {
-            'blue': 'blue',
-            'green': 'emerald',  # green maps to emerald in the implementation
-            'red': 'red',
-            'yellow': 'amber',  # yellow maps to amber
-            'purple': 'violet',  # purple maps to violet
+            "blue": "blue",
+            "green": "emerald",  # green maps to emerald in the implementation
+            "red": "red",
+            "yellow": "amber",  # yellow maps to amber
+            "purple": "violet",  # purple maps to violet
         }
 
         for color, expected_class in color_mappings.items():
@@ -118,7 +118,7 @@ class TestFilterOption(TestCase):
                 filter_query="test:value",
                 icon="lucide-test",
                 color=color,
-                category=FilterCategory.STATUS
+                category=FilterCategory.STATUS,
             )
 
             inactive_classes = filter_option.inactive_classes
@@ -134,32 +134,30 @@ class TestSearchFilter(TestCase):
     """Test the SearchFilter class"""
 
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', email='test@example.com')
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com"
+        )
 
         # Create test areas and contexts
-        self.work_area = Area.objects.create(name='Work', user=self.user)
-        self.personal_area = Area.objects.create(name='Personal', user=self.user)
+        self.work_area = Area.objects.create(name="Work", user=self.user)
+        self.personal_area = Area.objects.create(name="Personal", user=self.user)
 
-        self.office_context = Context.objects.create(name='office', user=self.user)
-        self.home_context = Context.objects.create(name='home', user=self.user)
+        self.office_context = Context.objects.create(name="office", user=self.user)
+        self.home_context = Context.objects.create(name="home", user=self.user)
 
         # Create test projects
         self.project1 = Item.objects.create(
-            title="Website redesign",
-            status=GTDStatus.PROJECT,
-            user=self.user
+            title="Website redesign", status=GTDStatus.PROJECT, user=self.user
         )
         self.project2 = Item.objects.create(
-            title="Mobile app",
-            status=GTDStatus.PROJECT,
-            user=self.user
+            title="Mobile app", status=GTDStatus.PROJECT, user=self.user
         )
 
         self.search_filter = SearchFilter(
             user=self.user,
             areas=[self.work_area, self.personal_area],
             contexts=[self.office_context, self.home_context],
-            projects=[self.project1, self.project2]
+            projects=[self.project1, self.project2],
         )
 
     def test_search_filter_initialization(self):
@@ -197,7 +195,9 @@ class TestSearchFilter(TestCase):
 
     def test_get_filters_by_category(self):
         """Test filtering by category"""
-        status_filters = self.search_filter.get_filters_by_category(FilterCategory.STATUS)
+        status_filters = self.search_filter.get_filters_by_category(
+            FilterCategory.STATUS
+        )
 
         # Should have status filters
         self.assertTrue(len(status_filters) > 0)
@@ -208,7 +208,14 @@ class TestSearchFilter(TestCase):
 
         # Should include expected status filters
         status_labels = [f.label for f in status_filters]
-        expected_statuses = ["Inbox", "Next Actions", "Projects", "Waiting For", "Someday", "Reference"]
+        expected_statuses = [
+            "Inbox",
+            "Next Actions",
+            "Projects",
+            "Waiting For",
+            "Someday",
+            "Reference",
+        ]
 
         for status in expected_statuses:
             self.assertIn(status, status_labels)
@@ -243,7 +250,9 @@ class TestSearchFilter(TestCase):
 
     def test_context_filters_generation(self):
         """Test that context filters are generated correctly"""
-        context_filters = self.search_filter.get_filters_by_category(FilterCategory.CONTEXT)
+        context_filters = self.search_filter.get_filters_by_category(
+            FilterCategory.CONTEXT
+        )
 
         self.assertEqual(len(context_filters), 2)
 
@@ -259,7 +268,9 @@ class TestSearchFilter(TestCase):
 
     def test_project_filters_generation(self):
         """Test that project filters are generated correctly"""
-        project_filters = self.search_filter.get_filters_by_category(FilterCategory.PROJECT)
+        project_filters = self.search_filter.get_filters_by_category(
+            FilterCategory.PROJECT
+        )
 
         self.assertEqual(len(project_filters), 2)
 
@@ -268,8 +279,10 @@ class TestSearchFilter(TestCase):
         self.assertIn("Mobile app", project_titles)
 
         # Check filter queries use project IDs
-        website_filter = next(f for f in project_filters if f.label == "Website redesign")
-        self.assertEqual(website_filter.filter_query, f'project:{self.project1.pk}')
+        website_filter = next(
+            f for f in project_filters if f.label == "Website redesign"
+        )
+        self.assertEqual(website_filter.filter_query, f"project:{self.project1.pk}")
         self.assertEqual(website_filter.color, "purple")
         self.assertEqual(website_filter.icon, "lucide-briefcase")
 
@@ -287,7 +300,9 @@ class TestSearchFilter(TestCase):
 
         # Find the inbox filter and check it's active
         status_filters = filters_by_category["status"]
-        inbox_filter = next((f for f in status_filters if f.filter_query == "in:inbox"), None)
+        inbox_filter = next(
+            (f for f in status_filters if f.filter_query == "in:inbox"), None
+        )
         self.assertIsNotNone(inbox_filter)
 
         # Check if the filter matching logic works
@@ -296,7 +311,9 @@ class TestSearchFilter(TestCase):
         simple_query = "in:inbox"
         simple_filters = self.search_filter.get_filters_with_state(simple_query)
         simple_status_filters = simple_filters["status"]
-        simple_inbox_filter = next((f for f in simple_status_filters if f.filter_query == "in:inbox"), None)
+        simple_inbox_filter = next(
+            (f for f in simple_status_filters if f.filter_query == "in:inbox"), None
+        )
 
         # For now, just check that the filter exists and has the right structure
         self.assertIsNotNone(simple_inbox_filter)
@@ -342,7 +359,7 @@ class TestSearchTokens(TestCase):
             original_query="in:inbox -priority:low test",
             included={"in": ["inbox"]},
             excluded={"priority": ["low"]},
-            query="test"
+            query="test",
         )
 
         self.assertEqual(tokens.original_query, "in:inbox -priority:low test")
@@ -355,7 +372,9 @@ class TestFilterStrategy(TestCase):
     """Test filter strategy functionality"""
 
     def setUp(self):
-        self.user = User.objects.create_user(username='testuser', email='test@example.com')
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com"
+        )
         self.parser = SearchParser()
 
     def test_filter_strategy_enum(self):
@@ -372,14 +391,16 @@ class TestFilterStrategy(TestCase):
             filter_query="in:inbox",
             icon="lucide-inbox",
             color="blue",
-            category=FilterCategory.STATUS
+            category=FilterCategory.STATUS,
         )
 
         # Test that toggling an active exclusive filter removes it
         current_query = "in:inbox"
         current_state = {"active": True, "inversed": False}
 
-        next_query = self.parser.generate_future_query(current_query, status_filter, current_state)
+        next_query = self.parser.generate_future_query(
+            current_query, status_filter, current_state
+        )
 
         # Should remove the filter (empty or just remaining text)
         self.assertEqual(next_query.strip(), "")
@@ -392,14 +413,16 @@ class TestFilterStrategy(TestCase):
             filter_query="has:project",
             icon="lucide-folder",
             color="blue",
-            category=FilterCategory.RELATIONSHIP
+            category=FilterCategory.RELATIONSHIP,
         )
 
         # Test adding a normal filter
         current_query = ""
         current_state = {"active": False, "inversed": False}
 
-        next_query = self.parser.generate_future_query(current_query, relationship_filter, current_state)
+        next_query = self.parser.generate_future_query(
+            current_query, relationship_filter, current_state
+        )
 
         # Should add the filter
         self.assertIn("has:project", next_query)
@@ -412,7 +435,7 @@ class TestFilterStrategy(TestCase):
             filter_query='area:"Work"',
             icon="at-sign",
             color="green",
-            category=FilterCategory.AREA
+            category=FilterCategory.AREA,
         )
 
         # Test the three-state cycle: inactive -> active -> inverted -> inactive
@@ -421,15 +444,21 @@ class TestFilterStrategy(TestCase):
         current_state = {"active": False, "inversed": False}
         next_query = self.parser.generate_future_query("", area_filter, current_state)
         # The parser normalizes values and may remove quotes if not needed
-        self.assertTrue('area:work' in next_query.lower() or 'area:"work"' in next_query.lower())
-        self.assertNotIn('-area:', next_query)
+        self.assertTrue(
+            "area:work" in next_query.lower() or 'area:"work"' in next_query.lower()
+        )
+        self.assertNotIn("-area:", next_query)
 
         # State 2: Active -> Inverted
         current_state = {"active": True, "inversed": False}
-        next_query = self.parser.generate_future_query('area:"work"', area_filter, current_state)
-        self.assertIn('-area:', next_query)
+        next_query = self.parser.generate_future_query(
+            'area:"work"', area_filter, current_state
+        )
+        self.assertIn("-area:", next_query)
 
         # State 3: Inverted -> Inactive
         current_state = {"active": True, "inversed": True}
-        next_query = self.parser.generate_future_query('-area:"work"', area_filter, current_state)
+        next_query = self.parser.generate_future_query(
+            '-area:"work"', area_filter, current_state
+        )
         self.assertEqual(next_query.strip(), "")

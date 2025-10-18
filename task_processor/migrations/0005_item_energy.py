@@ -4,15 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('task_processor', '0004_alter_item_title_item_task_proces_nirvana_76df99_idx'),
+        ("task_processor", "0004_alter_item_title_item_task_proces_nirvana_76df99_idx"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='item',
-            name='energy',
-            field=models.CharField(choices=[('high', 'High Energy'), ('medium', 'Medium Energy'), ('low', 'Low Energy')], default=None, max_length=10, null=True),
+            model_name="item",
+            name="energy",
+            field=models.CharField(
+                choices=[
+                    ("high", "High Energy"),
+                    ("medium", "Medium Energy"),
+                    ("low", "Low Energy"),
+                ],
+                default=None,
+                max_length=10,
+                null=True,
+            ),
         ),
     ]

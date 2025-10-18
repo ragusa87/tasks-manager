@@ -10,6 +10,7 @@ class Review(models.Model):
     """
     GTD Weekly/Monthly Reviews tracking
     """
+
     review_type = models.CharField(max_length=20, choices=ReviewType.choices)
     review_date = models.DateField(default=timezone.now)
     notes = models.TextField(blank=True)
@@ -24,11 +25,11 @@ class Review(models.Model):
     waiting_for_followed_up = models.IntegerField(default=0)
 
     class Meta:
-        ordering = ['-review_date']
-        unique_together = ('user', 'review_type', 'review_date')
+        ordering = ["-review_date"]
+        unique_together = ("user", "review_type", "review_date")
         indexes = [
-            models.Index(fields=['user', 'review_type']),
-            models.Index(fields=['review_date']),
+            models.Index(fields=["user", "review_type"]),
+            models.Index(fields=["review_date"]),
         ]
 
     def __str__(self):
@@ -37,10 +38,7 @@ class Review(models.Model):
     @classmethod
     def get_latest_review(cls, user, review_type):
         """Get the most recent review of specified type for user"""
-        return cls.objects.filter(
-            user=user,
-            review_type=review_type
-        ).first()
+        return cls.objects.filter(user=user, review_type=review_type).first()
 
     @classmethod
     def is_review_due(cls, user, review_type):
@@ -65,11 +63,11 @@ class Review(models.Model):
             queryset = queryset.filter(review_date__gte=since_date)
 
         return queryset.aggregate(
-            total_reviews=models.Count('id'),
-            total_inbox_processed=models.Sum('inbox_items_processed'),
-            total_projects_reviewed=models.Sum('projects_reviewed'),
-            total_next_actions=models.Sum('next_actions_identified'),
-            avg_inbox_per_review=models.Avg('inbox_items_processed'),
+            total_reviews=models.Count("id"),
+            total_inbox_processed=models.Sum("inbox_items_processed"),
+            total_projects_reviewed=models.Sum("projects_reviewed"),
+            total_next_actions=models.Sum("next_actions_identified"),
+            avg_inbox_per_review=models.Avg("inbox_items_processed"),
         )
 
 
@@ -78,7 +76,10 @@ class ItemStateLog(models.Model):
     Log of all state transitions for audit trail
     Automatically created by django-fsm-log
     """
-    item = models.ForeignKey('Item', on_delete=models.CASCADE, related_name='state_logs')
+
+    item = models.ForeignKey(
+        "Item", on_delete=models.CASCADE, related_name="state_logs"
+    )
     from_state = models.CharField(max_length=20)
     to_state = models.CharField(max_length=20)
     transition = models.CharField(max_length=50)
@@ -87,11 +88,11 @@ class ItemStateLog(models.Model):
     description = models.TextField(blank=True)
 
     class Meta:
-        ordering = ['-timestamp']
+        ordering = ["-timestamp"]
         indexes = [
-            models.Index(fields=['item', 'timestamp']),
-            models.Index(fields=['by', 'timestamp']),
-            models.Index(fields=['transition']),
+            models.Index(fields=["item", "timestamp"]),
+            models.Index(fields=["by", "timestamp"]),
+            models.Index(fields=["transition"]),
         ]
 
     def __str__(self):
@@ -101,18 +102,17 @@ class ItemStateLog(models.Model):
     def get_user_activity(cls, user, days=7):
         """Get recent state transition activity for a user"""
         since_date = timezone.now() - timezone.timedelta(days=days)
-        return cls.objects.filter(
-            by=user,
-            timestamp__gte=since_date
-        ).select_related('item')
+        return cls.objects.filter(by=user, timestamp__gte=since_date).select_related(
+            "item"
+        )
 
     @classmethod
     def get_transition_stats(cls, user, days=30):
         """Get statistics about state transitions"""
         since_date = timezone.now() - timezone.timedelta(days=days)
-        return cls.objects.filter(
-            by=user,
-            timestamp__gte=since_date
-        ).values('transition').annotate(
-            count=models.Count('id')
-        ).order_by('-count')
+        return (
+            cls.objects.filter(by=user, timestamp__gte=since_date)
+            .values("transition")
+            .annotate(count=models.Count("id"))
+            .order_by("-count")
+        )

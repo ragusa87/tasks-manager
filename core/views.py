@@ -18,7 +18,7 @@ class DocumentDownloadView(View):
 
     def get(self, request, document_id):
         # Validate token parameter
-        provided_token = request.GET.get('token')
+        provided_token = request.GET.get("token")
         if not provided_token:
             raise PermissionDenied("Token parameter is required")
 
@@ -26,7 +26,7 @@ class DocumentDownloadView(View):
             raise PermissionDenied("Invalid token")
 
         # Get the document from the database
-        Document = get_model('task_processor', 'Document')
+        Document = get_model("task_processor", "Document")
         document = get_object_or_404(Document, id=document_id)
 
         try:
@@ -34,18 +34,20 @@ class DocumentDownloadView(View):
             engine = get_file_system_engine()
 
             # Fetch the file to temporary storage
-            temp_file_path, original_filename = engine.fetch_file_to_temp(document.file_path)
+            temp_file_path, original_filename = engine.fetch_file_to_temp(
+                document.file_path
+            )
 
             # Create file response
             response = FileResponse(
-                open(temp_file_path, 'rb'),
+                open(temp_file_path, "rb"),
                 as_attachment=True,
-                filename=document.original_filename or original_filename
+                filename=document.original_filename or original_filename,
             )
 
             # Set content type if available
             if document.mime_type:
-                response['Content-Type'] = document.mime_type
+                response["Content-Type"] = document.mime_type
 
             # Add a callback to delete the file after response is sent
             def cleanup_file():

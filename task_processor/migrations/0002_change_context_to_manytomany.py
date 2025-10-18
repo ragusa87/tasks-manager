@@ -4,23 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('task_processor', '0001_initial'),
+        ("task_processor", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='item',
-            name='task_proces_context_c0da11_idx',
+            model_name="item",
+            name="task_proces_context_c0da11_idx",
         ),
         migrations.RemoveField(
-            model_name='item',
-            name='context',
+            model_name="item",
+            name="context",
         ),
         migrations.AddField(
-            model_name='item',
-            name='contexts',
-            field=models.ManyToManyField(blank=True, to='task_processor.context'),
+            model_name="item",
+            name="contexts",
+            field=models.ManyToManyField(blank=True, to="task_processor.context"),
         ),
     ]

@@ -15,21 +15,23 @@ class TestSearchFunctionality(TestCase):
 
     def setUp(self):
         """Set up test data"""
-        self.user = User.objects.create_user(username='testuser', email='test@example.com')
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com"
+        )
 
         # Create test areas and contexts
-        self.work_area = Area.objects.create(name='Work', user=self.user)
-        self.personal_area = Area.objects.create(name='Personal', user=self.user)
+        self.work_area = Area.objects.create(name="Work", user=self.user)
+        self.personal_area = Area.objects.create(name="Personal", user=self.user)
 
-        self.office_context = Context.objects.create(name='office', user=self.user)
-        self.home_context = Context.objects.create(name='home', user=self.user)
+        self.office_context = Context.objects.create(name="office", user=self.user)
+        self.home_context = Context.objects.create(name="home", user=self.user)
 
         # Create test items
         self.inbox_item = Item.objects.create(
             title="Process email",
             status=GTDStatus.INBOX,
             priority=Priority.NORMAL,
-            user=self.user
+            user=self.user,
         )
 
         self.next_action = Item.objects.create(
@@ -37,7 +39,7 @@ class TestSearchFunctionality(TestCase):
             status=GTDStatus.NEXT_ACTION,
             priority=Priority.HIGH,
             area=self.work_area,
-            user=self.user
+            user=self.user,
         )
         self.next_action.contexts.add(self.office_context)
 
@@ -46,14 +48,14 @@ class TestSearchFunctionality(TestCase):
             status=GTDStatus.NEXT_ACTION,
             due_date=timezone.now() - timedelta(days=2),
             priority=Priority.URGENT,
-            user=self.user
+            user=self.user,
         )
 
         self.project = Item.objects.create(
             title="Website redesign",
             status=GTDStatus.PROJECT,
             area=self.work_area,
-            user=self.user
+            user=self.user,
         )
 
         self.project_task = Item.objects.create(
@@ -62,14 +64,14 @@ class TestSearchFunctionality(TestCase):
             parent=self.project,
             priority=Priority.NORMAL,  # Different priority
             area=None,  # No area assigned directly
-            user=self.user
+            user=self.user,
         )
 
         self.waiting_item = Item.objects.create(
             title="Waiting for approval",
             status=GTDStatus.WAITING_FOR,
             waiting_for_person="John Doe",
-            user=self.user
+            user=self.user,
         )
 
     def test_status_search(self):
@@ -109,7 +111,7 @@ class TestSearchFunctionality(TestCase):
 
         # Test active items
         result = apply_search(Item.objects.for_user(self.user), "is:active")
-        active_items = result.values_list('id', flat=True)
+        active_items = result.values_list("id", flat=True)
         # Should exclude completed/cancelled items
         self.assertIn(self.inbox_item.id, active_items)
         self.assertIn(self.next_action.id, active_items)
@@ -143,15 +145,21 @@ class TestSearchFunctionality(TestCase):
     def test_combined_search(self):
         """Test combined search with multiple filters"""
         # Search for high priority items in work area
-        result = apply_search(Item.objects.for_user(self.user), 'priority:high area:"Work"')
+        result = apply_search(
+            Item.objects.for_user(self.user), 'priority:high area:"Work"'
+        )
         self.assertEqual(list(result), [self.next_action])
 
         # Search with exclusion - this should exclude the overdue item which has urgent priority
-        result = apply_search(Item.objects.for_user(self.user), 'in:next -priority:urgent')
+        result = apply_search(
+            Item.objects.for_user(self.user), "in:next -priority:urgent"
+        )
         result_list = list(result)
         self.assertIn(self.next_action, result_list)
         self.assertIn(self.project_task, result_list)  # Also has status NEXT_ACTION
-        self.assertNotIn(self.overdue_item, result_list)  # Has urgent priority, should be excluded
+        self.assertNotIn(
+            self.overdue_item, result_list
+        )  # Has urgent priority, should be excluded
 
     def test_has_filters(self):
         """Test 'has:' existence filters"""
@@ -177,14 +185,14 @@ class TestSearchFunctionality(TestCase):
             status=GTDStatus.NEXT_ACTION,
             priority=Priority.HIGH,
             area=self.work_area,
-            user=self.user
+            user=self.user,
         )
         complex_item.contexts.add(self.office_context)
 
         # Search: high priority work items with "office" in title, excluding inbox
         result = apply_search(
             Item.objects.for_user(self.user),
-            'priority:high area:"Work" -in:inbox office'
+            'priority:high area:"Work" -in:inbox office',
         )
 
         result_list = list(result)
@@ -193,12 +201,16 @@ class TestSearchFunctionality(TestCase):
 
     def test_project_search_by_name(self):
         """Test searching by project name"""
-        result = apply_search(Item.objects.for_user(self.user), 'project:"Website redesign"')
+        result = apply_search(
+            Item.objects.for_user(self.user), 'project:"Website redesign"'
+        )
         self.assertEqual(list(result), [self.project_task])
 
     def test_project_search_by_id(self):
         """Test searching by project ID"""
-        result = apply_search(Item.objects.for_user(self.user), f'project:{self.project.pk}')
+        result = apply_search(
+            Item.objects.for_user(self.user), f"project:{self.project.pk}"
+        )
         result_list = list(result)
         # Should find both the project itself and tasks within it
         self.assertIn(self.project, result_list)
@@ -223,12 +235,12 @@ class TestSearchFunctionality(TestCase):
         """Test excluding items from specific project"""
         # First add another task not in the project
         non_project_task = Item.objects.create(
-            title="Standalone task",
-            status=GTDStatus.NEXT_ACTION,
-            user=self.user
+            title="Standalone task", status=GTDStatus.NEXT_ACTION, user=self.user
         )
 
-        result = apply_search(Item.objects.for_user(self.user), f'-project:{self.project.pk}')
+        result = apply_search(
+            Item.objects.for_user(self.user), f"-project:{self.project.pk}"
+        )
         result_list = list(result)
 
         # Should exclude both project and its tasks

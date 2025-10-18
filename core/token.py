@@ -17,9 +17,7 @@ def generate_download_token(document_id: int):
     """
     message = f"document_download_{str(document_id)}"
     token = hmac.new(
-        settings.SECRET_KEY.encode('utf-8'),
-        message.encode('utf-8'),
-        hashlib.sha256
+        settings.SECRET_KEY.encode("utf-8"), message.encode("utf-8"), hashlib.sha256
     ).hexdigest()
     return token
 
@@ -51,4 +49,4 @@ def get_download_url(document_id: int):
     """
     token = generate_download_token(document_id)
 
-    return reverse('document_download', args=[document_id]) + f"?token={token}"
+    return reverse("document_download", args=[document_id]) + f"?token={token}"

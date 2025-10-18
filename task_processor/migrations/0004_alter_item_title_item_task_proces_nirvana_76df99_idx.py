@@ -5,20 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('task_processor', '0003_add_nirvana_id'),
+        ("task_processor", "0003_add_nirvana_id"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='item',
-            name='title',
+            model_name="item",
+            name="title",
             field=models.CharField(max_length=1024),
         ),
         migrations.AddIndex(
-            model_name='item',
-            index=models.Index(fields=['nirvana_id'], name='task_proces_nirvana_76df99_idx'),
+            model_name="item",
+            index=models.Index(
+                fields=["nirvana_id"], name="task_proces_nirvana_76df99_idx"
+            ),
         ),
     ]

@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,153 +15,344 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Area',
+            name="Area",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('description', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("description", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['name'],
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='Context',
+            name="Context",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('description', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("description", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['name'],
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='Item',
+            name="Item",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=200)),
-                ('description', models.TextField(blank=True)),
-                ('status', models.CharField(choices=[('inbox', 'Inbox'), ('next_action', 'Next Action'), ('waiting_for', 'Waiting For'), ('someday_maybe', 'Someday/Maybe'), ('reference', 'Reference'), ('project', 'Project'), ('completed', 'Completed'), ('cancelled', 'Cancelled')], default='inbox', max_length=50)),
-                ('priority', models.IntegerField(choices=[(1, 'Low'), (2, 'Normal'), (3, 'High'), (4, 'Urgent')], default=2)),
-                ('due_date', models.DateTimeField(blank=True, null=True)),
-                ('start_date', models.DateTimeField(blank=True, null=True)),
-                ('estimated_duration', models.DurationField(blank=True, help_text='Estimated time to complete', null=True)),
-                ('is_completed', models.BooleanField(default=False)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('waiting_for_person', models.CharField(blank=True, help_text='Person/system this is delegated to', max_length=100)),
-                ('date_requested', models.DateField(blank=True, help_text='When was this requested/delegated', null=True)),
-                ('follow_up_date', models.DateField(blank=True, help_text='When to follow up', null=True)),
-                ('last_reviewed', models.DateField(blank=True, null=True)),
-                ('review_frequency_days', models.IntegerField(default=90, help_text='How often to review this someday/maybe item')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('area', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='task_processor.area')),
-                ('context', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='task_processor.context')),
-                ('parent_project', models.ForeignKey(blank=True, limit_choices_to={'status': 'project'}, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sub_items', to='task_processor.item')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=200)),
+                ("description", models.TextField(blank=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("inbox", "Inbox"),
+                            ("next_action", "Next Action"),
+                            ("waiting_for", "Waiting For"),
+                            ("someday_maybe", "Someday/Maybe"),
+                            ("reference", "Reference"),
+                            ("project", "Project"),
+                            ("completed", "Completed"),
+                            ("cancelled", "Cancelled"),
+                        ],
+                        default="inbox",
+                        max_length=50,
+                    ),
+                ),
+                (
+                    "priority",
+                    models.IntegerField(
+                        choices=[(1, "Low"), (2, "Normal"), (3, "High"), (4, "Urgent")],
+                        default=2,
+                    ),
+                ),
+                ("due_date", models.DateTimeField(blank=True, null=True)),
+                ("start_date", models.DateTimeField(blank=True, null=True)),
+                (
+                    "estimated_duration",
+                    models.DurationField(
+                        blank=True, help_text="Estimated time to complete", null=True
+                    ),
+                ),
+                ("is_completed", models.BooleanField(default=False)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "waiting_for_person",
+                    models.CharField(
+                        blank=True,
+                        help_text="Person/system this is delegated to",
+                        max_length=100,
+                    ),
+                ),
+                (
+                    "date_requested",
+                    models.DateField(
+                        blank=True,
+                        help_text="When was this requested/delegated",
+                        null=True,
+                    ),
+                ),
+                (
+                    "follow_up_date",
+                    models.DateField(
+                        blank=True, help_text="When to follow up", null=True
+                    ),
+                ),
+                ("last_reviewed", models.DateField(blank=True, null=True)),
+                (
+                    "review_frequency_days",
+                    models.IntegerField(
+                        default=90,
+                        help_text="How often to review this someday/maybe item",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "area",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="task_processor.area",
+                    ),
+                ),
+                (
+                    "context",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="task_processor.context",
+                    ),
+                ),
+                (
+                    "parent_project",
+                    models.ForeignKey(
+                        blank=True,
+                        limit_choices_to={"status": "project"},
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sub_items",
+                        to="task_processor.item",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-priority', 'due_date', 'created_at'],
+                "ordering": ["-priority", "due_date", "created_at"],
             },
         ),
         migrations.CreateModel(
-            name='ItemStateLog',
+            name="ItemStateLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('from_state', models.CharField(max_length=20)),
-                ('to_state', models.CharField(max_length=20)),
-                ('transition', models.CharField(max_length=50)),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('description', models.TextField(blank=True)),
-                ('by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('item', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='state_logs', to='task_processor.item')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("from_state", models.CharField(max_length=20)),
+                ("to_state", models.CharField(max_length=20)),
+                ("transition", models.CharField(max_length=50)),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                ("description", models.TextField(blank=True)),
+                (
+                    "by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "item",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="state_logs",
+                        to="task_processor.item",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-timestamp'],
+                "ordering": ["-timestamp"],
             },
         ),
         migrations.CreateModel(
-            name='Review',
+            name="Review",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('review_type', models.CharField(choices=[('weekly', 'Weekly Review'), ('monthly', 'Monthly Review'), ('quarterly', 'Quarterly Review'), ('annual', 'Annual Review')], max_length=20)),
-                ('review_date', models.DateField(default=django.utils.timezone.now)),
-                ('notes', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('inbox_items_processed', models.IntegerField(default=0)),
-                ('projects_reviewed', models.IntegerField(default=0)),
-                ('next_actions_identified', models.IntegerField(default=0)),
-                ('someday_maybe_reviewed', models.IntegerField(default=0)),
-                ('waiting_for_followed_up', models.IntegerField(default=0)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "review_type",
+                    models.CharField(
+                        choices=[
+                            ("weekly", "Weekly Review"),
+                            ("monthly", "Monthly Review"),
+                            ("quarterly", "Quarterly Review"),
+                            ("annual", "Annual Review"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("review_date", models.DateField(default=django.utils.timezone.now)),
+                ("notes", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("inbox_items_processed", models.IntegerField(default=0)),
+                ("projects_reviewed", models.IntegerField(default=0)),
+                ("next_actions_identified", models.IntegerField(default=0)),
+                ("someday_maybe_reviewed", models.IntegerField(default=0)),
+                ("waiting_for_followed_up", models.IntegerField(default=0)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-review_date'],
+                "ordering": ["-review_date"],
             },
         ),
         migrations.AddIndex(
-            model_name='area',
-            index=models.Index(fields=['user', 'name'], name='task_proces_user_id_ae8bb9_idx'),
+            model_name="area",
+            index=models.Index(
+                fields=["user", "name"], name="task_proces_user_id_ae8bb9_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='area',
-            unique_together={('name', 'user')},
+            name="area",
+            unique_together={("name", "user")},
         ),
         migrations.AddIndex(
-            model_name='context',
-            index=models.Index(fields=['user', 'name'], name='task_proces_user_id_35da47_idx'),
+            model_name="context",
+            index=models.Index(
+                fields=["user", "name"], name="task_proces_user_id_35da47_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='context',
-            unique_together={('name', 'user')},
+            name="context",
+            unique_together={("name", "user")},
         ),
         migrations.AddIndex(
-            model_name='item',
-            index=models.Index(fields=['user', 'status'], name='task_proces_user_id_3caf8a_idx'),
+            model_name="item",
+            index=models.Index(
+                fields=["user", "status"], name="task_proces_user_id_3caf8a_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='item',
-            index=models.Index(fields=['user', 'status', 'is_completed'], name='task_proces_user_id_473245_idx'),
+            model_name="item",
+            index=models.Index(
+                fields=["user", "status", "is_completed"],
+                name="task_proces_user_id_473245_idx",
+            ),
         ),
         migrations.AddIndex(
-            model_name='item',
-            index=models.Index(fields=['due_date'], name='task_proces_due_dat_24e205_idx'),
+            model_name="item",
+            index=models.Index(
+                fields=["due_date"], name="task_proces_due_dat_24e205_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='item',
-            index=models.Index(fields=['context'], name='task_proces_context_c0da11_idx'),
+            model_name="item",
+            index=models.Index(
+                fields=["context"], name="task_proces_context_c0da11_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='item',
-            index=models.Index(fields=['area'], name='task_proces_area_id_f25b50_idx'),
+            model_name="item",
+            index=models.Index(fields=["area"], name="task_proces_area_id_f25b50_idx"),
         ),
         migrations.AddIndex(
-            model_name='itemstatelog',
-            index=models.Index(fields=['item', 'timestamp'], name='task_proces_item_id_8dec8d_idx'),
+            model_name="itemstatelog",
+            index=models.Index(
+                fields=["item", "timestamp"], name="task_proces_item_id_8dec8d_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='itemstatelog',
-            index=models.Index(fields=['by', 'timestamp'], name='task_proces_by_id_99b928_idx'),
+            model_name="itemstatelog",
+            index=models.Index(
+                fields=["by", "timestamp"], name="task_proces_by_id_99b928_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='itemstatelog',
-            index=models.Index(fields=['transition'], name='task_proces_transit_97485e_idx'),
+            model_name="itemstatelog",
+            index=models.Index(
+                fields=["transition"], name="task_proces_transit_97485e_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='review',
-            index=models.Index(fields=['user', 'review_type'], name='task_proces_user_id_4d0823_idx'),
+            model_name="review",
+            index=models.Index(
+                fields=["user", "review_type"], name="task_proces_user_id_4d0823_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='review',
-            index=models.Index(fields=['review_date'], name='task_proces_review__1f07a3_idx'),
+            model_name="review",
+            index=models.Index(
+                fields=["review_date"], name="task_proces_review__1f07a3_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='review',
-            unique_together={('user', 'review_type', 'review_date')},
+            name="review",
+            unique_together={("user", "review_type", "review_date")},
         ),
     ]

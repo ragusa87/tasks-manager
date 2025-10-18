@@ -4,7 +4,7 @@ from django.forms import BoundField
 register = template.Library()
 
 
-@register.filter(name='attr')
+@register.filter(name="attr")
 def attr(field, css):
     """
     Add or update attributes on a form field.
@@ -26,21 +26,21 @@ def attr(field, css):
 
     # Parse the css string
     if css:
-        pairs = [pair.strip() for pair in css.split(',')]
+        pairs = [pair.strip() for pair in css.split(",")]
         for pair in pairs:
-            if ':' in pair:
-                key, value = pair.split(':', 1)
+            if ":" in pair:
+                key, value = pair.split(":", 1)
                 key = key.strip()
                 value = value.strip()
 
                 # Special handling for class attribute
-                if key == 'class':
+                if key == "class":
                     # Merge with existing classes
-                    existing_class = field.field.widget.attrs.get('class', '')
+                    existing_class = field.field.widget.attrs.get("class", "")
                     if existing_class:
-                        attrs['class'] = f"{existing_class} {value}"
+                        attrs["class"] = f"{existing_class} {value}"
                     else:
-                        attrs['class'] = value
+                        attrs["class"] = value
                 else:
                     attrs[key] = value
 

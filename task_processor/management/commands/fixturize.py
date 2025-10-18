@@ -18,40 +18,40 @@ from task_processor.models import Area, Context, Item, Review, Tag
 
 
 class Command(BaseCommand):
-    help = 'Generate sample data for development/demo environment'
+    help = "Generate sample data for development/demo environment"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--users',
+            "--users",
             type=int,
             default=2,
-            help='Number of users to create (default: 2)'
+            help="Number of users to create (default: 2)",
         )
         parser.add_argument(
-            '--items-per-user',
+            "--items-per-user",
             type=int,
             default=50,
-            help='Number of items per user (default: 50)'
+            help="Number of items per user (default: 50)",
         )
         parser.add_argument(
-            '--clear',
-            action='store_true',
-            help='Clear existing data before generating new data'
+            "--clear",
+            action="store_true",
+            help="Clear existing data before generating new data",
         )
 
     def handle(self, *args, **options):
-        if options['clear']:
-            self.stdout.write('Clearing existing data...')
+        if options["clear"]:
+            self.stdout.write("Clearing existing data...")
             self.clear_data()
 
-        self.stdout.write('Generating sample data...')
+        self.stdout.write("Generating sample data...")
 
         with transaction.atomic():
-            users = self.create_users(options['users'])
+            users = self.create_users(options["users"])
             for user in users:
-                self.stdout.write(f'Creating data for user: {user.username}')
+                self.stdout.write(f"Creating data for user: {user.username}")
                 self.create_contexts_areas_and_tags(user)
-                self.create_items(user, options['items_per_user'])
+                self.create_items(user, options["items_per_user"])
                 self.create_reviews(user)
 
         self.stdout.write(
@@ -84,20 +84,20 @@ class Command(BaseCommand):
         """Create sample users"""
         users = []
         for i in range(count):
-            username = f'user{i+1}'
-            email = f'user{i+1}@example.com'
+            username = f"user{i + 1}"
+            email = f"user{i + 1}@example.com"
 
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults={
-                    'email': email,
-                    'first_name': 'User',
-                    'last_name': f'{i+1}',
-                    'is_active': True,
-                }
+                    "email": email,
+                    "first_name": "User",
+                    "last_name": f"{i + 1}",
+                    "is_active": True,
+                },
             )
             if created:
-                user.set_password('password')
+                user.set_password("password")
                 user.save()
             users.append(user)
         return users
@@ -109,7 +109,7 @@ class Command(BaseCommand):
             Context.objects.update_or_create(
                 name=context_name,
                 user=user,
-                defaults={'description': f'Default context: {context_name}'}
+                defaults={"description": f"Default context: {context_name}"},
             )
 
         # Create areas
@@ -117,15 +117,23 @@ class Command(BaseCommand):
 
         # Create sample tags
         sample_tags = [
-            'transport', 'read', 'watch', 'phone-call',
-            'meeting', 'creative', 'planning', 'admin', 'review',
-            'personal', 'work', 'learning', 'health', 'finance'
+            "transport",
+            "read",
+            "watch",
+            "phone-call",
+            "meeting",
+            "creative",
+            "planning",
+            "admin",
+            "review",
+            "personal",
+            "work",
+            "learning",
+            "health",
+            "finance",
         ]
         for tag_name in sample_tags:
-            Tag.objects.get_or_create(
-                name=tag_name,
-                user=user
-            )
+            Tag.objects.get_or_create(name=tag_name, user=user)
 
     def create_items(self, user, count):
         """Create various GTD items for user"""
@@ -144,7 +152,7 @@ class Command(BaseCommand):
             "Plan weekend family activity",
             "Submit expense reports",
             "Schedule car maintenance",
-            "Backup computer files"
+            "Backup computer files",
         ]
 
         project_templates = [
@@ -157,7 +165,7 @@ class Command(BaseCommand):
             "Implement new CRM system",
             "Plan garden makeover",
             "Organize photo collection",
-            "Build home automation system"
+            "Build home automation system",
         ]
 
         next_action_templates = [
@@ -170,7 +178,7 @@ class Command(BaseCommand):
             "Call insurance company",
             "Fix broken door handle",
             "Research competitor pricing",
-            "Test new software feature"
+            "Test new software feature",
         ]
 
         waiting_for_templates = [
@@ -183,7 +191,7 @@ class Command(BaseCommand):
             ("Legal review completion", "Legal Dept"),
             ("Software license renewal", "IT Department"),
             ("Interview scheduling", "HR Team"),
-            ("Budget approval", "Finance Team")
+            ("Budget approval", "Finance Team"),
         ]
 
         someday_maybe_templates = [
@@ -196,7 +204,7 @@ class Command(BaseCommand):
             "Learn Spanish",
             "Start a blog",
             "Take cooking classes",
-            "Learn woodworking"
+            "Learn woodworking",
         ]
 
         # Generate items with realistic distribution
@@ -208,10 +216,10 @@ class Command(BaseCommand):
         for i in range(project_count):
             project = self.create_project_item(
                 user,
-                random.choice(project_templates) + f" {i+1}",
+                random.choice(project_templates) + f" {i + 1}",
                 contexts,
                 areas,
-                tags
+                tags,
             )
             projects.append(project)
             items_created += 1
@@ -220,14 +228,17 @@ class Command(BaseCommand):
         next_action_count = int(count * 0.40)
         for i in range(next_action_count):
             # Some next actions belong to projects
-            parent = random.choice(projects) if projects and random.random() < 0.3 else None
+            parent = (
+                random.choice(projects) if projects and random.random() < 0.3 else None
+            )
             self.create_next_action_item(
                 user,
-                random.choice(next_action_templates) + (f" {i+1}" if not parent else ""),
+                random.choice(next_action_templates)
+                + (f" {i + 1}" if not parent else ""),
                 contexts,
                 areas,
                 tags,
-                parent
+                parent,
             )
             items_created += 1
 
@@ -235,11 +246,7 @@ class Command(BaseCommand):
         inbox_count = int(count * 0.20)
         for i in range(inbox_count):
             self.create_inbox_item(
-                user,
-                random.choice(inbox_items) + f" {i+1}",
-                contexts,
-                areas,
-                tags
+                user, random.choice(inbox_items) + f" {i + 1}", contexts, areas, tags
             )
             items_created += 1
 
@@ -248,12 +255,7 @@ class Command(BaseCommand):
         for i in range(waiting_count):
             title, person = random.choice(waiting_for_templates)
             self.create_waiting_for_item(
-                user,
-                title + f" {i+1}",
-                person,
-                contexts,
-                areas,
-                tags
+                user, title + f" {i + 1}", person, contexts, areas, tags
             )
             items_created += 1
 
@@ -262,17 +264,17 @@ class Command(BaseCommand):
         for i in range(someday_count):
             self.create_someday_maybe_item(
                 user,
-                random.choice(someday_maybe_templates) + f" {i+1}",
+                random.choice(someday_maybe_templates) + f" {i + 1}",
                 contexts,
                 areas,
-                tags
+                tags,
             )
             items_created += 1
 
         # Fill remaining with random items
         remaining = count - items_created
         for i in range(remaining):
-            self.create_random_item(user, contexts, areas, tags, i+1)
+            self.create_random_item(user, contexts, areas, tags, i + 1)
 
     def create_project_item(self, user, title, contexts, areas, tags):
         """Create a project item"""
@@ -284,14 +286,18 @@ class Command(BaseCommand):
             user=user,
             area=random.choice(areas) if random.random() < 0.95 else None,
             due_date=self.random_future_date() if random.random() < 0.6 else None,
-            estimated_duration=random.choice(list(GTDDuration)) if random.random() < 0.7 else None,
-            energy=random.choice(list(GTDEnergy)) if random.random() < 0.6 else None
+            estimated_duration=random.choice(list(GTDDuration))
+            if random.random() < 0.7
+            else None,
+            energy=random.choice(list(GTDEnergy)) if random.random() < 0.6 else None,
         )
 
         # Add contexts after creation (ManyToMany field)
         if random.random() < 0.85 and contexts:
             # Usually add 1-2 contexts
-            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            selected_contexts = random.sample(
+                contexts, min(random.randint(1, 2), len(contexts))
+            )
             project.contexts.set(selected_contexts)
 
         # Add tags after creation (ManyToMany field)
@@ -313,15 +319,19 @@ class Command(BaseCommand):
             parent=parent,
             area=random.choice(areas) if random.random() < 0.85 else None,
             due_date=self.random_future_date() if random.random() < 0.4 else None,
-            estimated_duration=random.choice(list(GTDDuration)) if random.random() < 0.8 else None,
+            estimated_duration=random.choice(list(GTDDuration))
+            if random.random() < 0.8
+            else None,
             energy=random.choice(list(GTDEnergy)) if random.random() < 0.7 else None,
-            is_completed=random.random() < 0.2  # 20% completed
+            is_completed=random.random() < 0.2,  # 20% completed
         )
 
         # Add contexts after creation (ManyToMany field)
         if random.random() < 0.95 and contexts:
             # Almost always add 1 context, sometimes 2
-            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            selected_contexts = random.sample(
+                contexts, min(random.randint(1, 2), len(contexts))
+            )
             item.contexts.set(selected_contexts)
 
         # Add tags after creation (ManyToMany field)
@@ -375,7 +385,7 @@ class Command(BaseCommand):
             area=random.choice(areas) if random.random() < 0.75 else None,
             waiting_for_person=person,
             date_requested=self.random_past_date(days=30),
-            follow_up_date=self.random_future_date(days=14)
+            follow_up_date=self.random_future_date(days=14),
         )
 
         # Add contexts after creation (ManyToMany field)
@@ -401,14 +411,18 @@ class Command(BaseCommand):
             priority=random.choice([Priority.LOW, Priority.NORMAL]),
             user=user,
             area=random.choice(areas) if random.random() < 0.95 else None,
-            last_reviewed=self.random_past_date(days=180) if random.random() < 0.7 else None,
-            review_frequency_days=random.choice([30, 60, 90, 180])
+            last_reviewed=self.random_past_date(days=180)
+            if random.random() < 0.7
+            else None,
+            review_frequency_days=random.choice([30, 60, 90, 180]),
         )
 
         # Add contexts after creation (ManyToMany field)
         if random.random() < 0.6 and contexts:
             # Sometimes add contexts to someday/maybe items
-            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            selected_contexts = random.sample(
+                contexts, min(random.randint(1, 2), len(contexts))
+            )
             item.contexts.set(selected_contexts)
 
         # Add tags after creation (ManyToMany field)
@@ -421,12 +435,14 @@ class Command(BaseCommand):
 
     def create_random_item(self, user, contexts, areas, tags, index):
         """Create a random item of any type"""
-        status = random.choice([
-            GTDStatus.NEXT_ACTION,
-            GTDStatus.PROJECT,
-            GTDStatus.REFERENCE,
-            GTDStatus.COMPLETED
-        ])
+        status = random.choice(
+            [
+                GTDStatus.NEXT_ACTION,
+                GTDStatus.PROJECT,
+                GTDStatus.REFERENCE,
+                GTDStatus.COMPLETED,
+            ]
+        )
 
         item = Item.objects.create(
             title=f"Random item {index}",
@@ -436,13 +452,15 @@ class Command(BaseCommand):
             user=user,
             area=random.choice(areas) if random.random() < 0.8 else None,
             due_date=self.random_future_date() if random.random() < 0.3 else None,
-            is_completed=status == GTDStatus.COMPLETED
+            is_completed=status == GTDStatus.COMPLETED,
         )
 
         # Add contexts after creation (ManyToMany field)
         if random.random() < 0.75 and contexts:
             # Usually add 1-2 contexts
-            selected_contexts = random.sample(contexts, min(random.randint(1, 2), len(contexts)))
+            selected_contexts = random.sample(
+                contexts, min(random.randint(1, 2), len(contexts))
+            )
             item.contexts.set(selected_contexts)
 
         # Add tags after creation (ManyToMany field)
@@ -457,17 +475,17 @@ class Command(BaseCommand):
         """Create sample review data"""
         # Create some past reviews
         for i in range(4):  # Last 4 weeks
-            review_date = timezone.now().date() - timedelta(weeks=i+1)
+            review_date = timezone.now().date() - timedelta(weeks=i + 1)
             Review.objects.create(
                 review_type=ReviewType.WEEKLY,
                 review_date=review_date,
                 user=user,
-                notes=f"Weekly review - Week {i+1}",
+                notes=f"Weekly review - Week {i + 1}",
                 inbox_items_processed=random.randint(5, 15),
                 projects_reviewed=random.randint(2, 8),
                 next_actions_identified=random.randint(3, 12),
                 someday_maybe_reviewed=random.randint(1, 5),
-                waiting_for_followed_up=random.randint(0, 3)
+                waiting_for_followed_up=random.randint(0, 3),
             )
 
         # Create a monthly review
@@ -481,7 +499,7 @@ class Command(BaseCommand):
             projects_reviewed=random.randint(8, 15),
             next_actions_identified=random.randint(15, 30),
             someday_maybe_reviewed=random.randint(5, 15),
-            waiting_for_followed_up=random.randint(2, 8)
+            waiting_for_followed_up=random.randint(2, 8),
         )
 
     def random_future_date(self, days=30):
@@ -499,4 +517,6 @@ class Command(BaseCommand):
         random_days = random.randint(1, days)
         random_hours = random.randint(0, 23)
         random_minutes = random.randint(0, 59)
-        return timezone.now() - timedelta(days=random_days, hours=random_hours, minutes=random_minutes)
+        return timezone.now() - timedelta(
+            days=random_days, hours=random_hours, minutes=random_minutes
+        )

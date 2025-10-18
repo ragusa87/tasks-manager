@@ -17,11 +17,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="in:next",
             icon="lucide-zap",
             color="blue",
-            category=FilterCategory.STATUS
+            category=FilterCategory.STATUS,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:next")
 
     def test_exclusive_filter_strategy_active_to_inactive(self):
@@ -32,11 +34,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="in:next",
             icon="lucide-zap",
             color="blue",
-            category=FilterCategory.STATUS
+            category=FilterCategory.STATUS,
         )
         current_state = {"active": True, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "")
 
     def test_exclusive_filter_strategy_with_multiple_existing(self):
@@ -47,11 +51,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="priority:urgent",
             icon="lucide-circle-alert",
             color="red",
-            category=FilterCategory.PRIORITY
+            category=FilterCategory.PRIORITY,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:inbox priority:urgent")
 
     def test_normal_filter_strategy_inactive_to_active(self):
@@ -62,11 +68,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="has:project",
             icon="lucide-folder",
             color="blue",
-            category=FilterCategory.RELATIONSHIP
+            category=FilterCategory.RELATIONSHIP,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:inbox has:project")
 
     def test_normal_filter_strategy_active_to_inactive(self):
@@ -77,11 +85,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="has:project",
             icon="lucide-folder",
             color="blue",
-            category=FilterCategory.RELATIONSHIP
+            category=FilterCategory.RELATIONSHIP,
         )
         current_state = {"active": True, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:inbox")
 
     def test_normal_filter_strategy_multiple_same_category(self):
@@ -92,11 +102,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="has:context",
             icon="lucide-hash",
             color="blue",
-            category=FilterCategory.RELATIONSHIP
+            category=FilterCategory.RELATIONSHIP,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "has:project,context")
 
     def test_invert_filter_strategy_inactive_to_active(self):
@@ -107,12 +119,14 @@ class TestGenerateFutureQuery(TestCase):
             filter_query='area:"Work"',
             icon="at-sign",
             color="green",
-            category=FilterCategory.AREA
+            category=FilterCategory.AREA,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
-        self.assertEqual(result, 'in:inbox area:work')
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
+        self.assertEqual(result, "in:inbox area:work")
 
     def test_invert_filter_strategy_active_to_inverted(self):
         """Test invert strategy: active (included) -> inverted (excluded)"""
@@ -122,12 +136,14 @@ class TestGenerateFutureQuery(TestCase):
             filter_query='area:"Work"',
             icon="at-sign",
             color="green",
-            category=FilterCategory.AREA
+            category=FilterCategory.AREA,
         )
         current_state = {"active": True, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
-        self.assertEqual(result, 'in:inbox area:Work -area:work')
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
+        self.assertEqual(result, "in:inbox area:Work -area:work")
 
     def test_invert_filter_strategy_inverted_to_inactive(self):
         """Test invert strategy: inverted (excluded) -> inactive (removed)"""
@@ -137,12 +153,14 @@ class TestGenerateFutureQuery(TestCase):
             filter_query='area:"Work"',
             icon="at-sign",
             color="green",
-            category=FilterCategory.AREA
+            category=FilterCategory.AREA,
         )
         current_state = {"active": True, "inversed": True}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
-        self.assertEqual(result, 'in:inbox -area:Work')
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
+        self.assertEqual(result, "in:inbox -area:Work")
 
     def test_generate_future_query_with_free_text(self):
         """Test that free text is preserved in generated queries"""
@@ -152,11 +170,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="priority:high",
             icon="lucide-arrow-up",
             color="red",
-            category=FilterCategory.PRIORITY
+            category=FilterCategory.PRIORITY,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:inbox priority:high search text")
 
     def test_generate_future_query_with_quoted_values(self):
@@ -167,11 +187,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query='context:"@office"',
             icon="lucide-at-sign",
             color="purple",
-            category=FilterCategory.CONTEXT
+            category=FilterCategory.CONTEXT,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, 'context:"@home","@office"')
 
     def test_generate_future_query_with_comma_separated_values(self):
@@ -182,13 +204,15 @@ class TestGenerateFutureQuery(TestCase):
             filter_query='tags:"personal"',
             icon="lucide-hash",
             color="purple",
-            category=FilterCategory.CONTEXT  # contexts use normal strategy
+            category=FilterCategory.CONTEXT,  # contexts use normal strategy
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         # Should add to existing values
-        self.assertEqual(result, 'tags:work,urgent,personal')
+        self.assertEqual(result, "tags:work,urgent,personal")
 
     def test_generate_future_query_empty_current_query(self):
         """Test generating future query from empty current query"""
@@ -198,11 +222,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="in:inbox",
             icon="lucide-inbox",
             color="blue",
-            category=FilterCategory.STATUS
+            category=FilterCategory.STATUS,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:inbox")
 
     def test_generate_future_query_invalid_filter(self):
@@ -213,11 +239,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="invalid_format",  # No field:value format
             icon="lucide-x",
             color="red",
-            category=FilterCategory.STATUS
+            category=FilterCategory.STATUS,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         # Should return unchanged query for invalid filter
         self.assertEqual(result, "in:inbox")
 
@@ -229,13 +257,17 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="in:next",
             icon="lucide-zap",
             color="blue",
-            category=FilterCategory.STATUS  # Exclusive strategy
+            category=FilterCategory.STATUS,  # Exclusive strategy
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         # Should replace in:inbox with in:next, keep others
-        self.assertEqual(result, 'priority:high has:project area:Work in:next search terms')
+        self.assertEqual(
+            result, "priority:high has:project area:Work in:next search terms"
+        )
 
     def test_generate_future_query_project_filter_with_id(self):
         """Test project filter with numeric ID"""
@@ -245,11 +277,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="project:123",
             icon="lucide-briefcase",
             color="purple",
-            category=FilterCategory.PROJECT
+            category=FilterCategory.PROJECT,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:inbox project:123")
 
     def test_generate_future_query_due_date_filter(self):
@@ -260,11 +294,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="is:due",
             icon="lucide-calendar",
             color="orange",
-            category=FilterCategory.DUE
+            category=FilterCategory.DUE,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:next is:due")
 
     def test_generate_future_query_energy_filter(self):
@@ -275,11 +311,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="energy:high",
             icon="lucide-battery-full",
             color="yellow",
-            category=FilterCategory.ENERGY
+            category=FilterCategory.ENERGY,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:next priority:high energy:high")
 
     def test_generate_future_query_replacing_energy_filter(self):
@@ -290,11 +328,13 @@ class TestGenerateFutureQuery(TestCase):
             filter_query="energy:high",
             icon="lucide-battery-full",
             color="yellow",
-            category=FilterCategory.ENERGY
+            category=FilterCategory.ENERGY,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, "in:next energy:high")
 
     def test_generate_future_query_context_filter_normal_strategy(self):
@@ -305,9 +345,11 @@ class TestGenerateFutureQuery(TestCase):
             filter_query='context:"@office"',
             icon="lucide-at-sign",
             color="purple",
-            category=FilterCategory.CONTEXT
+            category=FilterCategory.CONTEXT,
         )
         current_state = {"active": False, "inversed": False}
 
-        result = self.parser.generate_future_query(current_query, target_filter, current_state)
+        result = self.parser.generate_future_query(
+            current_query, target_filter, current_state
+        )
         self.assertEqual(result, 'context:"@home","@office"')

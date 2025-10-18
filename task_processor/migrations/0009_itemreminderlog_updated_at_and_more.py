@@ -5,20 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('task_processor', '0008_itemreminderlog_item_remind_at_item_rrule_and_more'),
+        ("task_processor", "0008_itemreminderlog_item_remind_at_item_rrule_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='itemreminderlog',
-            name='updated_at',
+            model_name="itemreminderlog",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AlterField(
-            model_name='itemreminderlog',
-            name='reminded_at',
+            model_name="itemreminderlog",
+            name="reminded_at",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]

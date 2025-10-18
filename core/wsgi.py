@@ -18,5 +18,6 @@ application = get_wsgi_application()
 # Wrap with WhiteNoise for static file serving in production
 if os.environ.get("DJANGO_SETTINGS_MODULE") == "core.settings.production":
     from whitenoise import WhiteNoise
+
     application = WhiteNoise(application, root="/app/staticfiles")
     application.add_files("/app/staticfiles", prefix="static/")

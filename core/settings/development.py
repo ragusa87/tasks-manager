@@ -2,7 +2,8 @@
 Development settings for core project.
 """
 
-from .base import * # noqa
+from .base import *  # noqa
+
 # Use SQLite for development if PostgreSQL is not available
 import os
 
@@ -23,7 +24,6 @@ INTERNAL_IPS = [
 ]
 
 
-
 if not os.getenv("DB_NAME"):
     DATABASES = {
         "default": {
@@ -42,9 +42,15 @@ CACHES = {
 # Override Vite settings for development
 DJANGO_VITE["default"]["dev_mode"] = True
 # Setup for traefik
-DJANGO_VITE["default"]["dev_server_host"] = get_env_variable("DJANGO_VITE_DEV_SERVER_HOST", "tasks-vite.docker.test")
-DJANGO_VITE["default"]["dev_server_port"] = get_env_variable("DJANGO_VITE_DEV_SERVER_PORT", "443") # 5173
-DJANGO_VITE["default"]["dev_server_protocol"] = get_env_variable("DJANGO_VITE_DEV_SERVER_PROTOCOL", "https")
+DJANGO_VITE["default"]["dev_server_host"] = get_env_variable(
+    "DJANGO_VITE_DEV_SERVER_HOST", "tasks-vite.docker.test"
+)
+DJANGO_VITE["default"]["dev_server_port"] = get_env_variable(
+    "DJANGO_VITE_DEV_SERVER_PORT", "443"
+)  # 5173
+DJANGO_VITE["default"]["dev_server_protocol"] = get_env_variable(
+    "DJANGO_VITE_DEV_SERVER_PROTOCOL", "https"
+)
 DJANGO_VITE["default"]["static_url_prefix"] = ""
 
 SHOW_DJANGO_DEBUG_TOOLBAR = DEBUG

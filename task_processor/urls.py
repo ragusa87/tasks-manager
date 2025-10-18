@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.urls import path
 
 from .views import (
@@ -36,8 +37,18 @@ urlpatterns = [
     path("item/create/", ItemCreateView.as_view(), name="item_create"),
     path("item/<int:item_id>/detail/", ItemDetailView.as_view(), name="item_detail"),
     path("item/<int:item_id>/update/", ItemUpdateView.as_view(), name="item_update"),
-    path("item/<int:item_id>/transition/<str:transition_slug>/", ItemTransitionView.as_view(), name="item_transition"),
+    path(
+        "item/<int:item_id>/transition/<str:transition_slug>/",
+        ItemTransitionView.as_view(),
+        name="item_transition",
+    ),
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard_stats"),
-    path("api/autocomplete/<str:field_type>/", AutocompleteView.as_view(), name="autocomplete"),
-    path("api/create/<str:field_type>/", CreateFieldView.as_view(), name="create_field"),
+    path(
+        "api/autocomplete/<str:field_type>/",
+        AutocompleteView.as_view(),
+        name="autocomplete",
+    ),
+    path(
+        "api/create/<str:field_type>/", CreateFieldView.as_view(), name="create_field"
+    ),
 ]

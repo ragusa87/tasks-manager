@@ -102,9 +102,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Authentication settings
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login/"
 
 
 # Internationalization
@@ -165,26 +165,26 @@ LOGGING = {
             "formatter": "verbose",
         },
     },
-    'loggers': {
-        'smbclient': {
-            'handlers': ['console'],
-            'level': 'ERROR',
-            'propagate': False,
+    "loggers": {
+        "smbclient": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
         },
-        'smbprotocol': {
-            'handlers': ['console'],
-            'level': 'ERROR',
-            'propagate': False,
+        "smbprotocol": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
         },
-        'ai_service': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "ai_service": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
         },
-        'websocket_utils': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
+        "websocket_utils": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
         },
     },
     "root": {
@@ -208,7 +208,9 @@ CHANNEL_LAYERS = {
 
 # Allows to have traefik communicating in http
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-CELERI_ADMIN_URL= get_env_variable("CELERI_ADMIN_URL", "http://tasks-celery-admin.docker.test/")
+CELERI_ADMIN_URL = get_env_variable(
+    "CELERI_ADMIN_URL", "http://tasks-celery-admin.docker.test/"
+)
 IS_DEMO = get_env_variable("IS_DEMO", "True").lower() in ("true", "1", "t")
 
 
@@ -221,7 +223,7 @@ DJANGO_VITE = {
     "default": {
         "dev_mode": False,  # Will be overridden in development.py
         "manifest_path": BASE_DIR / "static" / "dist" / ".vite" / "manifest.json",
-        "static_url_prefix": "dist"
+        "static_url_prefix": "dist",
     }
 }
 # Email backend settings
@@ -235,10 +237,9 @@ EMAIL_PORT = email_config["EMAIL_PORT"]
 EMAIL_BACKEND = email_config["EMAIL_BACKEND"]
 EMAIL_USE_TLS = email_config["EMAIL_USE_TLS"]
 EMAIL_USE_SSL = email_config["EMAIL_USE_SSL"]
-FRONTEND_URL= get_env_variable("FRONTEND_URL", "https://tasks.docker.test")
+FRONTEND_URL = get_env_variable("FRONTEND_URL", "https://tasks.docker.test")
 
 SHOW_DJANGO_DEBUG_TOOLBAR = False
-
 
 
 CUSTOM_AUTHENTICATION_BACKEND = str(

@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('task_processor', '0009_itemreminderlog_updated_at_and_more'),
+        ("task_processor", "0009_itemreminderlog_updated_at_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='item',
-            old_name='parent_project',
-            new_name='parent',
+            model_name="item",
+            old_name="parent_project",
+            new_name="parent",
         ),
     ]

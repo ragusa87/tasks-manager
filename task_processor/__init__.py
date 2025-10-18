@@ -1,1 +1,1 @@
-default_app_config = 'task_processor.apps.TaskProcessorConfig'
+default_app_config = "task_processor.apps.TaskProcessorConfig"

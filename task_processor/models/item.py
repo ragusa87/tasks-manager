@@ -27,34 +27,40 @@ def requires_form(form_class):
     Args:
         form_class: The Django form class to use for this transition (can be a string path)
     """
+
     def decorator(func):
         func._form_class = form_class
         return func
+
     return decorator
+
 
 def priority(position: int = 0):
     def decorator(func):
         func._position = position
         return func
-    return decorator
 
+    return decorator
 
 
 class ItemTransition(dict):
     @property
     def name(self):
         return self.get("name")
+
     @property
     def label(self):
         return self.get("label")
+
     @property
     def form_class(self):
         return self.get("form_class")
 
+
 class ItemTransitionsBag(list[ItemTransition]):
     @staticmethod
     def sort_by_priority(x: ItemTransition):
-        p = x.get('position')
+        p = x.get("position")
         if p is None:
             p = 0
         if p > 0:
@@ -67,12 +73,14 @@ class ItemTransitionsBag(list[ItemTransition]):
         # Sort by priority (higher numbers first, None values as zero)
         sorted_seq = sorted(seq, key=ItemTransitionsBag.sort_by_priority)
         super().__init__(sorted_seq)
+
     def get_transition(self, transition_slug):
         # Check if the requested transition is allowed
         for trans in self:
             if trans.name == transition_slug:
                 return trans
         return None
+
 
 class ItemManager(models.Manager):
     """Custom manager for GTD items with common queries"""
@@ -87,9 +95,7 @@ class ItemManager(models.Manager):
     def next_actions(self, user, context=None):
         """Get actionable next actions, optionally filtered by context"""
         queryset = self.filter(
-            user=user,
-            status=GTDStatus.NEXT_ACTION,
-            is_completed=False
+            user=user, status=GTDStatus.NEXT_ACTION, is_completed=False
         )
         if context:
             queryset = queryset.filter(contexts=context)
@@ -125,7 +131,7 @@ class ItemManager(models.Manager):
             user=user,
             due_date__lt=now,
             is_completed=False,
-            status__in=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT]
+            status__in=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT],
         )
 
     def due_today(self, user):
@@ -135,7 +141,7 @@ class ItemManager(models.Manager):
             user=user,
             due_date__date=today,
             is_completed=False,
-            status__in=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT]
+            status__in=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT],
         )
 
 
@@ -143,23 +149,28 @@ class Item(models.Model):
     """
     Universal GTD Item with State Machine for status transitions
     """
+
     title = models.CharField(max_length=1024)
     description = models.TextField(blank=True)
 
     # State machine field - this enforces valid transitions
-    status = models.CharField(max_length=50, choices=GTDStatus.choices, default=GTDStatus.INBOX)
-    energy = models.CharField(max_length=10, choices=GTDEnergy.choices, default=None, null=True)
+    status = models.CharField(
+        max_length=50, choices=GTDStatus.choices, default=GTDStatus.INBOX
+    )
+    energy = models.CharField(
+        max_length=10, choices=GTDEnergy.choices, default=None, null=True
+    )
 
     priority = models.IntegerField(choices=Priority.choices, default=Priority.NORMAL)
 
     # GTD-specific fields
     parent = models.ForeignKey(
-        'self',
+        "self",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name='sub_items',
-        limit_choices_to={'status': GTDStatus.PROJECT}
+        related_name="sub_items",
+        limit_choices_to={"status": GTDStatus.PROJECT},
     )
     contexts = models.ManyToManyField(Context, blank=True)
     area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
@@ -168,34 +179,52 @@ class Item(models.Model):
     # Time-related fields
     due_date = models.DateTimeField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
-    estimated_duration = models.CharField(max_length=10, choices=GTDDuration.choices, null=True, blank=True, help_text="Estimated time duration")
+    estimated_duration = models.CharField(
+        max_length=10,
+        choices=GTDDuration.choices,
+        null=True,
+        blank=True,
+        help_text="Estimated time duration",
+    )
 
     # Reminder fields
-    remind_at = models.DateTimeField(null=True, blank=True, help_text="Next reminder occurrence")
-    rrule = models.TextField(blank=True, null=True, help_text="RRULE recurrence pattern (RFC 5545)")
+    remind_at = models.DateTimeField(
+        null=True, blank=True, help_text="Next reminder occurrence"
+    )
+    rrule = models.TextField(
+        blank=True, null=True, help_text="RRULE recurrence pattern (RFC 5545)"
+    )
 
     # Completion tracking
     is_completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     # Waiting For fields (used when status=WAITING_FOR)
-    waiting_for_person = models.CharField(max_length=100, blank=True,
-                                          help_text="Person/system this is delegated to")
-    date_requested = models.DateField(null=True, blank=True,
-                                      help_text="When was this requested/delegated")
-    follow_up_date = models.DateField(null=True, blank=True,
-                                      help_text="When to follow up")
+    waiting_for_person = models.CharField(
+        max_length=100, blank=True, help_text="Person/system this is delegated to"
+    )
+    date_requested = models.DateField(
+        null=True, blank=True, help_text="When was this requested/delegated"
+    )
+    follow_up_date = models.DateField(
+        null=True, blank=True, help_text="When to follow up"
+    )
 
     # Someday/Maybe fields (used when status=SOMEDAY_MAYBE)
     last_reviewed = models.DateField(null=True, blank=True)
     review_frequency_days = models.IntegerField(
         default=GTDConfig.DEFAULT_SOMEDAY_MAYBE_REVIEW_DAYS,
-        help_text="How often to review this someday/maybe item"
+        help_text="How often to review this someday/maybe item",
     )
 
     # External integrations
-    nirvana_id = models.CharField(max_length=100, null=True, blank=True, unique=True,
-                                  help_text="External Nirvana ID for syncing")
+    nirvana_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="External Nirvana ID for syncing",
+    )
 
     # Metadata
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -205,15 +234,15 @@ class Item(models.Model):
     objects = ItemManager()
 
     class Meta:
-        ordering = ['-priority', 'due_date', 'created_at']
+        ordering = ["-priority", "due_date", "created_at"]
         indexes = [
-            models.Index(fields=['user', 'status']),
-            models.Index(fields=['user', 'status', 'is_completed']),
-            models.Index(fields=['due_date']),
-            models.Index(fields=['area']),
-            models.Index(fields=['nirvana_id']),
-            models.Index(fields=['remind_at']),
-            models.Index(fields=['remind_at', 'status', 'is_completed']),
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["user", "status", "is_completed"]),
+            models.Index(fields=["due_date"]),
+            models.Index(fields=["area"]),
+            models.Index(fields=["nirvana_id"]),
+            models.Index(fields=["remind_at"]),
+            models.Index(fields=["remind_at", "status", "is_completed"]),
         ]
 
     def __str__(self):
@@ -243,7 +272,11 @@ class Item(models.Model):
 
     @property
     def is_task(self):
-        return self.status in [GTDStatus.NEXT_ACTION, GTDStatus.WAITING_FOR, GTDStatus.INBOX]
+        return self.status in [
+            GTDStatus.NEXT_ACTION,
+            GTDStatus.WAITING_FOR,
+            GTDStatus.INBOX,
+        ]
 
     @property
     def is_someday_maybe(self):
@@ -261,7 +294,11 @@ class Item(models.Model):
     @property
     def is_active(self):
         """True if item is in active workflow"""
-        return self.status not in [GTDStatus.COMPLETED, GTDStatus.CANCELLED, GTDStatus.REFERENCE]
+        return self.status not in [
+            GTDStatus.COMPLETED,
+            GTDStatus.CANCELLED,
+            GTDStatus.REFERENCE,
+        ]
 
     @property
     def is_overdue(self):
@@ -273,7 +310,9 @@ class Item(models.Model):
     def is_due_soon(self):
         """True if due within warning period"""
         if self.due_date and not self.is_completed:
-            warning_date = timezone.now() + timedelta(days=GTDConfig.OVERDUE_WARNING_DAYS)
+            warning_date = timezone.now() + timedelta(
+                days=GTDConfig.OVERDUE_WARNING_DAYS
+            )
             return self.due_date <= warning_date
         return False
 
@@ -315,8 +354,7 @@ class Item(models.Model):
         """For project items - get their next actions"""
         if self.is_project:
             return self.sub_items.filter(
-                status=GTDStatus.NEXT_ACTION,
-                is_completed=False
+                status=GTDStatus.NEXT_ACTION, is_completed=False
             )
         return Item.objects.none()
 
@@ -328,12 +366,12 @@ class Item(models.Model):
     @property
     def priority_icon(self):
         """Get priority icon name for sprite tags"""
-        return GTDConfig.PRIORITY_ICONS.get(self.priority, '')
+        return GTDConfig.PRIORITY_ICONS.get(self.priority, "")
 
     @property
     def priority_color(self):
         """Get priority color class for styling"""
-        return GTDConfig.PRIORITY_COLORS.get(self.priority, 'text-gray-500')
+        return GTDConfig.PRIORITY_COLORS.get(self.priority, "text-gray-500")
 
     # Property to get the flow instance
     @property
@@ -347,21 +385,33 @@ class Item(models.Model):
 
         # Validate waiting_for fields
         if self.status == GTDStatus.WAITING_FOR:
-            if not self.waiting_for_person or str(self.waiting_for_person).strip() == "":
-                raise ValidationError("Waiting for items must specify who/what you're waiting for")
+            if (
+                not self.waiting_for_person
+                or str(self.waiting_for_person).strip() == ""
+            ):
+                raise ValidationError(
+                    "Waiting for items must specify who/what you're waiting for"
+                )
 
         # Validate project hierarchy depth
         if self.parent:
             if self.parent.status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
-                raise ValidationError("Parent must be of type: " + ", ".join(GTDConfig.STATUS_WITH_PARENT_ALLOWED))
+                raise ValidationError(
+                    "Parent must be of type: "
+                    + ", ".join(GTDConfig.STATUS_WITH_PARENT_ALLOWED)
+                )
 
             if self.depth >= GTDConfig.MAX_DEPTH:
-                raise ValidationError(f"Item nesting cannot exceed {GTDConfig.MAX_DEPTH} levels")
+                raise ValidationError(
+                    f"Item nesting cannot exceed {GTDConfig.MAX_DEPTH} levels"
+                )
 
         # Prevent circular references
         if self.parent and self.parent.status in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
             if self._check_circular_reference(self.parent):
-                raise ValidationError(f"Circular project reference detected: {self.parent.pk}")
+                raise ValidationError(
+                    f"Circular project reference detected: {self.parent.pk}"
+                )
 
     def _check_circular_reference(self, potential_parent):
         """Check for circular references in project hierarchy"""
@@ -372,7 +422,7 @@ class Item(models.Model):
         return False
 
     # Get available transitions for UI
-    def get_available_transitions(self) ->ItemTransitionsBag:
+    def get_available_transitions(self) -> ItemTransitionsBag:
         """Get list of available state transitions for current state"""
         return self.flow.get_available_transitions()
 
@@ -386,17 +436,18 @@ class ItemFlow:
     """
     Flow class for GTD Item state machine using viewflow.fsm
     """
+
     state_field = fsm.State(GTDStatus, default=GTDStatus.INBOX)
 
     state_icon_mapping = {
-        GTDStatus.INBOX.value: ('lucide-inbox', '📥'),
-        GTDStatus.NEXT_ACTION.value: ('lucide-zap', '🚀'),
-        GTDStatus.WAITING_FOR.value: ('lucide-hourglass', '👤'),
-        GTDStatus.SOMEDAY_MAYBE.value: ('lucide-history', '💭'),
-        GTDStatus.REFERENCE.value: ('lucide-archive', '📁'),
-        GTDStatus.PROJECT.value: ('lucide-briefcase', '💼'),
-        GTDStatus.COMPLETED.value: ('lucide-badge-check', '✅'),
-        GTDStatus.CANCELLED.value: ('lucide-trash-2', '🚫'),
+        GTDStatus.INBOX.value: ("lucide-inbox", "📥"),
+        GTDStatus.NEXT_ACTION.value: ("lucide-zap", "🚀"),
+        GTDStatus.WAITING_FOR.value: ("lucide-hourglass", "👤"),
+        GTDStatus.SOMEDAY_MAYBE.value: ("lucide-history", "💭"),
+        GTDStatus.REFERENCE.value: ("lucide-archive", "📁"),
+        GTDStatus.PROJECT.value: ("lucide-briefcase", "💼"),
+        GTDStatus.COMPLETED.value: ("lucide-badge-check", "✅"),
+        GTDStatus.CANCELLED.value: ("lucide-trash-2", "🚫"),
     }
 
     def __init__(self, item):
@@ -411,34 +462,52 @@ class ItemFlow:
         return self.item.status
 
     # State Machine Transitions with Guards and Actions
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.NEXT_ACTION, label=_("Next Action"))
+    @state_field.transition(
+        source=GTDStatus.INBOX, target=GTDStatus.NEXT_ACTION, label=_("Next Action")
+    )
     def process_as_action(self):
         """Process inbox item as actionable task"""
         pass
 
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.PROJECT, label=_("Convert to Project"))
+    @state_field.transition(
+        source=GTDStatus.INBOX, target=GTDStatus.PROJECT, label=_("Convert to Project")
+    )
     def process_as_project(self):
         """Process inbox item as multi-step project"""
         pass
 
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.SOMEDAY_MAYBE, label=_("Someday/Maybe"))
+    @state_field.transition(
+        source=GTDStatus.INBOX, target=GTDStatus.SOMEDAY_MAYBE, label=_("Someday/Maybe")
+    )
     def process_as_someday_maybe(self):
         """Process inbox item as someday/maybe"""
         if not self.item.last_reviewed:
             self.item.last_reviewed = timezone.now().date()
 
-    @state_field.transition(source=GTDStatus.INBOX, target=GTDStatus.REFERENCE,label=_("Convert as Reference"))
+    @state_field.transition(
+        source=GTDStatus.INBOX,
+        target=GTDStatus.REFERENCE,
+        label=_("Convert as Reference"),
+    )
     def process_as_reference(self):
         """Process inbox item as reference material"""
         pass
 
-    @state_field.transition(source=GTDStatus.NEXT_ACTION, target=GTDStatus.REFERENCE,label=_("Convert as Reference"))
+    @state_field.transition(
+        source=GTDStatus.NEXT_ACTION,
+        target=GTDStatus.REFERENCE,
+        label=_("Convert as Reference"),
+    )
     def convert_as_reference(self):
         self.item.parent = None
         pass
 
     @requires_form("task_processor.forms.WaitingForForm")
-    @state_field.transition(source=[GTDStatus.NEXT_ACTION], target=GTDStatus.WAITING_FOR, label=_("Waiting For"))
+    @state_field.transition(
+        source=[GTDStatus.NEXT_ACTION],
+        target=GTDStatus.WAITING_FOR,
+        label=_("Waiting For"),
+    )
     def delegate(self, person, follow_up_days=None):
         """Delegate task to someone else"""
         if person:
@@ -449,48 +518,82 @@ class ItemFlow:
             days = follow_up_days or GTDConfig.DEFAULT_FOLLOW_UP_DAYS
             self.item.follow_up_date = timezone.now().date() + timedelta(days=days)
 
-    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.WAITING_FOR],
-                           target=GTDStatus.SOMEDAY_MAYBE, label=_("Someday/Maybe"))
+    @state_field.transition(
+        source=[GTDStatus.NEXT_ACTION, GTDStatus.WAITING_FOR],
+        target=GTDStatus.SOMEDAY_MAYBE,
+        label=_("Someday/Maybe"),
+    )
     def defer_to_someday_maybe(self):
         """Move active item to someday/maybe"""
         if not self.item.last_reviewed:
             self.item.last_reviewed = timezone.now().date()
 
-    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.NEXT_ACTION, label=_("Next Action"))
+    @state_field.transition(
+        source=GTDStatus.SOMEDAY_MAYBE,
+        target=GTDStatus.NEXT_ACTION,
+        label=_("Next Action"),
+    )
     def activate_from_someday_maybe(self):
         """Activate someday/maybe item as next action"""
         pass
 
-    @state_field.transition(source=GTDStatus.SOMEDAY_MAYBE, target=GTDStatus.PROJECT, label=_("Convert to Project"))
+    @state_field.transition(
+        source=GTDStatus.SOMEDAY_MAYBE,
+        target=GTDStatus.PROJECT,
+        label=_("Convert to Project"),
+    )
     def activate_as_project(self):
         """Activate someday/maybe item as project"""
         pass
 
-    @state_field.transition(source=GTDStatus.WAITING_FOR, target=GTDStatus.NEXT_ACTION, label=_("Received Response"))
+    @state_field.transition(
+        source=GTDStatus.WAITING_FOR,
+        target=GTDStatus.NEXT_ACTION,
+        label=_("Received Response"),
+    )
     def receive_response(self):
         """Mark waiting for item as received/resolved"""
         pass
 
-    @state_field.transition(source=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT, GTDStatus.SOMEDAY_MAYBE, GTDStatus.WAITING_FOR], target=GTDStatus.COMPLETED, label=_("Complete"))
+    @state_field.transition(
+        source=[
+            GTDStatus.NEXT_ACTION,
+            GTDStatus.PROJECT,
+            GTDStatus.SOMEDAY_MAYBE,
+            GTDStatus.WAITING_FOR,
+        ],
+        target=GTDStatus.COMPLETED,
+        label=_("Complete"),
+    )
     def complete(self):
         """Mark item as completed"""
         self.item.is_completed = True
         self.item.completed_at = timezone.now()
 
-
     @priority(-100)
-    @state_field.transition(source=fsm.State.ANY, target=GTDStatus.CANCELLED, conditions=[lambda self: not self.item.status == GTDStatus.CANCELLED], label=_("Cancel"))
+    @state_field.transition(
+        source=fsm.State.ANY,
+        target=GTDStatus.CANCELLED,
+        conditions=[lambda self: not self.item.status == GTDStatus.CANCELLED],
+        label=_("Cancel"),
+    )
     def cancel(self):
         """Cancel item from any state"""
         pass
 
-    @state_field.transition(source=GTDStatus.CANCELLED, target=GTDStatus.INBOX, label=_("Restore to Inbox"))
+    @state_field.transition(
+        source=GTDStatus.CANCELLED, target=GTDStatus.INBOX, label=_("Restore to Inbox")
+    )
     def uncancel(self):
         """Process inbox item as actionable task"""
         pass
 
-    @state_field.transition(source=GTDStatus.COMPLETED, target=GTDStatus.NEXT_ACTION,
-                           conditions=[lambda self: self.item.is_completed], label=_("Reopen"))
+    @state_field.transition(
+        source=GTDStatus.COMPLETED,
+        target=GTDStatus.NEXT_ACTION,
+        conditions=[lambda self: self.item.is_completed],
+        label=_("Reopen"),
+    )
     def reopen(self):
         """Reopen completed item"""
         self.item.is_completed = False
@@ -505,22 +608,24 @@ class ItemFlow:
         # Get all transition methods by checking for the viewflow transition decorator
         transitions = []
         for method_name in dir(self):
-            if method_name.startswith('_'):
+            if method_name.startswith("_"):
                 continue
             method = getattr(self, method_name)
-            if hasattr(method, 'get_transitions'):
+            if hasattr(method, "get_transitions"):
                 method_transitions = method.get_transitions()
                 for transition in method_transitions:
                     transitions.append(self._transition_to_dict(transition))
         return ItemTransitionsBag(transitions)
 
-    def _get_annotated_property(self, transition_slug: str, property_name = "_form_class"):
+    def _get_annotated_property(
+        self, transition_slug: str, property_name="_form_class"
+    ):
         # Get the original function from the class to check for decorator attributes
         original_func = getattr(self.__class__, transition_slug)
 
         # The decorator attributes are preserved on the _descriptor object
         property_value = None
-        if hasattr(original_func, '_descriptor'):
+        if hasattr(original_func, "_descriptor"):
             descriptor = original_func._descriptor
             property_value = getattr(descriptor, property_name, None)
 
@@ -528,7 +633,7 @@ class ItemFlow:
             return None
 
         # Import the form class if it's a string path
-        if property_name == '_form_class' and isinstance(property_value, str):
+        if property_name == "_form_class" and isinstance(property_value, str):
             return import_string(property_value)
         return property_value
 
@@ -537,16 +642,18 @@ class ItemFlow:
         transition_target = str(transition.target)
         sprite_icon_tuple = self.state_icon_mapping.get(transition_target, (None, None))
 
-        return ItemTransition(**{
-            'name': transition_slug,
-            'label': str(transition.label),
-            'source': str(transition.source),
-            'target': str(transition.target),
-            'sprite': sprite_icon_tuple[0],
-            'icon': sprite_icon_tuple[1],
-            'form_class': self._get_annotated_property(transition_slug),
-            'position': self._get_annotated_property(transition_slug, "_position"),
-        })
+        return ItemTransition(
+            **{
+                "name": transition_slug,
+                "label": str(transition.label),
+                "source": str(transition.source),
+                "target": str(transition.target),
+                "sprite": sprite_icon_tuple[0],
+                "icon": sprite_icon_tuple[1],
+                "form_class": self._get_annotated_property(transition_slug),
+                "position": self._get_annotated_property(transition_slug, "_position"),
+            }
+        )
 
     @property
     def icon(self):
@@ -560,19 +667,20 @@ class ItemFlow:
         """Get icon for current state"""
         index = max(0, min(index, 1))  # Clamp index to 0 or 1
         return self.state_icon_mapping.get(self.item.status, (None, None))[index]
+
     def get_available_transitions(self) -> ItemTransitionsBag:
         """Get list of available state transitions for current state"""
         transitions = []
 
         # Get all transition methods by checking for the viewflow transition decorator
         for method_name in dir(self):
-            if method_name.startswith('_'):
+            if method_name.startswith("_"):
                 continue
 
             method = getattr(self, method_name)
-            if hasattr(method, 'get_transitions'):
+            if hasattr(method, "get_transitions"):
                 # Check if this transition can proceed from current state
-                if hasattr(method, 'can_proceed') and method.can_proceed():
+                if hasattr(method, "can_proceed") and method.can_proceed():
                     # Get the transition details
                     method_transitions = method.get_transitions()
                     for transition in method_transitions:
@@ -587,18 +695,25 @@ class ItemReminderLog(models.Model):
     Log of reminder attempts for GTD items.
     Tracks successful and failed reminder notifications.
     """
-    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='reminder_logs')
+
+    item = models.ForeignKey(
+        Item, on_delete=models.CASCADE, related_name="reminder_logs"
+    )
     reminded_at = models.DateTimeField(default=timezone.now)
-    error = models.TextField(blank=True, null=True, help_text="Error message if sending failed")
+    error = models.TextField(
+        blank=True, null=True, help_text="Error message if sending failed"
+    )
     nb_retry = models.IntegerField(default=0, help_text="Number of retry attempts")
-    active = models.BooleanField(default=True, help_text="Whether to continue retry attempts")
+    active = models.BooleanField(
+        default=True, help_text="Whether to continue retry attempts"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-reminded_at']
+        ordering = ["-reminded_at"]
         indexes = [
-            models.Index(fields=['item', 'active']),
-            models.Index(fields=['reminded_at']),
+            models.Index(fields=["item", "active"]),
+            models.Index(fields=["reminded_at"]),
         ]
 
     def __str__(self):
@@ -619,4 +734,5 @@ class ItemReminderLog(models.Model):
     def can_retry(self):
         """Return True if this reminder can be retried"""
         from task_processor.constants import GTDConfig
+
         return self.active and self.nb_retry < GTDConfig.MAX_REMINDER_THRESHOLD

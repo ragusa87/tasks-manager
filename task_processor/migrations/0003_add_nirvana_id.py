@@ -4,15 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('task_processor', '0002_change_context_to_manytomany'),
+        ("task_processor", "0002_change_context_to_manytomany"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='item',
-            name='nirvana_id',
-            field=models.CharField(blank=True, help_text='External Nirvana ID for syncing', max_length=100, null=True, unique=True),
+            model_name="item",
+            name="nirvana_id",
+            field=models.CharField(
+                blank=True,
+                help_text="External Nirvana ID for syncing",
+                max_length=100,
+                null=True,
+                unique=True,
+            ),
         ),
     ]

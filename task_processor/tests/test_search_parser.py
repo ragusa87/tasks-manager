@@ -59,7 +59,9 @@ class TestSearchParser(TestCase):
             "in": ["inbox"],
             "tags": ["train", "bus"],
             "is": ["overdue"],
-            "priority": ["-low"]  # Note: priority:-low is parsed as included field with value "-low"
+            "priority": [
+                "-low"
+            ],  # Note: priority:-low is parsed as included field with value "-low"
         }
         expected_excluded = {}
 
@@ -69,12 +71,10 @@ class TestSearchParser(TestCase):
 
     def test_excluded_priority_example(self):
         """Test parsing excluded priority filter"""
-        query = 'in:inbox -priority:low coucou'
+        query = "in:inbox -priority:low coucou"
         result = self.parser.parse(query)
 
-        expected_included = {
-            "in": ["inbox"]
-        }
+        expected_included = {"in": ["inbox"]}
         expected_excluded = {
             "priority": ["low"]  # This is how you exclude priority:low
         }
@@ -109,7 +109,9 @@ class TestSearchParser(TestCase):
     def test_special_characters_in_values(self):
         """Test parsing values with special characters"""
         result = self.parser.parse('tags:"work-item" priority:high+urgent')
-        self.assertEqual(result.included, {"tags": ["work-item"], "priority": ["high+urgent"]})
+        self.assertEqual(
+            result.included, {"tags": ["work-item"], "priority": ["high+urgent"]}
+        )
 
     def test_whitespace_handling(self):
         """Test proper whitespace handling"""

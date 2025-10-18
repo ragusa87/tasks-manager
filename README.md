@@ -1,6 +1,6 @@
 ### Disclamer
 
-This is a pet projet, goal is to do some code-flow with IA. 
+This is a pet projet, goal is to do some code-flow with IA.
 I don't intent to maintain this project in the long term.
 
 ### TODOS
@@ -10,7 +10,7 @@ I don't intent to maintain this project in the long term.
 - New transition: Convert whole project to references
 - Email inbox via https://maileroo.com/docs/inbound-routing/
 - Add custom *rrule* JS picker.
-- New views/action: `create a new project` , `delete an area`, `delete a tag` 
+- New views/action: `create a new project` , `delete an area`, `delete a tag`
 - DateTime picker could respect the user's locale.
 - htmx show connectivity issue and 500.
 
@@ -20,7 +20,7 @@ I don't intent to maintain this project in the long term.
 uv run ruff check .
 uv run ruff format .
 ```
-
+You can also use pre-commit (`docker compose exec web uv run pre-commit install`) or run `just uv run pre-commit run --all-files`
 ### Settings
 
 - **Development**: `core.settings.development`
@@ -35,7 +35,7 @@ Requirements:
 - traefik (optional, only if you want to use it as reverse-proxy)
 - justfile (optional)
 
-#### Initialize the project 
+#### Initialize the project
 
 Just run:
 ```

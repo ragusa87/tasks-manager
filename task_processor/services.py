@@ -1,6 +1,7 @@
 """
 Django signals for GTD task processing system.
 """
+
 import logging
 from datetime import datetime
 from typing import Optional
@@ -17,6 +18,7 @@ from .constants import GTDConfig
 from .models.item import Item, ItemReminderLog
 
 logger = logging.getLogger(__name__)
+
 
 class ReminderService:
     """
@@ -45,12 +47,16 @@ class ReminderService:
             send_mail(
                 subject=subject,
                 message=message,
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com'),
+                from_email=getattr(
+                    settings, "DEFAULT_FROM_EMAIL", "noreply@example.com"
+                ),
                 recipient_list=[recipient_email],
-                fail_silently=False
+                fail_silently=False,
             )
 
-            logger.info(f"Reminder email sent successfully for item {item.id} to {recipient_email}")
+            logger.info(
+                f"Reminder email sent successfully for item {item.id} to {recipient_email}"
+            )
             return True
 
         except Exception as e:
@@ -70,7 +76,9 @@ class ReminderService:
         ]
 
         if item.due_date:
-            message_lines.extend(["", f"Due Date: {item.due_date.strftime('%Y-%m-%d %H:%M')}"])
+            message_lines.extend(
+                ["", f"Due Date: {item.due_date.strftime('%Y-%m-%d %H:%M')}"]
+            )
 
         if item.area:
             message_lines.extend(["", f"Area: {item.area.name}"])
@@ -83,12 +91,14 @@ class ReminderService:
         url = f"{domain}" + reverse("dashboard") + f"?q=id:{item.pk}"
         message_lines.extend(["", f"URL: {url}"])
 
-        message_lines.extend([
-            "",
-            "Take action on this item when you have the time and context.",
-            "",
-            "Best regards,",
-        ])
+        message_lines.extend(
+            [
+                "",
+                "Take action on this item when you have the time and context.",
+                "",
+                "Best regards,",
+            ]
+        )
 
         return "\n".join(message_lines)
 
@@ -128,13 +138,17 @@ class ReminderService:
                 if next_occurrence.tzinfo is None:
                     next_occurrence = timezone.make_aware(next_occurrence)
 
-                logger.info(f"Next reminder for item {item.id} calculated: {next_occurrence}")
+                logger.info(
+                    f"Next reminder for item {item.id} calculated: {next_occurrence}"
+                )
                 return next_occurrence
 
             return None
 
         except Exception as e:
-            logger.error(f"Error calculating next reminder for item {item.id}: {str(e)}")
+            logger.error(
+                f"Error calculating next reminder for item {item.id}: {str(e)}"
+            )
             return None
 
     def _process_reminder(self, item: Item, reminded_at: datetime) -> ItemReminderLog:
@@ -155,9 +169,13 @@ class ReminderService:
         with transaction.atomic():
             # Create the initial log entry
             created = False
-            log_entry = ItemReminderLog.objects.annotate(
-                reminded_sec=TruncSecond('reminded_at')
-            ).filter(item=item, reminded_sec=reminded_at.replace(microsecond=0)).first()
+            log_entry = (
+                ItemReminderLog.objects.annotate(
+                    reminded_sec=TruncSecond("reminded_at")
+                )
+                .filter(item=item, reminded_sec=reminded_at.replace(microsecond=0))
+                .first()
+            )
             if not log_entry:
                 created = True
                 log_entry = ItemReminderLog.objects.create(
@@ -177,10 +195,9 @@ class ReminderService:
                 # Email sent successfully - calculate next reminder
                 next_reminder = self._calculate_next_reminder(item)
                 item.remind_at = next_reminder
-                item.save(update_fields=['remind_at'])
+                item.save(update_fields=["remind_at"])
 
                 return log_entry
-
 
             except Exception as e:
                 error_message = f"Exception during email send: {str(e)}"
@@ -194,9 +211,13 @@ class ReminderService:
                 # Check if we should continue retrying
                 if log_entry.nb_retry >= GTDConfig.MAX_REMINDER_THRESHOLD:
                     log_entry.active = False
-                    logger.warning(f"Max retry threshold reached for item {item.id}. Disabling further attempts.")
+                    logger.warning(
+                        f"Max retry threshold reached for item {item.id}. Disabling further attempts."
+                    )
                 else:
-                    logger.info(f"Reminder failed for item {item.id}. Will retry later. Attempt {log_entry.nb_retry}")
+                    logger.info(
+                        f"Reminder failed for item {item.id}. Will retry later. Attempt {log_entry.nb_retry}"
+                    )
 
                 log_entry.save()
 
@@ -215,10 +236,14 @@ class ReminderService:
             if reminder_log.is_success:
                 logger.info(f"Reminder processed successfully for item {item.id}")
             else:
-                logger.warning(f"Reminder processing failed for item {item.id}: {reminder_log.error}")
+                logger.warning(
+                    f"Reminder processing failed for item {item.id}: {reminder_log.error}"
+                )
             return reminder_log
         except Exception as e:
-            logger.error(f"Error in reminder_due signal handler for item {item.id}: {str(e)}")
+            logger.error(
+                f"Error in reminder_due signal handler for item {item.id}: {str(e)}"
+            )
             raise e
 
 

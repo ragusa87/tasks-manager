@@ -21,20 +21,12 @@ class ReminderSystemTestCase(TestCase):
     def setUp(self):
         """Set up test data."""
         self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
+            username="testuser", email="test@example.com", password="testpass123"
         )
 
-        self.area = Area.objects.create(
-            name='Test Area',
-            user=self.user
-        )
+        self.area = Area.objects.create(name="Test Area", user=self.user)
 
-        self.context = Context.objects.create(
-            name='@test',
-            user=self.user
-        )
+        self.context = Context.objects.create(name="@test", user=self.user)
 
     def test_item_with_reminder_fields(self):
         """Test creating an item with reminder fields."""
@@ -47,13 +39,13 @@ class ReminderSystemTestCase(TestCase):
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
             remind_at=remind_time,
-            rrule=rrule
+            rrule=rrule,
         )
 
         self.assertEqual(item.remind_at, remind_time)
         self.assertEqual(item.rrule, rrule)
 
-    @patch('task_processor.services.send_mail')
+    @patch("task_processor.services.send_mail")
     def test_reminder_email_integration_success(self, mock_send_mail):
         """Test successful reminder processing through task integration."""
         mock_send_mail.return_value = True
@@ -67,7 +59,7 @@ class ReminderSystemTestCase(TestCase):
             status=GTDStatus.NEXT_ACTION,
             area=self.area,
             remind_at=past_time,
-            is_completed=False
+            is_completed=False,
         )
         item.contexts.add(self.context)
 
@@ -85,11 +77,11 @@ class ReminderSystemTestCase(TestCase):
         log_entries = ItemReminderLog.objects.filter(item=item)
         self.assertTrue(log_entries.exists())
 
-        latest_log = log_entries.latest('reminded_at')
+        latest_log = log_entries.latest("reminded_at")
         self.assertTrue(latest_log.is_success)
         self.assertEqual(latest_log.nb_retry, 0)
 
-    @patch('task_processor.services.send_mail')
+    @patch("task_processor.services.send_mail")
     def test_reminder_email_integration_failure(self, mock_send_mail):
         """Test reminder processing failure through task integration."""
         mock_send_mail.side_effect = Exception("SMTP Error")
@@ -101,7 +93,7 @@ class ReminderSystemTestCase(TestCase):
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
             remind_at=past_time,
-            is_completed=False
+            is_completed=False,
         )
 
         # Run the reminder check task
@@ -116,12 +108,12 @@ class ReminderSystemTestCase(TestCase):
         log_entries = ItemReminderLog.objects.filter(item=item)
         self.assertTrue(log_entries.exists())
 
-        latest_log = log_entries.latest('reminded_at')
+        latest_log = log_entries.latest("reminded_at")
         self.assertTrue(latest_log.is_failed)
         self.assertEqual(latest_log.nb_retry, 0, "Item should not be retried yet")
         self.assertIsNotNone(latest_log.error)
 
-    @patch('task_processor.services.send_mail')
+    @patch("task_processor.services.send_mail")
     def test_reminder_email_integration_failure_twice(self, mock_send_mail):
         """Test reminder processing failure through task integration."""
         mock_send_mail.side_effect = Exception("SMTP Error")
@@ -133,7 +125,7 @@ class ReminderSystemTestCase(TestCase):
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
             remind_at=past_time,
-            is_completed=False
+            is_completed=False,
         )
         # Refresh item to get the exact timestamp from DB
         item.refresh_from_db()
@@ -144,7 +136,7 @@ class ReminderSystemTestCase(TestCase):
             error="First error",
             nb_retry=GTDConfig.MAX_REMINDER_THRESHOLD - 1,
             active=True,
-            reminded_at=item.remind_at  # Use the exact DB timestamp
+            reminded_at=item.remind_at,  # Use the exact DB timestamp
         )
 
         # Run the reminder check task
@@ -160,9 +152,15 @@ class ReminderSystemTestCase(TestCase):
 
         # The returned log should be the updated existing one
         updated_log = log_entries.first()
-        self.assertEqual(updated_log.id, existing_log.id, "Should be the same log entry")
+        self.assertEqual(
+            updated_log.id, existing_log.id, "Should be the same log entry"
+        )
         self.assertTrue(updated_log.is_failed)
-        self.assertEqual(updated_log.nb_retry, GTDConfig.MAX_REMINDER_THRESHOLD, "nb_retry should be incremented by 1")
+        self.assertEqual(
+            updated_log.nb_retry,
+            GTDConfig.MAX_REMINDER_THRESHOLD,
+            "nb_retry should be incremented by 1",
+        )
         self.assertIsNotNone(updated_log.error)
 
     def test_recurring_reminder_reschedule(self):
@@ -175,12 +173,12 @@ class ReminderSystemTestCase(TestCase):
             status=GTDStatus.NEXT_ACTION,
             remind_at=past_time,
             rrule="FREQ=DAILY;INTERVAL=1",
-            is_completed=False
+            is_completed=False,
         )
 
         original_remind_at = item.remind_at
 
-        with patch('task_processor.services.send_mail', return_value=True):
+        with patch("task_processor.services.send_mail", return_value=True):
             # Run the reminder check task
             result: list[ItemReminderLog] = check_reminders.apply().get()
 
@@ -207,10 +205,10 @@ class ReminderSystemTestCase(TestCase):
             status=GTDStatus.NEXT_ACTION,
             remind_at=past_time,
             rrule=None,  # No recurrence
-            is_completed=False
+            is_completed=False,
         )
 
-        with patch('task_processor.services.send_mail', return_value=True):
+        with patch("task_processor.services.send_mail", return_value=True):
             # Run the reminder check task
             result: list[ItemReminderLog] = check_reminders.apply().get()
 
@@ -233,7 +231,7 @@ class ReminderSystemTestCase(TestCase):
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
             remind_at=past_time,
-            is_completed=False
+            is_completed=False,
         )
 
         # Create an item that shouldn't be processed (future reminder)
@@ -243,10 +241,10 @@ class ReminderSystemTestCase(TestCase):
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
             remind_at=future_time,
-            is_completed=False
+            is_completed=False,
         )
 
-        with patch('task_processor.tasks.reminder_due.send') as mock_signal:
+        with patch("task_processor.tasks.reminder_due.send") as mock_signal:
             result: list[ItemReminderLog] = check_reminders.apply().get()
 
             # Should have found 1 item and sent 1 signal
@@ -260,15 +258,11 @@ class ReminderSystemTestCase(TestCase):
             user=self.user,
             status=GTDStatus.NEXT_ACTION,
             remind_at=timezone.now() + timedelta(hours=1),
-            rrule="FREQ=DAILY;INTERVAL=1"
+            rrule="FREQ=DAILY;INTERVAL=1",
         )
 
         # Create some reminder logs
-        ItemReminderLog.objects.create(
-            item=item,
-            nb_retry=0,
-            active=True
-        )
+        ItemReminderLog.objects.create(item=item, nb_retry=0, active=True)
 
         # Complete the item
         item.is_completed = True
@@ -282,17 +276,11 @@ class ReminderSystemTestCase(TestCase):
     def test_reminder_log_properties(self):
         """Test ItemReminderLog model properties."""
         item = Item.objects.create(
-            title="Log Test Item",
-            user=self.user,
-            status=GTDStatus.NEXT_ACTION
+            title="Log Test Item", user=self.user, status=GTDStatus.NEXT_ACTION
         )
 
         # Test successful log
-        success_log = ItemReminderLog.objects.create(
-            item=item,
-            nb_retry=0,
-            active=True
-        )
+        success_log = ItemReminderLog.objects.create(item=item, nb_retry=0, active=True)
 
         self.assertTrue(success_log.is_success)
         self.assertFalse(success_log.is_failed)
@@ -300,10 +288,7 @@ class ReminderSystemTestCase(TestCase):
 
         # Test failed log
         failed_log = ItemReminderLog.objects.create(
-            item=item,
-            error="Test error",
-            nb_retry=5,
-            active=True
+            item=item, error="Test error", nb_retry=5, active=True
         )
 
         self.assertFalse(failed_log.is_success)
@@ -312,10 +297,7 @@ class ReminderSystemTestCase(TestCase):
 
         # Test max retries reached
         max_retry_log = ItemReminderLog.objects.create(
-            item=item,
-            error="Max retries",
-            nb_retry=10,
-            active=False
+            item=item, error="Max retries", nb_retry=10, active=False
         )
 
         self.assertFalse(max_retry_log.can_retry)
@@ -337,7 +319,7 @@ class ReminderFormTestCase(TestCase):
             "FREQ=WEEKLY;BYDAY=MO,WE,FR",
             "FREQ=MONTHLY;BYMONTHDAY=15",
             "",  # Empty should be valid
-            None  # None should be valid
+            None,  # None should be valid
         ]
 
         for pattern in valid_patterns:
