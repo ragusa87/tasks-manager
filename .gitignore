@@ -62,3 +62,4 @@ docker-compose.override.yaml.backup
 
 # Dumps and exports
 Nirvana_Export_*.json
+dumps/
