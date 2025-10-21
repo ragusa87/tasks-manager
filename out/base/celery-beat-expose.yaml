@@ -1,0 +1,18 @@
+#! celery-beat-expose.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Service
+metadata:
+    name: celery-beat
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: celery-beat
+spec:
+    selector:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: celery-beat
+    ports:
+        - name: celery-bea-8000
+          port: 8000
+          targetPort: celery-bea-8000

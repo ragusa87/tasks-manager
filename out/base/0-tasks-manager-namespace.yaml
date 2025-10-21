@@ -1,0 +1,8 @@
+#! 0-tasks-manager-namespace.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager

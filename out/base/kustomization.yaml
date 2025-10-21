@@ -1,0 +1,25 @@
+#! kustomization.yaml
+# Generated code, do not edit
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+    - 0-tasks-manager-namespace.yaml
+    - celery-admin-deployment.yaml
+    - celery-admin-expose.yaml
+    - celery-beat-celery_beat_data-persistentVolumeClaim.yaml
+    - celery-beat-deployment.yaml
+    - celery-beat-expose.yaml
+    - celery-deployment.yaml
+    - celery-expose.yaml
+    - db-deployment.yaml
+    - db-expose.yaml
+    - db-postgres_data-persistentVolumeClaim.yaml
+    - db-service.yaml
+    - default-network-policy.yaml
+    - redis-deployment.yaml
+    - redis-expose.yaml
+    - redis-redis_data-persistentVolumeClaim.yaml
+    - redis-service.yaml
+    - web-deployment.yaml
+    - web-expose.yaml
+    - web-service.yaml

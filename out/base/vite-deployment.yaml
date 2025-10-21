@@ -1,0 +1,54 @@
+#! vite-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: vite
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: vite
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: tasks-manager
+            com.docker.compose.service: vite
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: tasks-manager
+                com.docker.compose.service: vite
+                com.docker.compose.network.default: "true"
+                com.docker.compose.network.pontsun: "true"
+        spec:
+            containers:
+                - name: vite
+                  image: tasks-manager-vite
+                  imagePullPolicy: IfNotPresent
+                  args:
+                    - sh
+                    - -c
+                    - npm install && npm run build
+                  workingDir: /app
+                  env:
+                    - name: NODE_ENV
+                      value: "development"
+                    - name: VITE_ALLOWED_HOSTS
+                      value: "tasks-vite.docker.test"
+                    - name: VITE_CORS_ORIGIN
+                      value: "\\.docker\\.test$"
+                  volumeMounts:
+                    - name: app
+                      mountPath: /app
+                    - name: app-node-modules
+                      mountPath: /app/node_modules
+            volumes:
+                - name: app
+                  hostPath:
+                    path: /Users/laurent/tasks-manager
+                - name: app-node-modules
+                  persistentVolumeClaim:
+                    claimName: vite-node-modules-cache

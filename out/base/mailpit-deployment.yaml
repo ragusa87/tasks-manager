@@ -1,0 +1,37 @@
+#! mailpit-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: mailpit
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: mailpit
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: tasks-manager
+            com.docker.compose.service: mailpit
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: tasks-manager
+                com.docker.compose.service: mailpit
+                com.docker.compose.network.default: "true"
+                com.docker.compose.network.pontsun: "true"
+        spec:
+            containers:
+                - name: mailpit
+                  image: axllent/mailpit:latest
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                    - name: mailpit-1025
+                      containerPort: 1025
+                    - name: mailpit-1110
+                      containerPort: 1110
+                    - name: mailpit-8025
+                      containerPort: 8025

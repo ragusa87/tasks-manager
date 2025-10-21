@@ -1,0 +1,80 @@
+#! celery-beat-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: celery-beat
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: celery-beat
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: tasks-manager
+            com.docker.compose.service: celery-beat
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: tasks-manager
+                com.docker.compose.service: celery-beat
+                com.docker.compose.network.default: "true"
+                com.docker.compose.network.pontsun: "true"
+        spec:
+            containers:
+                - name: celery-beat
+                  image: ghcr.io/ragusa87/tasks-manager:latest
+                  imagePullPolicy: IfNotPresent
+                  args:
+                    - uv
+                    - run
+                    - celery
+                    - -A
+                    - task_processor
+                    - beat
+                    - -l
+                    - info
+                  env:
+                    - name: ALLOWED_HOSTS
+                      value: "tasks.docker.test celeri-admin.docker.test"
+                    - name: CACHE_URL
+                      value: "redis://redis:6379/1"
+                    - name: CELERY_BROKER_URL
+                      value: "redis://redis:6379/0"
+                    - name: CELERY_RESULT_BACKEND
+                      value: "redis://redis:6379/0"
+                    - name: DB_HOST
+                      value: "db"
+                    - name: DB_NAME
+                      value: "tasks_processing"
+                    - name: DB_PASSWORD
+                      value: "your-secure-database-password-here"
+                    - name: DB_PORT
+                      value: "5432"
+                    - name: DB_USER
+                      value: "postgres"
+                    - name: DEBUG
+                      value: "False"
+                    - name: DJANGO_SETTINGS_MODULE
+                      value: "core.settings.production"
+                    - name: EMAIL_URL
+                      value: "smtp://mailpit:1025"
+                    - name: NODE_ENV
+                      value: "development"
+                    - name: REDIS_CHANNEL_URL
+                      value: "redis://redis:6379/1"
+                    - name: SECRET_KEY
+                      value: "your-custom-secret-key-here-min-50-chars-random-string"
+                  ports:
+                    - name: celery-bea-8000
+                      containerPort: 8000
+                  volumeMounts:
+                    - name: celerybeat-schedule
+                      mountPath: /celerybeat-schedule
+            volumes:
+                - name: celerybeat-schedule
+                  persistentVolumeClaim:
+                    claimName: celery-beat-celery-beat-data

@@ -1,0 +1,70 @@
+#! web-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: web
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: web
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: tasks-manager
+            com.docker.compose.service: web
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: tasks-manager
+                com.docker.compose.service: web
+                com.docker.compose.network.default: "true"
+                com.docker.compose.network.pontsun: "true"
+        spec:
+            containers:
+                - name: web
+                  image: ghcr.io/ragusa87/tasks-manager:latest
+                  imagePullPolicy: IfNotPresent
+                  args:
+                    - sh
+                    - -c
+                    - uv run python manage.py migrate && uv run python manage.py collectstatic --noinput && uv run uvicorn core.asgi:application --host 0.0.0.0 --port 8000
+                  env:
+                    - name: ALLOWED_HOSTS
+                      value: "tasks.docker.test"
+                    - name: CACHE_URL
+                      value: "redis://redis:6379/1"
+                    - name: CELERY_BROKER_URL
+                      value: "redis://redis:6379/0"
+                    - name: CELERY_RESULT_BACKEND
+                      value: "redis://redis:6379/0"
+                    - name: DB_HOST
+                      value: "db"
+                    - name: DB_NAME
+                      value: "tasks_processing"
+                    - name: DB_PASSWORD
+                      value: "your-secure-database-password-here"
+                    - name: DB_PORT
+                      value: "5432"
+                    - name: DB_USER
+                      value: "postgres"
+                    - name: DEBUG
+                      value: "False"
+                    - name: DJANGO_SETTINGS_MODULE
+                      value: "core.settings.production"
+                    - name: EMAIL_URL
+                      value: "smtp://mailpit:1025"
+                    - name: IS_DEMO
+                      value: "False"
+                    - name: NODE_ENV
+                      value: "development"
+                    - name: REDIS_CHANNEL_URL
+                      value: "redis://redis:6379/1"
+                    - name: SECRET_KEY
+                      value: "your-custom-secret-key-here-min-50-chars-random-string"
+                  ports:
+                    - name: web-8000
+                      containerPort: 8000

@@ -1,0 +1,24 @@
+#! pontsun-network-policy.yaml
+# Generated code, do not edit
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: pontsun-network-policy
+    namespace: tasks-manager
+spec:
+    podSelector:
+        matchLabels:
+            com.docker.compose.network.pontsun: "true"
+    policyTypes:
+        - Ingress
+        - Egress
+    ingress:
+        - from:
+            - podSelector:
+                matchLabels:
+                    com.docker.compose.network.pontsun: "true"
+    egress:
+        - to:
+            - podSelector:
+                matchLabels:
+                    com.docker.compose.network.pontsun: "true"

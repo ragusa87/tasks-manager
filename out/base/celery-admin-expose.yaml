@@ -1,0 +1,18 @@
+#! celery-admin-expose.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Service
+metadata:
+    name: celery-admin
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: celery-admin
+spec:
+    selector:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: celery-admin
+    ports:
+        - name: celery-adm-8000
+          port: 8000
+          targetPort: celery-adm-8000

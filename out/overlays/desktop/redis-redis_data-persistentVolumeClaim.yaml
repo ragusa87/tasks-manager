@@ -1,0 +1,9 @@
+#! redis-redis_data-persistentVolumeClaim.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: redis-redis-data
+    namespace: tasks-manager
+spec:
+    storageClassName: "standard" # see docker/desktop-storage-provisioner

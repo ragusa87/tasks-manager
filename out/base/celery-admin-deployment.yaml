@@ -1,0 +1,45 @@
+#! celery-admin-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: celery-admin
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: celery-admin
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: tasks-manager
+            com.docker.compose.service: celery-admin
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: tasks-manager
+                com.docker.compose.service: celery-admin
+                com.docker.compose.network.default: "true"
+                com.docker.compose.network.pontsun: "true"
+        spec:
+            containers:
+                - name: celery-admin
+                  image: ghcr.io/ragusa87/tasks-manager:latest
+                  imagePullPolicy: IfNotPresent
+                  args:
+                    - uv
+                    - run
+                    - celery
+                    - -A
+                    - task_processor
+                    - flower
+                  env:
+                    - name: CELERY_BROKER_URL
+                      value: "redis://redis:6379/0"
+                    - name: CELERY_RESULT_BACKEND
+                      value: "redis://redis:6379/0"
+                  ports:
+                    - name: celery-adm-8000
+                      containerPort: 8000

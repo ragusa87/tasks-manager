@@ -1,0 +1,18 @@
+#! celery-uv_cache-persistentVolumeClaim.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: celery-uv-cache
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.service: celery
+        com.docker.compose.volume: uv_cache
+spec:
+    accessModes:
+        # TODO would need to check which services use this volume
+        - ReadWriteOnce
+    volumeMode: Filesystem
+    resources:
+        requests:
+            storage: 100Mi

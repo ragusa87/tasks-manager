@@ -1,0 +1,18 @@
+#! web-expose.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Service
+metadata:
+    name: web
+    namespace: tasks-manager
+    labels:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: web
+spec:
+    selector:
+        com.docker.compose.project: tasks-manager
+        com.docker.compose.service: web
+    ports:
+        - name: web-8000
+          port: 8000
+          targetPort: web-8000
