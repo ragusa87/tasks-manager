@@ -7,6 +7,7 @@ x-vite-envs: &vite-environment
 x-django-service: &django-service
   build:
     context: .
+    target: django
     dockerfile: Dockerfile
     args:
       USER_ID: ${USER_ID:-1000}
@@ -126,7 +127,9 @@ services:
 
   vite:
     build:
-      context: ./frontend/docker/
+      context: .
+      target: vite
+      dockerfile: Dockerfile
       args:
         USER_ID: ${USER_ID:-1000}
         GROUP_ID: ${GROUP_ID:-1000}
