@@ -1,8 +1,39 @@
-FROM python:3.11-slim
+FROM node:22-alpine AS vite
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+WORKDIR /app
+# Create a user with the specified UID/GID or use existing one
+RUN if getent group ${GROUP_ID} >/dev/null 2>&1; then \
+        EXISTING_GROUP=$(getent group ${GROUP_ID} | cut -d: -f1); \
+    else \
+        addgroup -g ${GROUP_ID} nodeuser; \
+        EXISTING_GROUP=nodeuser; \
+    fi; \
+    if getent passwd ${USER_ID} >/dev/null 2>&1; then \
+        EXISTING_USER=$(getent passwd ${USER_ID} | cut -d: -f1); \
+    else \
+        adduser -u ${USER_ID} -G $EXISTING_GROUP -D nodeuser; \
+        EXISTING_USER=nodeuser; \
+    fi
+RUN mkdir -p /app/node_modules && chown -R ${USER_ID}:${GROUP_ID} /app
+# Switch to the user with specified UID
+USER ${USER_ID}:${GROUP_ID}
 
+COPY package-lock.json .
+COPY package.json .
+COPY vite.config.js .
+
+RUN mkdir -p frontend static/dist
+COPY frontend frontend/
+
+RUN npm ci && npm run vite build
+
+
+FROM python:3.11-slim AS django
 # Build arguments for user/group IDs
 ARG USER_ID=1000
 ARG GROUP_ID=1000
+
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -48,3 +79,8 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Default command
 CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+
+FROM django as django-prod
+COPY --from=vite /app/static/dist ./static
+RUN uv run python manage.py collectstatic
