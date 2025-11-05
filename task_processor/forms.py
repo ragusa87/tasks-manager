@@ -387,3 +387,143 @@ class ItemForm(forms.ModelForm):
             else:
                 item.contexts.clear()
         return item
+
+
+class AreaForm(forms.ModelForm):
+    """Form for creating and updating Areas"""
+
+    class Meta:
+        model = Area
+        fields = ["name", "description"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "placeholder": "Enter area name",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "rows": 4,
+                    "placeholder": "",
+                }
+            ),
+        }
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise ValidationError("Name cannot be empty.")
+
+        # Check for duplicates within user's areas
+        existing = Area.objects.filter(user=self.user, name__iexact=name).exclude(
+            pk=self.instance.pk if self.instance and self.instance.pk else None
+        )
+
+        if existing.exists():
+            raise ValidationError("You already have an area with this name.")
+
+        return name
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.user = self.user
+        if commit:
+            instance.save()
+        return instance
+
+
+class ContextForm(forms.ModelForm):
+    """Form for creating and updating Contexts"""
+
+    class Meta:
+        model = Context
+        fields = ["name", "description"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "placeholder": "Enter context name (e.g., @home, @office)",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "rows": 4,
+                    "placeholder": "Optional: Describe where or in what situation you can do tasks",
+                }
+            ),
+        }
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise ValidationError("Name cannot be empty.")
+
+        # Check for duplicates within user's contexts
+        existing = Context.objects.filter(user=self.user, name__iexact=name).exclude(
+            pk=self.instance.pk if self.instance and self.instance.pk else None
+        )
+
+        if existing.exists():
+            raise ValidationError("You already have a context with this name.")
+
+        return name
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.user = self.user
+        if commit:
+            instance.save()
+        return instance
+
+
+class TagForm(forms.ModelForm):
+    """Form for creating and updating Tags"""
+
+    class Meta:
+        model = Tag
+        fields = ["name"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "placeholder": "Enter tag name",
+                }
+            ),
+        }
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise ValidationError("Name cannot be empty.")
+
+        # Check for duplicates within user's tags
+        existing = Tag.objects.filter(user=self.user, name__iexact=name).exclude(
+            pk=self.instance.pk if self.instance and self.instance.pk else None
+        )
+
+        if existing.exists():
+            raise ValidationError("You already have a tag with this name.")
+
+        return name
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.user = self.user
+        if commit:
+            instance.save()
+        return instance

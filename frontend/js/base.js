@@ -491,11 +491,57 @@ function initializeDatePicker(){
     })
 }
 
+// Mobile menu functionality
+function initializeMobileMenu() {
+    const menuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    if (menuButton && mobileMenu) {
+        // Remove existing listener by cloning
+        const newMenuButton = menuButton.cloneNode(true);
+        menuButton.parentNode.replaceChild(newMenuButton, menuButton);
+
+        // Add click listener for main menu toggle
+        newMenuButton.addEventListener('click', function() {
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            this.setAttribute('aria-expanded', !isExpanded);
+            mobileMenu.classList.toggle('hidden');
+
+            // Rotate the hamburger icon
+            const svg = this.querySelector('svg');
+            if (svg) {
+                svg.classList.toggle('rotate-90');
+            }
+        });
+    }
+
+    // Handle mobile dropdown triggers
+    document.querySelectorAll('.mobile-dropdown-trigger').forEach(trigger => {
+        // Clone to remove existing listeners
+        const newTrigger = trigger.cloneNode(true);
+        trigger.parentNode.replaceChild(newTrigger, trigger);
+
+        newTrigger.addEventListener('click', function() {
+            const content = this.nextElementSibling;
+            if (content && content.classList.contains('mobile-dropdown-content')) {
+                content.classList.toggle('hidden');
+
+                // Rotate chevron icon
+                const svg = this.querySelector('svg');
+                if (svg) {
+                    svg.classList.toggle('rotate-180');
+                }
+            }
+        });
+    });
+}
+
 // Initialize on page load
 const init = () => {
     initializeAutocomplete();
     initializeAccordions();
     initializeDatePicker();
+    initializeMobileMenu();
 }
 document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('htmx:afterSwap', init);

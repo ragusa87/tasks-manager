@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ title }}</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    Manage where or in what situation you can do tasks
+                </p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'dashboard' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% sprite "lucide-chevron-left" 24 class="mr-2" %}
+                    Back
+                </a>
+                <a href="{% url 'context_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% sprite "lucide-plus" 24 class="mr-2" %}
+                    Create Context
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contexts List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        {% if contexts %}
+        <ul class="divide-y divide-gray-200">
+            {% for context in contexts %}
+            <li class="hover:bg-gray-50 transition-colors">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-medium text-gray-900 truncate">
+                            {{ context.name }}
+                        </h3>
+                        {% if context.description %}
+                        <p class="mt-1 text-sm text-gray-600">
+                            {{ context.description }}
+                        </p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">
+                            Created {{ context.created_at|date:"F d, Y" }}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-3 ml-4">
+                        <a href="{% url 'context_update' context.id %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            {% sprite "lucide-pencil" 20 class="mr-1" %}
+                            Edit
+                        </a>
+                        <a href="{% url 'context_delete' context.id %}" class="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            {% sprite "lucide-trash-2" 20 class="mr-1" %}
+                            Delete
+                        </a>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="px-6 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No contexts yet</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating a new context (e.g., @home, @office, @phone).</p>
+            <div class="mt-6">
+                <a href="{% url 'context_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% sprite "lucide-plus" 24 class="mr-2" %}
+                    Create Context
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="mt-6">
+        {% include "partials/pagination.html" %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
