@@ -14,6 +14,7 @@ from django.utils.http import is_same_domain
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import (
     CreateView,
+    DeleteView,
     FormView,
     ListView,
     TemplateView,
@@ -23,7 +24,7 @@ from django.views.generic import (
 from factory.django import get_model
 
 from .constants import GTDConfig, GTDStatus
-from .forms import ItemForm
+from .forms import AreaForm, ContextForm, ItemForm, TagForm
 from .models import Area, Context, Item, Tag
 from .search import FilterCategory
 
@@ -793,3 +794,273 @@ class CreateFieldView(View):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
+
+
+# ============================================================================
+# AREA CRUD VIEWS
+# ============================================================================
+
+
+@method_decorator(login_required, name="dispatch")
+class AreaListView(ListView):
+    """Display list of areas for current user"""
+
+    model = Area
+    template_name = "areas/area_list.html"
+    context_object_name = "areas"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Area.objects.filter(user=self.request.user).order_by("name")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "My Areas"
+        return context
+
+
+@method_decorator(login_required, name="dispatch")
+class AreaCreateView(ReturnRefererMixin, CreateView):
+    """Create a new area"""
+
+    model = Area
+    form_class = AreaForm
+    template_name = "areas/area_form.html"
+    fallback_url = reverse_lazy("area_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request, f"Area '{self.object.name}' created successfully!"
+        )
+        return response
+
+
+@method_decorator(login_required, name="dispatch")
+class AreaUpdateView(ReturnRefererMixin, UpdateView):
+    """Update an existing area"""
+
+    model = Area
+    form_class = AreaForm
+    template_name = "areas/area_form.html"
+    pk_url_kwarg = "area_id"
+    fallback_url = reverse_lazy("area_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_queryset(self):
+        return Area.objects.filter(user=self.request.user)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request, f"Area '{self.object.name}' updated successfully!"
+        )
+        return response
+
+
+@method_decorator(login_required, name="dispatch")
+class AreaDeleteView(ReturnRefererMixin, DeleteView):
+    """Delete an area"""
+
+    model = Area
+    pk_url_kwarg = "area_id"
+    template_name = "areas/area_confirm_delete.html"
+    fallback_url = reverse_lazy("area_list")
+
+    def get_queryset(self):
+        return Area.objects.filter(user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        area_name = self.get_object().name
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"Area '{area_name}' deleted successfully!")
+        return response
+
+
+# ============================================================================
+# CONTEXT CRUD VIEWS
+# ============================================================================
+
+
+@method_decorator(login_required, name="dispatch")
+class ContextListView(ListView):
+    """Display list of contexts for current user"""
+
+    model = Context
+    template_name = "contexts/context_list.html"
+    context_object_name = "contexts"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Context.objects.filter(user=self.request.user).order_by("name")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "My Contexts"
+        return context
+
+
+@method_decorator(login_required, name="dispatch")
+class ContextCreateView(ReturnRefererMixin, CreateView):
+    """Create a new context"""
+
+    model = Context
+    form_class = ContextForm
+    template_name = "contexts/context_form.html"
+    fallback_url = reverse_lazy("context_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request, f"Context '{self.object.name}' created successfully!"
+        )
+        return response
+
+
+@method_decorator(login_required, name="dispatch")
+class ContextUpdateView(ReturnRefererMixin, UpdateView):
+    """Update an existing context"""
+
+    model = Context
+    form_class = ContextForm
+    template_name = "contexts/context_form.html"
+    pk_url_kwarg = "context_id"
+    fallback_url = reverse_lazy("context_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_queryset(self):
+        return Context.objects.filter(user=self.request.user)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request, f"Context '{self.object.name}' updated successfully!"
+        )
+        return response
+
+
+@method_decorator(login_required, name="dispatch")
+class ContextDeleteView(ReturnRefererMixin, DeleteView):
+    """Delete a context"""
+
+    model = Context
+    pk_url_kwarg = "context_id"
+    template_name = "contexts/context_confirm_delete.html"
+    fallback_url = reverse_lazy("context_list")
+
+    def get_queryset(self):
+        return Context.objects.filter(user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        context_name = self.get_object().name
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"Context '{context_name}' deleted successfully!")
+        return response
+
+
+# ============================================================================
+# TAG CRUD VIEWS
+# ============================================================================
+
+
+@method_decorator(login_required, name="dispatch")
+class TagListView(ListView):
+    """Display list of tags for current user"""
+
+    model = Tag
+    template_name = "tags/tag_list.html"
+    context_object_name = "tags"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Tag.objects.filter(user=self.request.user).order_by("name")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "My Tags"
+        return context
+
+
+@method_decorator(login_required, name="dispatch")
+class TagCreateView(ReturnRefererMixin, CreateView):
+    """Create a new tag"""
+
+    model = Tag
+    form_class = TagForm
+    template_name = "tags/tag_form.html"
+    fallback_url = reverse_lazy("tag_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request, f"Tag '{self.object.name}' created successfully!"
+        )
+        return response
+
+
+@method_decorator(login_required, name="dispatch")
+class TagUpdateView(ReturnRefererMixin, UpdateView):
+    """Update an existing tag"""
+
+    model = Tag
+    form_class = TagForm
+    template_name = "tags/tag_form.html"
+    pk_url_kwarg = "tag_id"
+    fallback_url = reverse_lazy("tag_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_queryset(self):
+        return Tag.objects.filter(user=self.request.user)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request, f"Tag '{self.object.name}' updated successfully!"
+        )
+        return response
+
+
+@method_decorator(login_required, name="dispatch")
+class TagDeleteView(ReturnRefererMixin, DeleteView):
+    """Delete a tag"""
+
+    model = Tag
+    pk_url_kwarg = "tag_id"
+    template_name = "tags/tag_confirm_delete.html"
+    fallback_url = reverse_lazy("tag_list")
+
+    def get_queryset(self):
+        return Tag.objects.filter(user=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        tag_name = self.get_object().name
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"Tag '{tag_name}' deleted successfully!")
+        return response

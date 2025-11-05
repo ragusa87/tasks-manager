@@ -18,7 +18,15 @@ Including another URLconf
 from django.urls import path
 
 from .views import (
+    AreaCreateView,
+    AreaDeleteView,
+    AreaListView,
+    AreaUpdateView,
     AutocompleteView,
+    ContextCreateView,
+    ContextDeleteView,
+    ContextListView,
+    ContextUpdateView,
     CreateFieldView,
     DashboardStatsView,
     DashboardView,
@@ -28,6 +36,10 @@ from .views import (
     ItemUpdateView,
     LoginView,
     LogoutView,
+    TagCreateView,
+    TagDeleteView,
+    TagListView,
+    TagUpdateView,
 )
 
 urlpatterns = [
@@ -51,4 +63,27 @@ urlpatterns = [
     path(
         "api/create/<str:field_type>/", CreateFieldView.as_view(), name="create_field"
     ),
+    # Areas
+    path("areas/", AreaListView.as_view(), name="area_list"),
+    path("areas/create/", AreaCreateView.as_view(), name="area_create"),
+    path("areas/<int:area_id>/update/", AreaUpdateView.as_view(), name="area_update"),
+    path("areas/<int:area_id>/delete/", AreaDeleteView.as_view(), name="area_delete"),
+    # Contexts
+    path("contexts/", ContextListView.as_view(), name="context_list"),
+    path("contexts/create/", ContextCreateView.as_view(), name="context_create"),
+    path(
+        "contexts/<int:context_id>/update/",
+        ContextUpdateView.as_view(),
+        name="context_update",
+    ),
+    path(
+        "contexts/<int:context_id>/delete/",
+        ContextDeleteView.as_view(),
+        name="context_delete",
+    ),
+    # Tags
+    path("tags/", TagListView.as_view(), name="tag_list"),
+    path("tags/create/", TagCreateView.as_view(), name="tag_create"),
+    path("tags/<int:tag_id>/update/", TagUpdateView.as_view(), name="tag_update"),
+    path("tags/<int:tag_id>/delete/", TagDeleteView.as_view(), name="tag_delete"),
 ]
