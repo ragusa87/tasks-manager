@@ -18,10 +18,11 @@ I don't intent to maintain this project in the long term.
 - Bach actions support: `tag<->area` conversion, `+tag`, `-tag`, `+area`, `-area` etc
 - New transition: Convert whole project to references
 - Email inbox via https://maileroo.com/docs/inbound-routing/
-- Add custom *rrule* JS picker.
-- New views/action: `create a new project` , `delete an area`, `delete a tag`
+- Add custom *rrule* JS picker <https://demo.mobiscroll.com/vue/scheduler/recurring-events>
 - DateTime picker could respect the user's locale.
 - htmx show connectivity issue and 500.
+- Allow checking item to archive them
+- Delete archived item automatically after 30 days ?
 
 ## Linting and Formatting
 
