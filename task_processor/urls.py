@@ -56,12 +56,14 @@ urlpatterns = [
     ),
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard_stats"),
     path(
-        "api/autocomplete/<str:field_type>/",
+        "autocomplete/search/<str:field_type>/",
         AutocompleteView.as_view(),
         name="autocomplete",
     ),
     path(
-        "api/create/<str:field_type>/", CreateFieldView.as_view(), name="create_field"
+        "autocomplete/create/<str:field_type>/",
+        CreateFieldView.as_view(),
+        name="create_field",
     ),
     # Areas
     path("areas/", AreaListView.as_view(), name="area_list"),
