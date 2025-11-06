@@ -97,16 +97,21 @@ class TestFilterOption(TestCase):
 
     def test_different_color_schemes(self):
         """Test that different colors produce different CSS classes"""
-        # Test a few specific color mappings that we know exist
-        color_mappings = {
-            "blue": "blue",
-            "green": "emerald",  # green maps to emerald in the implementation
-            "red": "red",
-            "yellow": "amber",  # yellow maps to amber
-            "purple": "violet",  # purple maps to violet
-        }
+        # Test that different colors use different filter classes
+        colors = [
+            "blue",
+            "green",
+            "red",
+            "yellow",
+            "purple",
+            "pink",
+            "indigo",
+            "orange",
+            "teal",
+            "cyan",
+        ]
 
-        for color, expected_class in color_mappings.items():
+        for color in colors:
             filter_option = FilterOption(
                 label="Test",
                 filter_query="test:value",
@@ -117,11 +122,23 @@ class TestFilterOption(TestCase):
 
             inactive_classes = filter_option.inactive_classes
             active_classes = filter_option.active_classes
+            inversed_classes = filter_option.inversed_classes
 
-            # Should contain color-specific classes
-            self.assertIn(f"from-{expected_class}", inactive_classes)
-            self.assertIn(f"from-{expected_class}", active_classes)
-            self.assertIn(f"text-{expected_class}", inactive_classes)
+            # Should contain the base classes
+            self.assertIn("filter-suggestion", inactive_classes)
+            self.assertIn("filter-suggestion", active_classes)
+            self.assertIn("filter-suggestion", inversed_classes)
+
+            # Should contain color-specific class
+            self.assertIn(f"filter-{color}", inactive_classes)
+            self.assertIn(f"filter-{color}", active_classes)
+            self.assertIn(f"filter-{color}", inversed_classes)
+
+            # Should contain state-specific class
+            self.assertIn("filter-suggestion-inactive", inactive_classes)
+            self.assertIn("filter-suggestion-active", active_classes)
+            self.assertIn("filter-suggestion-inversed", inversed_classes)
+            self.assertIn("filter-suggestion-active", inversed_classes)
 
 
 class TestSearchFilter(TestCase):

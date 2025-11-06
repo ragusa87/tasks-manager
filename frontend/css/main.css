@@ -64,3 +64,145 @@
 .stats-card-inner.focused {
   background-color: var(--card-bg-color);
 }
+
+/* Filter suggestion system using CSS custom properties */
+.filter-suggestion {
+  --filter-from-light: currentColor;
+  --filter-to-light: currentColor;
+  --filter-from-dark: currentColor;
+  --filter-to-dark: currentColor;
+  --filter-text-light: currentColor;
+  --filter-text-dark: white;
+  --filter-ring-light: currentColor;
+  --filter-ring-dark: currentColor;
+}
+
+/* Color variants */
+.filter-blue {
+  --filter-from-light: rgb(219 234 254); /* blue-100 */
+  --filter-to-light: rgb(191 219 254); /* blue-200 */
+  --filter-from-dark: rgb(59 130 246); /* blue-500 */
+  --filter-to-dark: rgb(37 99 235); /* blue-600 */
+  --filter-text-light: rgb(30 64 175); /* blue-800 */
+  --filter-ring-light: rgb(96 165 250); /* blue-400 */
+  --filter-ring-dark: rgb(59 130 246); /* blue-500 */
+}
+
+.filter-green {
+  --filter-from-light: rgb(209 250 229); /* emerald-100 */
+  --filter-to-light: rgb(167 243 208); /* emerald-200 */
+  --filter-from-dark: rgb(16 185 129); /* emerald-500 */
+  --filter-to-dark: rgb(5 150 105); /* emerald-600 */
+  --filter-text-light: rgb(6 95 70); /* emerald-800 */
+  --filter-ring-light: rgb(52 211 153); /* emerald-400 */
+  --filter-ring-dark: rgb(16 185 129); /* emerald-500 */
+}
+
+.filter-yellow {
+  --filter-from-light: rgb(254 243 199); /* amber-100 */
+  --filter-to-light: rgb(253 230 138); /* amber-200 */
+  --filter-from-dark: rgb(245 158 11); /* amber-500 */
+  --filter-to-dark: rgb(217 119 6); /* amber-600 */
+  --filter-text-light: rgb(146 64 14); /* amber-800 */
+  --filter-ring-light: rgb(251 191 36); /* amber-400 */
+  --filter-ring-dark: rgb(245 158 11); /* amber-500 */
+}
+
+.filter-red {
+  --filter-from-light: rgb(254 226 226); /* red-100 */
+  --filter-to-light: rgb(254 202 202); /* red-200 */
+  --filter-from-dark: rgb(239 68 68); /* red-500 */
+  --filter-to-dark: rgb(220 38 38); /* red-600 */
+  --filter-text-light: rgb(153 27 27); /* red-800 */
+  --filter-ring-light: rgb(248 113 113); /* red-400 */
+  --filter-ring-dark: rgb(239 68 68); /* red-500 */
+}
+
+.filter-purple {
+  --filter-from-light: rgb(237 233 254); /* violet-100 */
+  --filter-to-light: rgb(221 214 254); /* violet-200 */
+  --filter-from-dark: rgb(139 92 246); /* violet-500 */
+  --filter-to-dark: rgb(124 58 237); /* violet-600 */
+  --filter-text-light: rgb(91 33 182); /* violet-800 */
+  --filter-ring-light: rgb(167 139 250); /* violet-400 */
+  --filter-ring-dark: rgb(139 92 246); /* violet-500 */
+}
+
+.filter-pink {
+  --filter-from-light: rgb(252 231 243); /* pink-100 */
+  --filter-to-light: rgb(251 207 232); /* pink-200 */
+  --filter-from-dark: rgb(236 72 153); /* pink-500 */
+  --filter-to-dark: rgb(219 39 119); /* pink-600 */
+  --filter-text-light: rgb(157 23 77); /* pink-800 */
+  --filter-ring-light: rgb(244 114 182); /* pink-400 */
+  --filter-ring-dark: rgb(236 72 153); /* pink-500 */
+}
+
+.filter-indigo {
+  --filter-from-light: rgb(224 231 255); /* indigo-100 */
+  --filter-to-light: rgb(199 210 254); /* indigo-200 */
+  --filter-from-dark: rgb(99 102 241); /* indigo-500 */
+  --filter-to-dark: rgb(79 70 229); /* indigo-600 */
+  --filter-text-light: rgb(55 48 163); /* indigo-800 */
+  --filter-ring-light: rgb(129 140 248); /* indigo-400 */
+  --filter-ring-dark: rgb(99 102 241); /* indigo-500 */
+}
+
+.filter-orange {
+  --filter-from-light: rgb(255 237 213); /* orange-100 */
+  --filter-to-light: rgb(254 215 170); /* orange-200 */
+  --filter-from-dark: rgb(249 115 22); /* orange-500 */
+  --filter-to-dark: rgb(234 88 12); /* orange-600 */
+  --filter-text-light: rgb(154 52 18); /* orange-800 */
+  --filter-ring-light: rgb(251 146 60); /* orange-400 */
+  --filter-ring-dark: rgb(249 115 22); /* orange-500 */
+}
+
+.filter-teal {
+  --filter-from-light: rgb(204 251 241); /* teal-100 */
+  --filter-to-light: rgb(153 246 228); /* teal-200 */
+  --filter-from-dark: rgb(20 184 166); /* teal-500 */
+  --filter-to-dark: rgb(13 148 136); /* teal-600 */
+  --filter-text-light: rgb(17 94 89); /* teal-800 */
+  --filter-ring-light: rgb(45 212 191); /* teal-400 */
+  --filter-ring-dark: rgb(20 184 166); /* teal-500 */
+}
+
+.filter-cyan {
+  --filter-from-light: rgb(207 250 254); /* cyan-100 */
+  --filter-to-light: rgb(165 243 252); /* cyan-200 */
+  --filter-from-dark: rgb(6 182 212); /* cyan-500 */
+  --filter-to-dark: rgb(8 145 178); /* cyan-600 */
+  --filter-text-light: rgb(21 94 117); /* cyan-800 */
+  --filter-ring-light: rgb(34 211 238); /* cyan-400 */
+  --filter-ring-dark: rgb(6 182 212); /* cyan-500 */
+}
+
+/* State classes */
+.filter-suggestion-inactive {
+  @apply bg-gradient-to-r shadow-sm hover:shadow-md transition-all duration-200 ring-1;
+  background-image: linear-gradient(to right, var(--filter-from-light), var(--filter-to-light));
+  color: var(--filter-text-light);
+  --tw-ring-color: var(--filter-ring-light);
+  --tw-ring-opacity: 0.5;
+}
+
+.filter-suggestion-inactive:hover {
+  background-image: linear-gradient(to right, var(--filter-to-light), var(--filter-from-light));
+}
+
+.filter-suggestion-active {
+  @apply bg-gradient-to-r shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 ring-2;
+  background-image: linear-gradient(to right, var(--filter-from-dark), var(--filter-to-dark));
+  color: var(--filter-text-dark);
+  --tw-ring-color: var(--filter-ring-dark);
+  --tw-ring-opacity: 0.5;
+}
+
+.filter-suggestion-active:hover {
+  background-image: linear-gradient(to right, var(--filter-to-dark), var(--filter-from-dark));
+}
+
+.filter-suggestion-inversed {
+    @apply line-through;
+}

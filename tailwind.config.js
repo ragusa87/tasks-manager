@@ -16,6 +16,7 @@ export default {
       { pattern: /text-[a-z]+(-\d{3})?/ },  // text colors including 'text-white'
       { pattern: /hover:bg-[a-z]+-\d{3}/ }, // hover:bg-*
       { pattern: /ring(-[a-z]+)?-\d{1,3}/ }, // ring-2, ring-red-300
+      { pattern: /filter-/ }, // filter-suggestion-inactive filter-<color>s
         "hidden",
   ],
   theme: {

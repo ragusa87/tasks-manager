@@ -81,41 +81,17 @@ class FilterOption(NamedTuple):
     @property
     def inactive_classes(self) -> str:
         """More vibrant inactive state with better contrast and subtle gradients"""
-        color_configs = {
-            "blue": "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 hover:from-blue-200 hover:to-blue-300 ring-1 ring-blue-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "green": "bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 hover:from-emerald-200 hover:to-emerald-300 ring-1 ring-emerald-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "yellow": "bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 hover:from-amber-200 hover:to-amber-300 ring-1 ring-amber-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "red": "bg-gradient-to-r from-red-100 to-red-200 text-red-800 hover:from-red-200 hover:to-red-300 ring-1 ring-red-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "purple": "bg-gradient-to-r from-violet-100 to-violet-200 text-violet-800 hover:from-violet-200 hover:to-violet-300 ring-1 ring-violet-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "pink": "bg-gradient-to-r from-pink-100 to-pink-200 text-pink-800 hover:from-pink-200 hover:to-pink-300 ring-1 ring-pink-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "indigo": "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 hover:from-indigo-200 hover:to-indigo-300 ring-1 ring-indigo-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "orange": "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 hover:from-orange-200 hover:to-orange-300 ring-1 ring-orange-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "teal": "bg-gradient-to-r from-teal-100 to-teal-200 text-teal-800 hover:from-teal-200 hover:to-teal-300 ring-1 ring-teal-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-            "cyan": "bg-gradient-to-r from-cyan-100 to-cyan-200 text-cyan-800 hover:from-cyan-200 hover:to-cyan-300 ring-1 ring-cyan-400/50 shadow-sm hover:shadow-md transition-all duration-200",
-        }
-        return color_configs.get(self.color, color_configs["blue"])
+        return f"filter-suggestion filter-{self.color} filter-suggestion-inactive"
 
     @property
     def active_classes(self) -> str:
         """Bold, vibrant active state with strong visual feedback"""
-        color_configs = {
-            "blue": "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 ring-2 ring-blue-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "green": "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 ring-2 ring-emerald-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "yellow": "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 ring-2 ring-amber-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "red": "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 ring-2 ring-red-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "purple": "bg-gradient-to-r from-violet-500 to-violet-600 text-white hover:from-violet-600 hover:to-violet-700 ring-2 ring-violet-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "pink": "bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 ring-2 ring-pink-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "indigo": "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 ring-2 ring-indigo-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "orange": "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 ring-2 ring-orange-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "teal": "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700 ring-2 ring-teal-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-            "cyan": "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-600 hover:to-cyan-700 ring-2 ring-cyan-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200",
-        }
-        return color_configs.get(self.color, color_configs["blue"])
+        return f"filter-suggestion filter-{self.color} filter-suggestion-active"
 
     @property
     def inversed_classes(self) -> str:
         """CSS classes for inversed (excluded) state."""
-        return f"{self.active_classes} line-through"
+        return f"filter-suggestion filter-{self.color} filter-suggestion-active filter-suggestion-inversed"
 
     @property
     def current_classes(self) -> str:
