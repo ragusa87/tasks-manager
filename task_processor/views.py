@@ -185,10 +185,14 @@ class DashboardView(ListView):
     """
 
     def get_queryset(self):
+        from datetime import datetime, time
+
         from django.db import models as django_models
         from django.db.models.functions import Cast
 
         today = timezone.now().date()
+        today_start = timezone.make_aware(datetime.combine(today, time.min))
+        today_end = timezone.make_aware(datetime.combine(today, time.max))
         items = (
             Item.objects.for_user(self.request.user)
             .select_related("area")
@@ -223,9 +227,12 @@ class DashboardView(ListView):
                 ),
                 due_date_boost=Case(
                     # Overdue items (negative days) get maximum boost
-                    When(due_date__lt=today, then=Value(1000)),
+                    When(due_date__lt=today_start, then=Value(1000)),
                     # Due today gets very high boost
-                    When(due_date=today, then=Value(100)),
+                    When(
+                        Q(due_date__gte=today_start) & Q(due_date__lte=today_end),
+                        then=Value(100),
+                    ),
                     # Due tomorrow
                     When(
                         due_date=Cast(
