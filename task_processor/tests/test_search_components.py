@@ -42,29 +42,23 @@ class TestFilterOption(TestCase):
     def test_inactive_classes(self):
         """Test CSS classes for inactive state"""
         classes = self.filter_option.inactive_classes
-        self.assertIn("bg-gradient-to-r", classes)
-        self.assertIn("from-blue-100", classes)
-        self.assertIn("text-blue-800", classes)
-        self.assertIn("hover:", classes)
-        self.assertIn("transition-all", classes)
+        self.assertIn("filter-suggestion", classes)
+        self.assertIn("filter-blue", classes)
+        self.assertIn("filter-suggestion-inactive", classes)
 
     def test_active_classes(self):
         """Test CSS classes for active state"""
         classes = self.filter_option.active_classes
-        self.assertIn("bg-gradient-to-r", classes)
-        self.assertIn("from-blue-500", classes)
-        self.assertIn("text-white", classes)
-        self.assertIn("hover:", classes)
-        self.assertIn("shadow-lg", classes)
-        self.assertIn("transform", classes)
+        self.assertIn("filter-suggestion", classes)
+        self.assertIn("filter-blue", classes)
+        self.assertIn("filter-suggestion-active", classes)
 
     def test_inversed_classes(self):
         """Test CSS classes for inversed state"""
         classes = self.filter_option.inversed_classes
-        self.assertIn("line-through", classes)
-        # Should include active classes too
-        self.assertIn("bg-gradient-to-r", classes)
-        self.assertIn("from-blue-500", classes)
+        self.assertIn("filter-suggestion", classes)
+        self.assertIn("filter-blue", classes)
+        self.assertIn("filter-suggestion-inversed", classes)
 
     def test_current_classes_inactive(self):
         """Test current_classes property for inactive filter"""
@@ -317,8 +311,18 @@ class TestSearchFilter(TestCase):
 
         # For now, just check that the filter exists and has the right structure
         self.assertIsNotNone(simple_inbox_filter)
-        self.assertIsInstance(simple_inbox_filter.active, bool)
-        self.assertIsInstance(simple_inbox_filter.inversed, bool)
+        self.assertTrue(simple_inbox_filter.active)
+        self.assertFalse(simple_inbox_filter.inversed)
+
+        # Test inversion
+        simple_query = "-in:inbox"
+        simple_filters = self.search_filter.get_filters_with_state(simple_query)
+        simple_status_filters = simple_filters["status"]
+        simple_inbox_filter = next(
+            (f for f in simple_status_filters if f.filter_query == "in:inbox"), None
+        )
+        self.assertTrue(simple_inbox_filter.active)
+        self.assertTrue(simple_inbox_filter.inversed)
 
     def test_empty_lists_handling(self):
         """Test SearchFilter with empty areas/contexts/projects"""

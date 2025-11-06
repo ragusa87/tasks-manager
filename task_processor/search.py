@@ -538,18 +538,18 @@ class SearchParser:
             # Parse the filter query to check for matches
             filter_parts = self._parse_filter_query(filter_option.filter_query)
 
-            for _field, value in filter_parts:
+            for _field_name, value in filter_parts:
                 # Check included tokens
-                if field in tokens.included:
-                    for token_value in tokens.included[_field]:
+                if _field_name in tokens.included:
+                    for token_value in tokens.included[_field_name]:
                         if self._matches_filter_value(token_value, value):
                             active = True
                             inversed = False
                             break
 
                 # Check excluded tokens
-                if field in tokens.excluded:
-                    for token_value in tokens.excluded[field]:
+                if _field_name in tokens.excluded:
+                    for token_value in tokens.excluded[_field_name]:
                         if self._matches_filter_value(token_value, value):
                             active = True
                             inversed = True
