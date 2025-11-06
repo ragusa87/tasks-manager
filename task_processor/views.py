@@ -600,7 +600,7 @@ class ItemUpdateView(ReturnRefererMixin, UpdateView):
 
 class AutocompleteView(View):
     """
-    API endpoint for autocomplete functionality.
+    endpoint for autocomplete functionality.
     Supports tags, areas, contexts, and parent projects based on field_type.
     """
 
@@ -740,7 +740,7 @@ class AutocompleteView(View):
 @method_decorator(csrf_exempt, name="dispatch")
 class CreateFieldView(View):
     """
-    API endpoint for creating new field values on the fly.
+    endpoint for creating new field values on the fly.
     Supports tags, areas, and contexts based on field_type.
     """
 
