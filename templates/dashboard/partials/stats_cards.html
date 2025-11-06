@@ -1,22 +1,22 @@
 {% load sprite_tags %}
-<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-8">
     <!-- Inbox -->
-    <button class="block hover:bg-gray-50 transition-colors duration-150" data-filter="in:inbox">
-        <div class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-            <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-red-400">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
-                                {% sprite "lucide-archive" 24 %}
-                            </div>
+    <button type="button"
+            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            data-filter="in:inbox">
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-red-400">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
+                            {% sprite "lucide-archive" 24 %}
                         </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Inbox</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_inbox|default:"0" }}</dd>
-                            </dl>
-                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Inbox</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_inbox|default:"0" }}</dd>
+                        </dl>
                     </div>
                 </div>
             </div>
@@ -85,6 +85,29 @@
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
                             <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_waiting_for|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </button>
+
+    <!-- Someday Maybe -->
+    <button type="button"
+            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            data-filter="in:someday">
+        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-gray-400">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 text-gray-400">
+                            {% sprite "lucide-hourglass" 24 %}
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Someday Maybe</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_someday_maybe|default:"0" }}</dd>
                         </dl>
                     </div>
                 </div>
