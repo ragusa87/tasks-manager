@@ -23,6 +23,7 @@ I don't intent to maintain this project in the long term.
 - htmx show connectivity issue and 500.
 - Allow checking item to archive them
 - Delete archived item automatically after 30 days ?
+- Create a site.webmanifest with a PWA page to add a new task
 
 ## Linting and Formatting
 
