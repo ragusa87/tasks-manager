@@ -8,3 +8,59 @@
   bottom: 0;
   left: 0;
 }
+
+/* Stats card system using CSS custom properties */
+.stats-card {
+  --card-ring-color: currentColor;
+  --card-border-color: currentColor;
+  --card-bg-color: transparent;
+}
+
+.stats-card-red {
+  --card-ring-color: rgb(239 68 68); /* red-500 */
+  --card-border-color: rgb(248 113 113); /* red-400 */
+  --card-bg-color: rgb(254 242 242); /* red-50 */
+}
+
+.stats-card-blue {
+  --card-ring-color: rgb(59 130 246); /* blue-500 */
+  --card-border-color: rgb(96 165 250); /* blue-400 */
+  --card-bg-color: rgb(239 246 255); /* blue-50 */
+}
+
+.stats-card-purple {
+  --card-ring-color: rgb(168 85 247); /* purple-500 */
+  --card-border-color: rgb(192 132 252); /* purple-400 */
+  --card-bg-color: rgb(250 245 255); /* purple-50 */
+}
+
+.stats-card-yellow {
+  --card-ring-color: rgb(234 179 8); /* yellow-500 */
+  --card-border-color: rgb(250 204 21); /* yellow-400 */
+  --card-bg-color: rgb(254 252 232); /* yellow-50 */
+}
+
+.stats-card-gray {
+  --card-ring-color: rgb(107 114 128); /* gray-500 */
+  --card-border-color: rgb(156 163 175); /* gray-400 */
+  --card-bg-color: rgb(249 250 251); /* gray-50 */
+}
+
+.stats-card-btn {
+  @apply block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  --tw-ring-color: var(--card-ring-color);
+}
+
+.stats-card-btn.focused {
+  @apply ring-2 ring-offset-2;
+  --tw-ring-color: var(--card-ring-color);
+}
+
+.stats-card-inner {
+  @apply bg-white overflow-hidden shadow rounded-lg border-l-4;
+  border-color: var(--card-border-color);
+}
+
+.stats-card-inner.focused {
+  background-color: var(--card-bg-color);
+}

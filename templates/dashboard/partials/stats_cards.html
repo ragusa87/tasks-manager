@@ -1,117 +1,127 @@
 {% load sprite_tags %}
 <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-8" hx-swap-oob="true" id="stats-cards">
     <!-- Inbox -->
-    <button type="button"
-            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 {% if 'in:inbox' in search_query %}ring-2 ring-red-500 ring-offset-2{% endif %}"
-            data-filter="in:inbox">
-        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-red-400 {% if 'in:inbox' in search_query %}bg-red-50{% endif %}">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
-                            {% sprite "lucide-archive" 24 %}
+    <div class="stats-card stats-card-red">
+        <button type="button"
+                class="stats-card-btn {% if 'in:inbox' in search_query %}focused{% endif %}"
+                data-filter="in:inbox">
+            <div class="stats-card-inner {% if 'in:inbox' in search_query %}focused{% endif %}">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
+                                {% sprite "lucide-archive" 24 %}
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Inbox</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_inbox|default:"0" }}</dd>
-                        </dl>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Inbox</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_inbox|default:"0" }}</dd>
+                            </dl>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </button>
+        </button>
+    </div>
 
     <!-- Next Actions -->
-    <button type="button"
-            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {% if 'in:next' in search_query %}ring-2 ring-blue-500 ring-offset-2{% endif %}"
-            data-filter="in:next">
-        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-blue-400 {% if 'in:next' in search_query %}bg-blue-50{% endif %}">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="h-8 w-8 text-blue-400">
-                            {% sprite "lucide-zap" 24 %}
+    <div class="stats-card stats-card-blue">
+        <button type="button"
+                class="stats-card-btn {% if 'in:next' in search_query %}focused{% endif %}"
+                data-filter="in:next">
+            <div class="stats-card-inner {% if 'in:next' in search_query %}focused{% endif %}">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 text-blue-400">
+                                {% sprite "lucide-zap" 24 %}
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Next Actions</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_next_action|default:"0" }}</dd>
-                        </dl>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Next Actions</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_next_action|default:"0" }}</dd>
+                            </dl>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </button>
+        </button>
+    </div>
 
     <!-- Projects -->
-    <button type="button"
-            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 {% if 'in:project' in search_query %}ring-2 ring-purple-500 ring-offset-2{% endif %}"
-            data-filter="in:project">
-        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-purple-400 {% if 'in:project' in search_query %}bg-purple-50{% endif %}">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="h-8 w-8 text-purple-400">
-                            {% sprite "lucide-briefcase" 24 %}
+    <div class="stats-card stats-card-purple">
+        <button type="button"
+                class="stats-card-btn {% if 'in:project' in search_query %}focused{% endif %}"
+                data-filter="in:project">
+            <div class="stats-card-inner {% if 'in:project' in search_query %}focused{% endif %}">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 text-purple-400">
+                                {% sprite "lucide-briefcase" 24 %}
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_project|default:"0" }}</dd>
-                        </dl>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_project|default:"0" }}</dd>
+                            </dl>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </button>
+        </button>
+    </div>
 
     <!-- Waiting For -->
-    <button type="button"
-            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 {% if 'in:waiting' in search_query %}ring-2 ring-yellow-500 ring-offset-2{% endif %}"
-            data-filter="in:waiting">
-        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-yellow-400 {% if 'in:waiting' in search_query %}bg-yellow-50{% endif %}">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="h-8 w-8 text-yellow-400">
-                            {% sprite "lucide-hourglass" 24 %}
+    <div class="stats-card stats-card-yellow">
+        <button type="button"
+                class="stats-card-btn {% if 'in:waiting' in search_query %}focused{% endif %}"
+                data-filter="in:waiting">
+            <div class="stats-card-inner {% if 'in:waiting' in search_query %}focused{% endif %}">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 text-yellow-400">
+                                {% sprite "lucide-hourglass" 24 %}
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_waiting_for|default:"0" }}</dd>
-                        </dl>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_waiting_for|default:"0" }}</dd>
+                            </dl>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </button>
+        </button>
+    </div>
 
     <!-- Someday Maybe -->
-    <button type="button"
-            class="stats-filter-btn block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 {% if 'in:someday' in search_query %}ring-2 ring-gray-500 ring-offset-2{% endif %}"
-            data-filter="in:someday">
-        <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-gray-400 {% if 'in:someday' in search_query %}bg-gray-50{% endif %}">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="h-8 w-8 text-gray-400">
-                            {% sprite "lucide-hourglass" 24 %}
+    <div class="stats-card stats-card-gray">
+        <button type="button"
+                class="stats-card-btn {% if 'in:someday' in search_query %}focused{% endif %}"
+                data-filter="in:someday">
+            <div class="stats-card-inner {% if 'in:someday' in search_query %}focused{% endif %}">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 text-gray-400">
+                                {% sprite "lucide-hourglass" 24 %}
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Someday Maybe</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_someday_maybe|default:"0" }}</dd>
-                        </dl>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Someday Maybe</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_someday_maybe|default:"0" }}</dd>
+                            </dl>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </button>
+        </button>
+    </div>
 </div>
