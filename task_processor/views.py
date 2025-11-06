@@ -811,7 +811,11 @@ class AreaListView(ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return Area.objects.filter(user=self.request.user).order_by("name")
+        return (
+            Area.objects.filter(user=self.request.user)
+            .annotate(task_count=Count("item", filter=Q(item__user=self.request.user)))
+            .order_by("name")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -901,7 +905,11 @@ class ContextListView(ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return Context.objects.filter(user=self.request.user).order_by("name")
+        return (
+            Context.objects.filter(user=self.request.user)
+            .annotate(task_count=Count("item", filter=Q(item__user=self.request.user)))
+            .order_by("name")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -991,7 +999,11 @@ class TagListView(ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return Tag.objects.filter(user=self.request.user).order_by("name")
+        return (
+            Tag.objects.filter(user=self.request.user)
+            .annotate(task_count=Count("item", filter=Q(item__user=self.request.user)))
+            .order_by("name")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
