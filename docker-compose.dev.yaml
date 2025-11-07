@@ -1,0 +1,108 @@
+# YAML Anchors for shared configuration
+x-vite-envs: &vite-environment
+  environment:
+    - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS}
+    - NODE_ENV=${NODE_ENV}
+    - VITE_CORS_ORIGIN=${VITE_CORS_ORIGIN}
+services:
+  web:
+    build:
+      context: .
+      target: django
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    command: sh -c './manage.py migrate; while true; do ./manage.py runserver 0.0.0.0:8000; sleep 1; done'
+    volumes:
+      - .:/app
+  celery:
+    build:
+      context: .
+      target: django
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    command: uv run manage.py rundevworker --skip-checks
+    volumes:
+      - .:/app
+  celery-beat:
+    build:
+      context: .
+      target: django
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    volumes:
+      - .:/app
+  celery-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - .:/app
+    networks:
+      - default
+      - pontsun
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.celeri-admin.rule=Host(`tasks-celery-admin.docker.test`)
+      - traefik.http.routers.celeri-admin.entrypoints=https,http
+      - traefik.http.routers.celeri-admin.middlewares=celeri-redirect
+      - traefik.http.middlewares.celeri-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.celeri-redirect.redirectscheme.permanent=true
+      - traefik.http.services.celeri-admin.loadbalancer.server.port=5555
+    depends_on:
+      - redis
+    command: uv run celery -A task_processor flower
+
+  vite:
+    build:
+      context: .
+      target: vite
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules_cache:/app/node_modules
+    ports: []
+    <<: *vite-environment
+    command: sh -c "npm install && npm run dev"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.tasks-vite.rule=Host(`tasks-vite.docker.test`)
+      - traefik.http.routers.tasks-vite.entrypoints=https,http
+      - traefik.http.services.tasks-vite.loadbalancer.server.port=5173
+    networks:
+      - default
+      - pontsun
+  db:
+    ports:
+      - "5432:5432"
+  mailpit:
+    image: axllent/mailpit:latest
+    networks:
+      - default
+      - pontsun
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.tasks_mailpit.entrypoints=http,https'
+      - 'traefik.http.routers.tasks_mailpit.middlewares=https_redirect@file'
+      - 'traefik.http.routers.tasks_mailpit.rule=Host(`tasks-mail.docker.test`)'
+      - 'traefik.http.services.tasks_mailpit.loadbalancer.server.port=8025'
+volumes:
+  node_modules_cache:
+networks:
+    pontsun:
+        external: true
