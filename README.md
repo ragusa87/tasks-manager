@@ -5,7 +5,7 @@ A Django web task manager, based on the GTM™ Methodology (but not affiliated w
 
 ## Disclamer
 
-This is a pet projet, goal is to do some code-flow with IA.
+This is a pet project, goal is to do some code-flow with IA.
 I don't intent to maintain this project in the long term.
 
 ## Features
@@ -43,14 +43,16 @@ You can also use pre-commit (`docker compose exec web uv run pre-commit install`
 
 Requirements:
 - docker & docker-compose
-- traefik (optional, only if you want to use it as reverse-proxy)
+- traefik (optional, only if you want to use it as reverse-proxy, expected network is pontsun)
 - justfile (optional)
 
 ### Initialize the project
 
 Just run:
 ```
-docker compose up -d
+cp .env.example .env
+cp docker-compose.override.example.yaml docker-compose.override.yaml
+docker compose up -d -f docker-compose.yaml -f docker-compose.dev.yaml
 ```
 
 You need to wait for the container to be ready before accessing the web interface.
@@ -63,7 +65,7 @@ For production, you need to generate the config files first:
 ```bash
 ./bin/init.sh
 ```
-The command above will create a docker-compose.override.yaml file for you (based on docker-compose.override.example.yaml).
+The command above will create a docker-compose.override.yaml file for you (based on docker-compose.override.example.yaml) and create a .env file mostly ready for production.
 
 WARNING: If you re-run the command again, all existing data in your database will be lost (we recreate the database volume).
 

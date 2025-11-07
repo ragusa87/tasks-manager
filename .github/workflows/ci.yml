@@ -76,6 +76,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          target: django-prod
+          build-args: |
+            USER_ID=1000
+            GROUP_ID=1000
+      - name: Build and push DEV Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}-dev
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: django
           build-args: |
             USER_ID=1000
             GROUP_ID=1000

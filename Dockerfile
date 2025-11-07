@@ -81,6 +81,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
-FROM django as django-prod
+FROM django AS django-prod
 COPY --from=vite /app/static/dist ./static
 RUN uv run python manage.py collectstatic

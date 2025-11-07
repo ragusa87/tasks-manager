@@ -42,6 +42,11 @@ if [ ! -f "docker-compose.override.example.yaml" ]; then
     exit 1
 fi
 
+if [ ! -f ".env.example" ]; then
+    echo -e "${RED}Error: .env.example not found!${NC}"
+    exit 1
+fi
+
 echo -e "${GREEN}=== Docker Compose Override Initialization ===${NC}\n"
 
 
@@ -66,7 +71,7 @@ if [ -f "docker-compose.override.yaml" ]; then
             exit 1
         fi
         echo -e "${YELLOW}Stopping containers and removing database volume...${NC}"
-        docker compose down
+        docker compose down db || echo "Error removing DB volume.."
         docker volume rm tasks-manager_postgres_data 2>/dev/null || true
     else
         echo -e "${YELLOW}Force flag detected. Overwriting existing docker-compose.override.yaml...${NC}"
@@ -79,6 +84,23 @@ if [ -f "docker-compose.override.yaml" ]; then
 fi
 
 
+# Check if .env. already exists
+if [ -f ".env" ]; then
+    if [ "$FORCE" = false ]; then
+        echo -e "${YELLOW}Warning: .env already exists!${NC}"
+        read -p "Do you want to overwrite it? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${RED}Aborted.${NC}"
+            exit 1
+        fi
+    fi
+    echo -e "${YELLOW}Creating backup as .env.backup${NC}"
+    cp -f .env .env.backup
+fi
+
+echo -e "${GREEN}Copying .env.example...${NC}"
+cp -f .env.example .env
 
 echo -e "${GREEN}Copying docker-compose.override.example.yaml...${NC}"
 cp docker-compose.override.example.yaml docker-compose.override.yaml
@@ -135,16 +157,20 @@ SECRET_KEY_ESCAPED=$(echo "$SECRET_KEY" | sed 's/[&#/\$]/\\&/g' | sed 's/\$/\$\$
 DB_PASSWORD_ESCAPED=$(echo "$DB_PASSWORD" | sed 's/[&#/\]/\\&/g')
 
 # Replace SECRET_KEY
-sed -i "s#SECRET_KEY=your-custom-secret-key-here-min-50-chars-random-string#SECRET_KEY=$SECRET_KEY_ESCAPED#g" docker-compose.override.yaml
+sed -i "s#SECRET_KEY=django-insecure-docker-dev-key-change-in-production#SECRET_KEY=$SECRET_KEY_ESCAPED#g" docker-compose.override.yaml
+sed -i "s#SECRET_KEY=django-insecure-docker-dev-key-change-in-production#SECRET_KEY=\"$SECRET_KEY_ESCAPED\"#g" .env
 
 # Replace DB_PASSWORD
 sed -i "s#DB_PASSWORD=your-secure-database-password-here#DB_PASSWORD=$DB_PASSWORD_ESCAPED#g" docker-compose.override.yaml
+sed -i "s#DB_PASSWORD=your-secure-database-password-here#DB_PASSWORD=$DB_PASSWORD_ESCAPED#g" .env
 
 # Replace POSTGRES_PASSWORD
 sed -i "s#POSTGRES_PASSWORD: your-secure-database-password-here#POSTGRES_PASSWORD: $DB_PASSWORD_ESCAPED#g" docker-compose.override.yaml
+sed -i "s#POSTGRES_PASSWORD: your-secure-database-password-here#POSTGRES_PASSWORD: $DB_PASSWORD_ESCAPED#g" .env
 
 # Replace ALLOWED_HOSTS with domain name
 sed -i "s#ALLOWED_HOSTS=tasks.example.com#ALLOWED_HOSTS=$DOMAIN_NAME#g" docker-compose.override.yaml
+sed -i "s#ALLOWED_HOSTS=tasks.example.com#ALLOWED_HOSTS=$DOMAIN_NAME#g" .env
 
 # Replace Traefik router rule with domain name
 sed -i 's#traefik.http.routers.web-import.rule=Host(`tasks.example.com`)#traefik.http.routers.web-import.rule=Host(`'"$DOMAIN_NAME"'`)#g' docker-compose.override.yaml
@@ -153,12 +179,21 @@ sed -i 's#traefik.http.routers.web-import.rule=Host(`tasks.example.com`)#traefik
 sed -i "s|USER_ID: 1000|USER_ID: $USER_ID|g" docker-compose.override.yaml
 sed -i "s|GROUP_ID: 1000|GROUP_ID: $GROUP_ID|g" docker-compose.override.yaml
 
+# .env for prod..
+sed -i "s|NODE_ENV=development|NODE_ENV=production|g" .env
+sed -i "s|:docker-compose.dev.yaml||g" .env
+sed -i "s#core.settings.dev#core.settings.production#g" .env
+sed -i "s#DEBUG=True#DEBUG=False#g" .env
+sed -i 's#ALLOWED_HOSTS="tasks.docker.test celeri-admin.docker.test"#ALLOWED_HOSTS='${DOMAIN_NAME}'#g' .env
+sed -i 's#smtp://mailpit:1025#console://#g' .env
+
 # Replace ports with random ones
 sed -i "s|\"5432:5432\"|\"$PORT_5432:5432\"|g" docker-compose.override.yaml
 sed -i "s|\"6379:6379\"|\"$PORT_6379:6379\"|g" docker-compose.override.yaml
 sed -i "s|\"8000:8000\"|\"$PORT_8000:8000\"|g" docker-compose.override.yaml
 
-echo -e "\n${GREEN}✓ docker-compose.override.yaml has been created successfully!${NC}\n"
+
+echo -e "\n${GREEN}✓ docker-compose.override.yaml and .env have been created successfully!${NC}\n"
 
 # Display generated credentials
 echo -e "${YELLOW}=== Generated Credentials ===${NC}"
@@ -172,6 +207,6 @@ echo -e "Redis Port: ${GREEN}$PORT_6379${NC} (mapped to container port 6379)"
 echo -e "Web Port: ${GREEN}$PORT_8000${NC} (mapped to container port 8000)"
 
 echo -e "\n${GREEN}=== Initialization Complete ===${NC}"
+echo -e "Please cross check your .env config, especially for emails"
 rm -Rf .venv node_modules
-cp -f .env.example .env
 docker compose up -d

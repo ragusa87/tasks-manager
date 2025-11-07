@@ -1,38 +1,28 @@
 # YAML Anchors for shared configuration
-x-vite-envs: &vite-environment
-  environment:
-    - VITE_ALLOWED_HOSTS=tasks-vite.docker.test
-    - NODE_ENV=development
-    - VITE_CORS_ORIGIN=\.docker\.test$
 x-django-service: &django-service
-  build:
-    context: .
-    target: django
-    dockerfile: Dockerfile
-    args:
-      USER_ID: ${USER_ID:-1000}
-      GROUP_ID: ${GROUP_ID:-1000}
+  image: ghcr.io/ragusa87/tasks-manager:main
   environment: &django-environment
     #- VITE_DEV_SERVER_HOST=vite
     #- DJANGO_VITE_DEV_SERVER_HOST=localhost
     #- DJANGO_VITE_DEV_SERVER_PROTOCOL=http
     #- DJANGO_VITE_DEV_SERVER_PORT=5137
-    - NODE_ENV=development
-    - SECRET_KEY=django-insecure-docker-dev-key-change-in-production
-    - DEBUG=True
-    - DB_NAME=tasks_processing
+    - NODE_ENV=${NODE_ENV}
+    - SECRET_KEY=${SECRET_KEY}
+    - DEBUG=${DEBUG}
+    - DB_NAME=${DB_NAME}
     - DB_USER=postgres
-    - DB_PASSWORD=postgres
+    - DB_PASSWORD=${DB_PASSWORD}
     - DB_HOST=db
     - DB_PORT=5432
     - CELERY_BROKER_URL=redis://redis:6379/0
     - REDIS_CHANNEL_URL=redis://redis:6379/1
     - CELERY_RESULT_BACKEND=redis://redis:6379/0
     - CACHE_URL=redis://redis:6379/1
-    - ALLOWED_HOSTS=tasks.docker.test celeri-admin.docker.test
-    - EMAIL_URL=smtp://mailpit:1025
+    - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+    - EMAIL_URL=${EMAIL_URL}
+    - DJANGO_SETTINGS_MODULE={DJANGO_SETTINGS_MODULE}
+    - CUSTOM_AUTHENTICATION_BACKEND={CUSTOM_AUTHENTICATION_BACKEND}
   volumes: &django-volumes
-    - .:/app
     - media_data:/app/media
     - uv_cache:/root/.cache/uv
   networks:
@@ -50,11 +40,9 @@ services:
     environment:
       POSTGRES_DB: tasks_processing
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -76,89 +64,22 @@ services:
   web:
     <<: *django-service
     volumes:
-      - .:/app
       - media_data:/app/media
       - static_data:/app/staticfiles
     labels:
       - traefik.enable=true
       - traefik.http.routers.web-import.rule=Host(`tasks.docker.test`)
       - traefik.http.routers.web-import.entrypoints=http,https
-      - traefik.http.routers.web-import.middlewares=https-redirect
       - traefik.http.services.web-import.loadbalancer.server.port=8000
-      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
-      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
-    command: sh -c 'while true; do ./manage.py runserver 0.0.0.0:8000; sleep 1; done'
+    command: sh -c "uv run python manage.py migrate && uv run python manage.py collectstatic --noinput && uv run uvicorn core.asgi:application --host 0.0.0.0 --port 8000"
   celery:
     <<: *django-service
-    # command: uv run celery -A task_processor worker -l info
-    command: uv run manage.py rundevworker --skip-checks
-
+    command: uv run manage.py runworker
   celery-beat:
     <<: *django-service
     volumes:
-      - .:/app
       - celery_beat_data:/celerybeat-schedule
     command: uv run celery -A task_processor beat -l info
-
-  celery-admin:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        USER_ID: ${USER_ID:-1000}
-        GROUP_ID: ${GROUP_ID:-1000}
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    networks:
-      - default
-      - pontsun
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.celeri-admin.rule=Host(`tasks-celery-admin.docker.test`)
-      - traefik.http.routers.celeri-admin.entrypoints=https,http
-      - traefik.http.routers.celeri-admin.middlewares=celeri-redirect
-      - traefik.http.middlewares.celeri-redirect.redirectscheme.scheme=https
-      - traefik.http.middlewares.celeri-redirect.redirectscheme.permanent=true
-      - traefik.http.services.celeri-admin.loadbalancer.server.port=5555
-    depends_on:
-      - redis
-    command: uv run celery -A task_processor flower
-
-  vite:
-    build:
-      context: .
-      target: vite
-      dockerfile: Dockerfile
-      args:
-        USER_ID: ${USER_ID:-1000}
-        GROUP_ID: ${GROUP_ID:-1000}
-    working_dir: /app
-    volumes:
-      - .:/app
-      - node_modules_cache:/app/node_modules
-    ports: []
-    <<: *vite-environment
-    command: sh -c "npm install && npm run dev"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.tasks-vite.rule=Host(`tasks-vite.docker.test`)
-      - traefik.http.routers.tasks-vite.entrypoints=https,http
-      - traefik.http.services.tasks-vite.loadbalancer.server.port=5173
-    networks:
-      - default
-      - pontsun
-  mailpit:
-    image: axllent/mailpit:latest
-    networks:
-      - default
-      - pontsun
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.tasks_mailpit.entrypoints=http,https'
-      - 'traefik.http.routers.tasks_mailpit.middlewares=https_redirect@file'
-      - 'traefik.http.routers.tasks_mailpit.rule=Host(`tasks-mail.docker.test`)'
-      - 'traefik.http.services.tasks_mailpit.loadbalancer.server.port=8025'
 volumes:
   postgres_data:
   redis_data:
@@ -166,7 +87,6 @@ volumes:
   static_data:
   celery_beat_data:
   uv_cache:
-  node_modules_cache:
 networks:
     pontsun:
         external: true

@@ -3,62 +3,20 @@
 # IMPORTANT: Never commit docker-compose.override.yml to version control!
 services:
   web:
-    build:
-      args:
-        USER_ID: 1000  # Change to your host user ID
-        GROUP_ID: 1000  # Change to your host group ID
-      target: django-prod
-    command: >
-      sh -c "uv run python manage.py migrate && uv run python manage.py collectstatic --noinput && uv run uvicorn core.asgi:application --host 0.0.0.0 --port 8000"
-    environment:
-      # 1. Generate SECRET_KEY with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-      - SECRET_KEY=your-custom-secret-key-here-min-50-chars-random-string
-      - DEBUG=False
-      - DB_PASSWORD=your-secure-database-password-here
-      - ALLOWED_HOSTS=tasks.example.com
-      - IS_DEMO=False
-      - DJANGO_SETTINGS_MODULE=core.settings.production
-      # - CUSTOM_AUTHENTICATION_BACKEND=authcrunch
-    ports:
-      - "8000:8000"
+    #build:
+    #  target: django-prod
+    #  args:
+    #    USER_ID: 1000  # Change to your host user ID
+    #    GROUP_ID: 1000  # Change to your host group ID
+#    environment:
+#      - ...
+    #ports:
+    #  - "8000:8000"
     labels:
       - traefik.http.routers.web-import.rule=Host(`tasks.example.com`)
-  celery:
-    build:
-      args:
-        USER_ID: 1000
-        GROUP_ID: 1000
-    environment:
-      - SECRET_KEY=your-custom-secret-key-here-min-50-chars-random-string
-      - DB_PASSWORD=your-secure-database-password-here
-      - DJANGO_SETTINGS_MODULE=core.settings.production
-      - DEBUG=False
-  celery-beat:
-    build:
-      args:
-        USER_ID: 1000
-        GROUP_ID: 1000
-    environment:
-      - SECRET_KEY=your-custom-secret-key-here-min-50-chars-random-string
-      - DB_PASSWORD=your-secure-database-password-here
-      - DJANGO_SETTINGS_MODULE=core.settings.production
-      - DEBUG=False
-  celery-admin:
-    build:
-      args:
-        USER_ID: 1000
-        GROUP_ID: 1000
-    deploy:
-      replicas: 0
-  db:
-    environment:
-      POSTGRES_PASSWORD: your-secure-database-password-here
-    ports:
-      - "5432:5432"
-  redis:
-    ports:
-      - "6379:6379"
-  vite:
-    command: sh -c "npm install && npm run build"
-    deploy:
-      replicas: 0
+#  db:
+#    ports:
+#      - "5432:5432"
+#  redis:
+#    ports:
+#      - "6379:6379"
