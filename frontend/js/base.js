@@ -262,7 +262,7 @@ function initializeAutocomplete() {
         });
 
         function searchItems(query) {
-            const url = `/api/autocomplete/${fieldType}/?q=${encodeURIComponent(query)}`;
+            const url = `/autocomplete/search/${fieldType}/?q=${encodeURIComponent(query)}`;
 
             fetch(url)
                 .then(response => {
@@ -392,7 +392,7 @@ function initializeAutocomplete() {
         function createNewTag(name) {
             if (!allowCreate) return;
 
-            fetch(`/api/create/${fieldType}/`, {
+            fetch(`/autocomplete/create/${fieldType}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
