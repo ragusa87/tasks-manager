@@ -22,10 +22,11 @@ USER ${USER_ID}:${GROUP_ID}
 COPY package-lock.json .
 COPY package.json .
 COPY vite.config.js .
+COPY tailwind.config.js .
 
 RUN mkdir -p frontend static/dist
 COPY frontend frontend/
-
+COPY templates templates/
 RUN npm ci && npm run vite build
 
 
@@ -64,7 +65,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
 # Create necessary directories with correct permissions
-RUN mkdir -p /app/logs /app/media /app/staticfiles && \
+RUN mkdir -p /app/logs /app/media /app/staticfiles /app/static && \
     chown -R appuser:appuser /app
 
 # Copy application code
@@ -82,5 +83,5 @@ CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
 FROM django AS django-prod
-COPY --from=vite /app/static/dist ./static
-RUN uv run python manage.py collectstatic
+COPY --from=vite /app/static/dist ./static/dist
+RUN uv run python manage.py collectstatic --noinput

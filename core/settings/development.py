@@ -9,7 +9,9 @@ import os
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "tasks.docker.test"]
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS", "localhost 127.0.0.1 tasks.docker.test"
+).split()
 
 # Add debug toolbar for development
 INSTALLED_APPS += ["debug_toolbar"]

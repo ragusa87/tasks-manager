@@ -1,6 +1,6 @@
 # YAML Anchors for shared configuration
 x-django-service: &django-service
-  image: ghcr.io/ragusa87/tasks-manager:main
+  image: ghcr.io/ragusa87/tasks-manager:latest
   environment: &django-environment
     #- VITE_DEV_SERVER_HOST=vite
     #- DJANGO_VITE_DEV_SERVER_HOST=localhost
@@ -22,6 +22,7 @@ x-django-service: &django-service
     - EMAIL_URL=${EMAIL_URL}
     - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
     - CUSTOM_AUTHENTICATION_BACKEND=${CUSTOM_AUTHENTICATION_BACKEND}
+    - IS_DEMO=${IS_DEMO}
   volumes: &django-volumes
     - media_data:/app/media
     - uv_cache:/root/.cache/uv

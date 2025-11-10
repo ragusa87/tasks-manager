@@ -35,5 +35,6 @@ if [ "$OLD_HEAD" != "$NEW_HEAD" ]; then
         ./bin/backup.sh
     fi
     echo "HEAD has changed, running docker compose up..."
+    docker compose pull
     docker compose up -d --build --remove-orphans
 fi

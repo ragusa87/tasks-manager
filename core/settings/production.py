@@ -8,7 +8,7 @@ import os
 
 DEBUG = False
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split()
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
