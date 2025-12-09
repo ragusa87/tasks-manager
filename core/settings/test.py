@@ -6,6 +6,9 @@ from .base import *  # noqa
 
 DEBUG = True
 
+SECURE_PROXY_SSL_HEADER = None
+SECURE_SSL_REDIRECT = False
+
 # Use in-memory database for tests
 DATABASES = {
     "default": {

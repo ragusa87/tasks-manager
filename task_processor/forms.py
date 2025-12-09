@@ -189,6 +189,7 @@ class ItemForm(forms.ModelForm):
 
     def __init__(self, item_flow: ItemFlow, user, *args, **kwargs):
         self.item_flow = item_flow
+        self.user = user
         super().__init__(*args, **kwargs)
 
         # parent relationship is only valid for projects/references
@@ -304,18 +305,14 @@ class ItemForm(forms.ModelForm):
                     for id in contexts_value.split(",")
                     if id.strip().isdigit()
                 ]
-                return Context.objects.filter(
-                    id__in=ids, user=self.instance.user if self.instance else None
-                )
+                return Context.objects.filter(id__in=ids, user=self.user)
             except (ValueError, TypeError):
                 return Context.objects.none()
         elif isinstance(contexts_value, list):
             try:
                 # Handle list of IDs: [1, 2, 3] or ["1", "2", "3"]
                 ids = [int(id) for id in contexts_value if str(id).isdigit()]
-                return Context.objects.filter(
-                    id__in=ids, user=self.instance.user if self.instance else None
-                )
+                return Context.objects.filter(id__in=ids, user=self.user)
             except (ValueError, TypeError):
                 return Context.objects.none()
 
@@ -333,18 +330,14 @@ class ItemForm(forms.ModelForm):
                     for id in tags_value.split(",")
                     if id.strip().isdigit()
                 ]
-                return Tag.objects.filter(
-                    id__in=ids, user=self.instance.user if self.instance else None
-                )
+                return Tag.objects.filter(id__in=ids, user=self.user)
             except (ValueError, TypeError):
                 return Tag.objects.none()
         elif isinstance(tags_value, list):
             try:
                 # Handle list of IDs: [1, 2, 3] or ["1", "2", "3"]
                 ids = [int(id) for id in tags_value if str(id).isdigit()]
-                return Tag.objects.filter(
-                    id__in=ids, user=self.instance.user if self.instance else None
-                )
+                return Tag.objects.filter(id__in=ids, user=self.user)
             except (ValueError, TypeError):
                 return Tag.objects.none()
 
