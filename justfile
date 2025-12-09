@@ -30,7 +30,7 @@ shell_plus *args:
 
 alias t := test
 test *args:
-  docker compose exec {{BACKEND_CONTAINER}} uv run pytest "$@"
+  docker compose exec -e DJANGO_SETTINGS_MODULE=core.settings.test {{BACKEND_CONTAINER}} uv run pytest "$@"
 
 alias validate := lint
 alias l := lint
