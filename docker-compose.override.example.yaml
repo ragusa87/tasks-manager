@@ -1,19 +1,24 @@
 # Example override file for docker-compose
 # Copy this to docker-compose.override.yml and customize as needed
 # IMPORTANT: Never commit docker-compose.override.yml to version control!
+x-build: &build-django
+  target: django-prod
+  args:
+    USER_ID: 1000  # Change to your host user ID
+    GROUP_ID: 1000  # Change to your host group ID
 services:
   web:
-    #build:
-    #  target: django-prod
-    #  args:
-    #    USER_ID: 1000  # Change to your host user ID
-    #    GROUP_ID: 1000  # Change to your host group ID
-#    environment:
-#      - ...
-    #ports:
-    #  - "8000:8000"
     labels:
       - traefik.http.routers.web-import.rule=Host(`tasks.docker.test`)
+#   build: *build-django
+#   environment:
+#     - ...
+#   ports:
+#     - "8000:8000"
+#  celery:
+#    build: *build-django
+#  celery-beat:
+#    build: *build-django
 #  db:
 #    ports:
 #      - "5432:5432"
