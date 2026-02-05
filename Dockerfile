@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:22-alpine AS vite
+FROM --platform=$BUILDPLATFORM node:25-alpine AS vite
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 WORKDIR /app
