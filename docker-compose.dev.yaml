@@ -24,7 +24,7 @@ services:
       args:
         USER_ID: ${USER_ID:-1000}
         GROUP_ID: ${GROUP_ID:-1000}
-    command: uv run manage.py rundevworker --skip-checks
+    command: manage.py rundevworker --skip-checks
     volumes:
       - .:/app
   celery-beat:
@@ -62,7 +62,7 @@ services:
       - traefik.http.services.celeri-admin.loadbalancer.server.port=5555
     depends_on:
       - redis
-    command: uv run celery -A task_processor flower
+    command: celery -A task_processor flower
 
   vite:
     build:

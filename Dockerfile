@@ -50,6 +50,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install uv
 RUN pip install uv
+ENV UV_PROJECT_ENVIRONMENT=/opt/python/venv
+ENV PATH="/opt/python/venv/bin:$PATH"
 
 # Create user with specified UID/GID
 RUN groupadd -g ${GROUP_ID} appuser && \
@@ -61,12 +63,9 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install Python dependencies
-RUN uv sync --frozen
-
 # Create necessary directories with correct permissions
-RUN mkdir -p /app/logs /app/media /app/staticfiles /app/static && \
-    chown -R appuser:appuser /app
+RUN mkdir -p /app/logs /app/media /app/staticfiles /app/static /opt/python && \
+    chown -R appuser:appuser /app /opt/python
 
 # Copy application code
 COPY --chown=appuser:appuser . .
@@ -74,14 +73,17 @@ COPY --chown=appuser:appuser . .
 # Switch to non-root user
 USER appuser
 
+# Install Python dependencies
+ENV PATH="/opt/python/venv/bin:$PATH"
+RUN uv sync --frozen
+
 # Expose port
 EXPOSE 8000
-ENV PATH="/app/.venv/bin:$PATH"
 
 # Default command
-CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
 FROM django AS django-prod
 COPY --from=vite /app/static/dist ./static/dist
-RUN uv run python manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput
