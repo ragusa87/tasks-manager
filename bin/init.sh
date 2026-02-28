@@ -124,7 +124,7 @@ echo -e "${GREEN}Generating secure credentials...${NC}"
 
 # Generate Django SECRET_KEY (using Python if available, otherwise openssl)
 if command -v uv &> /dev/null; then
-    SECRET_KEY=$(uv run python3 -c 'import random; import string; print("".join(random.SystemRandom().choice(string.ascii_letters + string.digits + string.punctuation.replace("\"", "").replace("\\", "")) for _ in range(50)))')
+    SECRET_KEY=$(python3 -c 'import random; import string; print("".join(random.SystemRandom().choice(string.ascii_letters + string.digits + string.punctuation.replace("\"", "").replace("\\", "")) for _ in range(50)))')
 else
     SECRET_KEY=$(openssl rand -base64 48 | tr -d "=+/" | cut -c1-50)
 fi

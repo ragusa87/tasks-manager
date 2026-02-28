@@ -28,10 +28,10 @@ I don't intent to maintain this project in the long term.
 ## Linting and Formatting
 
 ```bash
-uv run ruff check .
-uv run ruff format .
+ruff check .
+ruff format .
 ```
-You can also use pre-commit (`docker compose exec web uv run pre-commit install`) or run `just uv run pre-commit run --all-files`
+You can also use pre-commit (`docker compose exec web pre-commit install`) or run `just pre-commit run --all-files`
 ## Settings
 
 - **Development**: `core.settings.development`

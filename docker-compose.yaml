@@ -72,15 +72,15 @@ services:
       - traefik.http.routers.web-import.rule=Host(`tasks.docker.test`)
       - traefik.http.routers.web-import.entrypoints=http,https
       - traefik.http.services.web-import.loadbalancer.server.port=8000
-    command: sh -c "uv run python manage.py migrate && uv run python manage.py collectstatic --noinput && uv run uvicorn core.asgi:application --host 0.0.0.0 --port 8000"
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && uvicorn core.asgi:application --host 0.0.0.0 --port 8000"
   celery:
     <<: *django-service
-    command: uv run manage.py runworker
+    command: manage.py runworker
   celery-beat:
     <<: *django-service
     volumes:
       - celery_beat_data:/celerybeat-schedule
-    command: uv run celery -A task_processor beat -l info
+    command: celery -A task_processor beat -l info
 volumes:
   postgres_data:
   redis_data:

@@ -31,9 +31,12 @@ jobs:
         run: |
           uv sync --frozen --dev
 
+      - name: Add .venv/bin to PATH
+        run: echo "${{ github.workspace }}/.venv/bin:$PATH" >> $GITHUB_PATH
+
       - name: Run pre-commit
         run: |
-          uv run pre-commit run --all-files
+          pre-commit run --all-files
 
   build:
     name: Build Docker image
@@ -167,13 +170,16 @@ jobs:
         run: |
           uv sync --frozen --dev
 
+      - name: Add .venv/bin to PATH
+        run: echo "${{ github.workspace }}/.venv/bin:$PATH" >> $GITHUB_PATH
+
       - name: Run migrations
         run: |
-          uv run python manage.py migrate --noinput
+          python manage.py migrate --noinput
 
       - name: Run tests
         run: |
-          uv run pytest --cov --cov-report=xml --cov-report=term
+          pytest --cov --cov-report=xml --cov-report=term
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -187,4 +193,4 @@ jobs:
 
       - name: Run fixturize
         run: |
-          uv run python manage.py fixturize --clear
+          python manage.py fixturize --clear

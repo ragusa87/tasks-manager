@@ -20,28 +20,28 @@ alias django := manage
 alias dj := manage
 # Run a Django manage.py command
 manage *args:
-  docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py "$@"
+  docker compose exec {{BACKEND_CONTAINER}} python manage.py "$@"
 
 # Run manage.py shell_plus
 alias shell := shell_plus
 alias sp := shell_plus
 shell_plus *args:
-  docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py shell_plus "$@"
+  docker compose exec {{BACKEND_CONTAINER}} python manage.py shell_plus "$@"
 
 alias t := test
 test *args:
-  docker compose exec -e DJANGO_SETTINGS_MODULE=core.settings.test {{BACKEND_CONTAINER}} uv run pytest "$@"
+  docker compose exec -e DJANGO_SETTINGS_MODULE=core.settings.test {{BACKEND_CONTAINER}} pytest "$@"
 
 alias validate := lint
 alias l := lint
 # Lint the code
 lint:
-  docker compose exec {{BACKEND_CONTAINER}} uv run ruff check
+  docker compose exec {{BACKEND_CONTAINER}} ruff check
 
 alias fix := format
 # Fix styling offenses and format code
 format:
-  docker compose exec {{BACKEND_CONTAINER}} uv run ruff check --fix
+  docker compose exec {{BACKEND_CONTAINER}} ruff check --fix
 
 alias c := compile
 # Compile the requirements files
@@ -56,17 +56,17 @@ install:
 alias mm := makemigrations
 # Generate database migrations
 makemigrations *args:
-  docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py makemigrations "$@"
+  docker compose exec {{BACKEND_CONTAINER}} python manage.py makemigrations "$@"
 
 alias m := migrate
 # Migrate the database
 migrate:
-  docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py migrate
+  docker compose exec {{BACKEND_CONTAINER}} python manage.py migrate
 
 alias f := fixturize
 # Reset the database and load the fixtures
 fixturize *args:
-  docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py fixturize "$@"
+  docker compose exec {{BACKEND_CONTAINER}} python manage.py fixturize "$@"
 
 npm *args:
   docker compose exec {{FRONTEND_CONTAINER}} npm "$@"
@@ -74,9 +74,9 @@ npm *args:
 alias messages := translate
 # Make messages and compile them
 translate:
-	docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py makemessages -a -i "node_modules/*"
-	docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py makemessages -a -d djangojs -i "node_modules/*" -i "static/*"
-	docker compose exec {{BACKEND_CONTAINER}} uv run python manage.py compilemessages
+	docker compose exec {{BACKEND_CONTAINER}} python manage.py makemessages -a -i "node_modules/*"
+	docker compose exec {{BACKEND_CONTAINER}} python manage.py makemessages -a -d djangojs -i "node_modules/*" -i "static/*"
+	docker compose exec {{BACKEND_CONTAINER}} python manage.py compilemessages
 
 uv *args:
     docker compose run --rm {{BACKEND_CONTAINER}} uv "$@"
