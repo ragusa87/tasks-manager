@@ -75,7 +75,7 @@ services:
     command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && uvicorn core.asgi:application --host 0.0.0.0 --port 8000"
   celery:
     <<: *django-service
-    command: manage.py runworker
+    command: python manage.py runworker
   celery-beat:
     <<: *django-service
     volumes:
