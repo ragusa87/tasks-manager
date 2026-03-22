@@ -1,32 +1,41 @@
 {% load sprite_tags %}
 {% if errors %}
-<ul class="mb-2 space-y-1">
+<ul class="mb-3 space-y-1 p-3 bg-red-50 border border-red-200 rounded-md">
     {% for error in errors %}
-    <li class="text-sm text-red-600">{{ error }}</li>
+    <li class="text-sm text-red-600 flex items-center gap-1.5">
+        {% sprite "lucide-circle-alert" 14 class="shrink-0" %}
+        {{ error }}
+    </li>
     {% endfor %}
 </ul>
 {% endif %}
-<div class="document-list space-y-2" id="document-list-{{ item_id }}" data-item-id="{{ item_id }}"
+<div class="document-list space-y-1.5" id="document-list-{{ item_id }}" data-item-id="{{ item_id }}"
      data-upload-url="{% url 'document_upload' item_id %}">
     {% for document in documents %}
-    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md border border-gray-200"
+    <div class="group flex items-center justify-between px-3 py-2.5 bg-white rounded-md border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
          id="document-{{ document.id }}" data-document-id="{{ document.id }}">
-        <div class="flex items-center space-x-3">
-            {% sprite "lucide-file-text" 20 class="text-gray-500" %}
-            <div>
+        <div class="flex items-center gap-2.5 min-w-0">
+            {% sprite "lucide-file" 18 class="shrink-0" %}
+            <div class="min-w-0">
                 <a href="{% url 'document_download' document.id %}"
-                   class="text-sm font-medium text-blue-600 hover:text-blue-800"
+                   class="block text-sm font-medium text-gray-800 hover:text-blue-600 truncate"
+                   title="{{ document.file_name }}"
                    target="_blank">{{ document.file_name }}</a>
-                <p class="text-xs text-gray-500">{{ document.file_size_display }}</p>
+                <p class="text-xs text-gray-400">{{ document.file_size_display }}</p>
             </div>
         </div>
-        <button type="button" class="text-gray-400 hover:text-red-600 transition-colors cursor-pointer delete-doc-btn" title="Delete document"
+        <button type="button"
+                class="ml-2 shrink-0 p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer delete-doc-btn opacity-0 group-hover:opacity-100"
+                title="Delete document"
                 data-item-id="{{ item_id }}"
                 data-delete-url="{% url 'document_delete' document.id %}">
-            {% sprite "lucide-trash-2" 18 %}
+            {% sprite "lucide-trash-2" 15 %}
         </button>
     </div>
     {% empty %}
-    <p class="text-sm text-gray-500 italic" id="no-documents-{{ item_id }}">No documents attached</p>
+    <div class="flex flex-col items-center justify-center py-6 text-center" id="no-documents-{{ item_id }}">
+        {% sprite "lucide-file" 28 class="mb-2" %}
+        <p class="text-sm text-gray-400">No documents attached yet</p>
+    </div>
     {% endfor %}
 </div>
