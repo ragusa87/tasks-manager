@@ -13,7 +13,7 @@ services:
       args:
         USER_ID: ${USER_ID:-1000}
         GROUP_ID: ${GROUP_ID:-1000}
-    command: sh -c './manage.py migrate; while true; do ./manage.py runserver 0.0.0.0:8000; sleep 1; done'
+    command: sh -c 'python ./manage.py migrate; while true; do python ./manage.py runserver 0.0.0.0:8000; sleep 1; done'
     volumes:
       - .:/app
   celery:
@@ -24,7 +24,7 @@ services:
       args:
         USER_ID: ${USER_ID:-1000}
         GROUP_ID: ${GROUP_ID:-1000}
-    command: manage.py rundevworker --skip-checks
+    command: python manage.py rundevworker --skip-checks
     volumes:
       - .:/app
   celery-beat:
