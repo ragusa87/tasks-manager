@@ -24,7 +24,7 @@ CSRF_COOKIE_SECURE = True
 # Using basic storage to avoid compression issues with Vite-generated files
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": STORAGE_BACKEND,
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",

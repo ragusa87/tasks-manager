@@ -4,6 +4,7 @@ Base Django settings for core project.
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import dj_email_url
 from dotenv import load_dotenv
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django_vite",
     "django_celery_beat",
+    "storages",
     "core",
     "task_processor",
     "nirvana",
@@ -194,6 +196,33 @@ LOGGING = {
 }
 
 ALLOWED_TYPES = ["application/pdf"]
+MAX_FILE_SIZE = 10 * 1024 * 1024
+
+# Storage configuration derived from a single STORAGE_URL env var.
+# Formats:
+#   file://media                                          (local filesystem)
+#   s3://access_key:secret@endpoint/bucket/prefix?region=eu-west-1
+_storage_url = os.getenv("STORAGE_URL", "file://media")
+_parsed_storage = urlparse(_storage_url)
+
+if _parsed_storage.scheme == "s3":
+    STORAGE_BACKEND = "storages.backends.s3boto3.S3Boto3Storage"
+    AWS_ACCESS_KEY_ID = _parsed_storage.username or ""
+    AWS_SECRET_ACCESS_KEY = _parsed_storage.password or ""
+    AWS_S3_ENDPOINT_URL = f"https://{_parsed_storage.hostname}"
+    _path_parts = _parsed_storage.path.strip("/").split("/", 1)
+    AWS_STORAGE_BUCKET_NAME = _path_parts[0]
+    AWS_MEDIA_LOCATION = _path_parts[1] if len(_path_parts) > 1 else "media"
+    _qs = parse_qs(_parsed_storage.query)
+    AWS_S3_REGION_NAME = _qs.get("region", ["eu-west-1"])[0]
+    AWS_DEFAULT_ACL = "private"
+    AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
+else:
+    # Default: local filesystem
+    STORAGE_BACKEND = "django.core.files.storage.FileSystemStorage"
+    MEDIA_ROOT = BASE_DIR / (_parsed_storage.netloc or "media")
+
+DOCUMENT_PRESIGNED_URL_EXPIRY = int(os.getenv("DOCUMENT_PRESIGNED_URL_EXPIRY", "300"))
 
 
 # Django Channels configuration
