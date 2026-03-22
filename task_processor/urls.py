@@ -30,6 +30,9 @@ from .views import (
     CreateFieldView,
     DashboardStatsView,
     DashboardView,
+    DocumentDeleteView,
+    DocumentDownloadView,
+    DocumentUploadView,
     ItemCreateView,
     ItemDetailView,
     ItemTransitionView,
@@ -53,6 +56,21 @@ urlpatterns = [
         "item/<int:item_id>/transition/<str:transition_slug>/",
         ItemTransitionView.as_view(),
         name="item_transition",
+    ),
+    path(
+        "item/<int:item_id>/documents/upload/",
+        DocumentUploadView.as_view(),
+        name="document_upload",
+    ),
+    path(
+        "documents/<int:document_id>/delete/",
+        DocumentDeleteView.as_view(),
+        name="document_delete",
+    ),
+    path(
+        "documents/<int:document_id>/download/",
+        DocumentDownloadView.as_view(),
+        name="document_download",
     ),
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard_stats"),
     path(

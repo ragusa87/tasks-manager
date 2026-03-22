@@ -1,11 +1,14 @@
 from datetime import timedelta
 
+import boto3
+import magic
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Count, IntegerField, Q, Value, When
-from django.http import JsonResponse
+from django.http import FileResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -25,7 +28,7 @@ from factory.django import get_model
 
 from .constants import GTDConfig, GTDStatus
 from .forms import AreaForm, ContextForm, ItemForm, TagForm
-from .models import Area, Context, Item, Tag
+from .models import Area, Context, Document, Item, Tag
 from .search import FilterCategory
 
 
@@ -508,6 +511,11 @@ class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
     def get_queryset(self):
         return Item.objects.for_user(self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["documents"] = self.object.documents.all()
+        return context
+
 
 @method_decorator(login_required, name="dispatch")
 class ItemCreateView(ReturnRefererMixin, CreateView):
@@ -578,6 +586,7 @@ class ItemUpdateView(ReturnRefererMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = f'Update "{self.object.title}"'
+        context["documents"] = self.object.documents.all()
 
         # Add initial values for autocomplete fields
         form = context.get("form")
@@ -1083,3 +1092,107 @@ class TagDeleteView(ReturnRefererMixin, DeleteView):
         response = super().delete(request, *args, **kwargs)
         messages.success(request, f"Tag '{tag_name}' deleted successfully!")
         return response
+
+
+@method_decorator(login_required, name="dispatch")
+class DocumentUploadView(View):
+    """
+    View for uploading multiple documents to a task.
+    """
+
+    def post(self, request, item_id):
+        item = get_object_or_404(Item, id=item_id, user=request.user)
+        files = request.FILES.getlist("files")
+
+        allowed_types = settings.ALLOWED_TYPES
+        max_size = settings.MAX_FILE_SIZE
+
+        errors = []
+        for file in files:
+            if file.size > max_size:
+                errors.append(
+                    f"{file.name}: file exceeds the {max_size // (1024 * 1024)} MB limit"
+                )
+                continue
+
+            # Validate file type using magic bytes, not the browser-supplied Content-Type.
+            detected_type = magic.from_buffer(file.read(2048), mime=True)
+            file.seek(0)
+            if allowed_types and detected_type not in allowed_types:
+                errors.append(f"{file.name}: file type not allowed (only PDF)")
+                continue
+
+            Document.objects.create(
+                item=item,
+                file=file,
+                file_name=file.name,
+                file_size=file.size,
+                content_type=detected_type,
+                user=request.user,
+            )
+
+        documents = item.documents.all()
+        return render(
+            request,
+            "partials/document_list.html",
+            {"documents": documents, "item_id": item.id, "errors": errors},
+        )
+
+
+@method_decorator(login_required, name="dispatch")
+class DocumentDeleteView(View):
+    """
+    View for deleting a document.
+    """
+
+    def post(self, request, document_id):
+        document = get_object_or_404(Document, id=document_id, user=request.user)
+        item = document.item
+        document.delete()
+
+        documents = item.documents.all()
+        return render(
+            request,
+            "partials/document_list.html",
+            {"documents": documents, "item_id": item.id},
+        )
+
+
+@method_decorator(login_required, name="dispatch")
+class DocumentDownloadView(View):
+    """
+    Serves a document file to its owner.
+    Local storage: streams the file via FileResponse.
+    S3 storage: redirects to a pre-signed URL.
+    Returns 403 if the requesting user does not own the document.
+    """
+
+    def get(self, request, document_id):
+        document = get_object_or_404(Document, id=document_id)
+        if document.user != request.user:
+            raise PermissionDenied
+
+        if settings.STORAGE_BACKEND == "storages.backends.s3boto3.S3Boto3Storage":
+            expiry = getattr(settings, "DOCUMENT_PRESIGNED_URL_EXPIRY", 300)
+            s3_client = boto3.client(
+                "s3",
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+                region_name=settings.AWS_S3_REGION_NAME,
+            )
+            presigned_url = s3_client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
+                    "Key": document.file.name,
+                },
+                ExpiresIn=expiry,
+            )
+            return HttpResponseRedirect(presigned_url)
+
+        return FileResponse(
+            document.file.open("rb"),
+            content_type=document.content_type or "application/octet-stream",
+            as_attachment=False,
+        )

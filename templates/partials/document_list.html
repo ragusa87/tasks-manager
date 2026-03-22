@@ -1,0 +1,32 @@
+{% load sprite_tags %}
+{% if errors %}
+<ul class="mb-2 space-y-1">
+    {% for error in errors %}
+    <li class="text-sm text-red-600">{{ error }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+<div class="document-list space-y-2" id="document-list-{{ item_id }}" data-item-id="{{ item_id }}"
+     data-upload-url="{% url 'document_upload' item_id %}">
+    {% for document in documents %}
+    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md border border-gray-200"
+         id="document-{{ document.id }}" data-document-id="{{ document.id }}">
+        <div class="flex items-center space-x-3">
+            {% sprite "lucide-file-text" 20 class="text-gray-500" %}
+            <div>
+                <a href="{% url 'document_download' document.id %}"
+                   class="text-sm font-medium text-blue-600 hover:text-blue-800"
+                   target="_blank">{{ document.file_name }}</a>
+                <p class="text-xs text-gray-500">{{ document.file_size_display }}</p>
+            </div>
+        </div>
+        <button type="button" class="text-gray-400 hover:text-red-600 transition-colors cursor-pointer delete-doc-btn" title="Delete document"
+                data-item-id="{{ item_id }}"
+                data-delete-url="{% url 'document_delete' document.id %}">
+            {% sprite "lucide-trash-2" 18 %}
+        </button>
+    </div>
+    {% empty %}
+    <p class="text-sm text-gray-500 italic" id="no-documents-{{ item_id }}">No documents attached</p>
+    {% endfor %}
+</div>

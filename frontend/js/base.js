@@ -4,6 +4,7 @@ import 'air-datepicker/air-datepicker.css';
 import localeEn from 'air-datepicker/locale/en';
 import localeFr from 'air-datepicker/locale/fr';
 import htmx from 'htmx.org';
+import { initDocumentUpload } from './documents.js';
 window.htmx = htmx
 htmx.config.responseHandling = [
     {code: "204", swap: false},
@@ -12,6 +13,14 @@ htmx.config.responseHandling = [
     {code: "[4]..", swap: true, error: false},
     {code: "...", swap: false}
 ]
+
+
+document.body.addEventListener('htmx:configRequest', function(evt) {
+    var csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        evt.detail.headers['X-CSRFToken'] = csrfInput.value;
+    }
+});
 
 // Simple dropdown toggle functionality
 function initializeDropdowns() {
@@ -542,6 +551,7 @@ const init = () => {
     initializeAccordions();
     initializeDatePicker();
     initializeMobileMenu();
+    initDocumentUpload();
 }
 document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('htmx:afterSwap', init);

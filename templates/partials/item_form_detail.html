@@ -526,3 +526,51 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Accordion: Documents -->
+<div class="accordion-item border-t border-gray-200 pt-6" data-has-errors="false">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-2 hover:bg-gray-50 rounded transition-colors">
+        <h3 class="text-base font-medium text-gray-900 flex items-center">
+            {% sprite "lucide-paperclip" 20 class="mr-2" %}
+            Documents
+        </h3>
+        <svg class="accordion-icon w-5 h-5 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+    </button>
+    <div class="accordion-content">
+        <div class="pt-4 space-y-4">
+            {% if item %}
+            <div id="document-list-container-{{ item.id }}"
+                 data-item-id="{{ item.id }}">
+                {% include "partials/document_list.html" with item_id=item.id documents=documents %}
+            </div>
+
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                 id="document-dropzone-{{ item.id }}"
+                 data-item-id="{{ item.id }}">
+                <label for="document-input-{{ item.id }}" class="cursor-pointer">
+                    {% sprite "lucide-upload" 20 class="mx-auto mb-2 text-gray-400" %}
+                    <span class="block text-sm font-medium text-blue-700">Upload Documents</span>
+                    <span class="block text-xs text-gray-500 mt-1">PDF files only, max 10MB</span>
+                </label>
+                <input type="file"
+                       id="document-input-{{ item.id }}"
+                       class="sr-only document-file-input"
+                       data-item-id="{{ item.id }}"
+                       data-upload-url="{% url 'document_upload' item.id %}"
+                       multiple
+                       accept=".pdf,application/pdf">
+                <div id="upload-progress-{{ item.id }}" class="hidden mt-3">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Uploading...</p>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500 italic">Documents can be attached after creating the item</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
