@@ -202,6 +202,7 @@ class DashboardView(ListView):
             .prefetch_related("contexts")
             .prefetch_related("tags")
             .prefetch_related("parent")
+            .prefetch_related("documents")
             .annotate(
                 status_order=Case(
                     When(

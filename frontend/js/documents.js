@@ -1,6 +1,37 @@
 export function initDocumentUpload() {
     initFileInputs();
+    initDropzones();
     initDeleteButtons();
+}
+
+function initDropzones() {
+    document.querySelectorAll('.document-dropzone:not([data-initialized])').forEach(function(zone) {
+        zone.setAttribute('data-initialized', 'true');
+        var itemId = zone.dataset.itemId;
+        var uploadUrl = zone.dataset.uploadUrl;
+        if (!itemId || !uploadUrl) return;
+
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-600');
+        });
+
+        zone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-600');
+        });
+
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-600');
+            var files = e.dataTransfer.files;
+            if (!files || files.length === 0) return;
+            uploadFiles(itemId, uploadUrl, files);
+        });
+    });
 }
 
 function initFileInputs() {
@@ -44,6 +75,7 @@ function handleDeleteClick(e) {
     })
     .then(function(html) {
         documentList.outerHTML = html;
+        initDocumentUpload();
     })
     .catch(function(error) {
         console.error('Delete error:', error);
@@ -73,7 +105,7 @@ function uploadFiles(itemId, uploadUrl, files) {
     var progressEl = document.getElementById('upload-progress-' + itemId);
     if (progressEl) {
         progressEl.classList.remove('hidden');
-        progressEl.querySelector('.bg-blue-600').style.width = '30%';
+        progressEl.querySelector('[data-progress-bar]').style.width = '30%';
     }
 
     var documentList = document.querySelector('.document-list[data-item-id="' + itemId + '"]');
@@ -91,10 +123,10 @@ function uploadFiles(itemId, uploadUrl, files) {
     })
     .then(function(html) {
         if (progressEl) {
-            progressEl.querySelector('.bg-blue-600').style.width = '100%';
+            progressEl.querySelector('[data-progress-bar]').style.width = '100%';
             setTimeout(function() {
                 progressEl.classList.add('hidden');
-                progressEl.querySelector('.bg-blue-600').style.width = '0%';
+                progressEl.querySelector('[data-progress-bar]').style.width = '0%';
             }, 500);
         }
 

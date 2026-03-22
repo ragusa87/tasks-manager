@@ -105,6 +105,13 @@
                             {% if not forloop.last %}, {% endif %}
                         {% endfor %}
 
+                        {% if item.documents.exists %}
+                        <span class="inline-flex items-center text-gray-500">
+                            {% sprite "lucide-paperclip" 12 class="mr-1" %}
+                            <span>{{ item.documents.count }}</span>
+                        </span>
+                        {% endif %}
+
                     </div>
                 </div>
             </div>

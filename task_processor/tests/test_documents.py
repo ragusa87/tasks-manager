@@ -1,4 +1,24 @@
 import io
+
+
+def make_pdf(content=b"PDF test content") -> bytes:
+    """Return a minimal valid PDF binary that python-magic will recognise as application/pdf."""
+    body = (
+        b"%PDF-1.4\n"
+        b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+        b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+        b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\nendobj\n"
+        b"xref\n0 4\n"
+        b"0000000000 65535 f \n"
+        b"0000000009 00000 n \n"
+        b"0000000058 00000 n \n"
+        b"0000000115 00000 n \n"
+        b"trailer\n<< /Size 4 /Root 1 0 R >>\n"
+        b"startxref\n190\n%%EOF\n"
+    )
+    return body
+
+
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
@@ -69,8 +89,7 @@ class DocumentUploadViewTests(TestCase):
         """Test successful PDF upload"""
         self.client.force_login(self.user)
 
-        pdf_content = b"fake pdf content"
-        pdf_file = io.BytesIO(pdf_content)
+        pdf_file = io.BytesIO(make_pdf())
         pdf_file.name = "test.pdf"
 
         response = self.client.post(
@@ -89,9 +108,9 @@ class DocumentUploadViewTests(TestCase):
         """Test uploading multiple files"""
         self.client.force_login(self.user)
 
-        pdf1 = io.BytesIO(b"pdf 1")
+        pdf1 = io.BytesIO(make_pdf())
         pdf1.name = "test1.pdf"
-        pdf2 = io.BytesIO(b"pdf 2")
+        pdf2 = io.BytesIO(make_pdf())
         pdf2.name = "test2.pdf"
 
         response = self.client.post(
@@ -106,7 +125,7 @@ class DocumentUploadViewTests(TestCase):
         """Test that upload returns HTML of document list"""
         self.client.force_login(self.user)
 
-        pdf_file = io.BytesIO(b"pdf content")
+        pdf_file = io.BytesIO(make_pdf())
         pdf_file.name = "test.pdf"
 
         response = self.client.post(
@@ -397,7 +416,7 @@ class DocumentDownloadViewTests(TestCase):
                 reverse("document_download", args=[self.document.id]),
             )
 
-        self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], presigned_url)
         mock_s3.generate_presigned_url.assert_called_once_with(
             "get_object",
@@ -407,3 +426,64 @@ class DocumentDownloadViewTests(TestCase):
             },
             ExpiresIn=300,
         )
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    }
+)
+class DocumentCascadeDeleteTests(TestCase):
+    """Test that deleting an Item also deletes associated Document files."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="testuser2", email="test2@example.com", password="testpass"
+        )
+        self.item = Item.objects.create(
+            title="Item with docs",
+            user=self.user,
+            status=GTDStatus.INBOX,
+            priority=Priority.NORMAL,
+        )
+
+    def _create_document(self, filename="file.pdf", content=b"data"):
+        from django.core.files.base import ContentFile
+
+        doc = Document(
+            item=self.item,
+            file_name=filename,
+            file_size=len(content),
+            content_type="application/pdf",
+            user=self.user,
+        )
+        doc.file.save(filename, ContentFile(content), save=True)
+        return doc
+
+    def test_deleting_item_removes_document_files(self):
+        """Physical files must be deleted when the parent Item is deleted."""
+        doc = self._create_document()
+        file_name = doc.file.name
+        storage = doc.file.storage
+
+        self.assertTrue(storage.exists(file_name))
+
+        self.item.delete()
+
+        self.assertEqual(Document.objects.filter(id=doc.id).count(), 0)
+        self.assertFalse(storage.exists(file_name))
+
+    def test_deleting_item_removes_multiple_document_files(self):
+        """All physical files are removed when an Item with multiple docs is deleted."""
+        doc1 = self._create_document("a.pdf", b"aaa")
+        doc2 = self._create_document("b.pdf", b"bbb")
+        storage = doc1.file.storage
+        file1, file2 = doc1.file.name, doc2.file.name
+
+        self.item.delete()
+
+        self.assertFalse(storage.exists(file1))
+        self.assertFalse(storage.exists(file2))
