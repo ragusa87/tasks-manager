@@ -21,7 +21,11 @@ def _get_or_create_by_name(model, user, name, **defaults):
     except IntegrityError:
         # Lost a race with a concurrent create of the same name: the
         # (name, user) unique constraint fired, so the row exists now.
-        return model.objects.filter(user=user, name__iexact=name).first(), False
+        existing = model.objects.filter(user=user, name__iexact=name).first()
+        if existing is None:
+            # Not the name race after all: surface the original error.
+            raise
+        return existing, False
 
 
 @router.get("/tags", response=list[TagOut])

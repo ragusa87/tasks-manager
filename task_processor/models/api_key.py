@@ -2,7 +2,7 @@ import hashlib
 import secrets
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 
@@ -15,7 +15,9 @@ class ApiKey(models.Model):
     tokens (not human passwords) and the unique index allows O(1) lookup.
     """
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_keys")
+    user = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="api_keys"
+    )
     name = models.CharField(
         max_length=100, help_text="Label to identify this key, e.g. 'iOS shortcut'"
     )
