@@ -158,7 +158,7 @@ class Item(models.Model):
         max_length=50, choices=GTDStatus.choices, default=GTDStatus.INBOX
     )
     energy = models.CharField(
-        max_length=10, choices=GTDEnergy.choices, default=None, null=True
+        max_length=10, choices=GTDEnergy.choices, default=None, null=True, blank=True
     )
 
     priority = models.IntegerField(choices=Priority.choices, default=Priority.NORMAL)

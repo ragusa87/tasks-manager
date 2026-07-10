@@ -3,6 +3,7 @@ Base Django settings for core project.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     "django_vite",
     "django_celery_beat",
     "storages",
+    "ninja",
     "core",
     "task_processor",
     "nirvana",
@@ -198,6 +200,10 @@ LOGGING = {
 
 ALLOWED_TYPES = ["application/pdf"]
 MAX_FILE_SIZE = 10 * 1024 * 1024
+
+# Minimum age of ApiKey.last_used_at before it is refreshed on an
+# authenticated API request (avoids one DB write per request).
+API_KEY_LAST_USED_UPDATE_INTERVAL = timedelta(minutes=15)
 
 # Storage configuration derived from a single STORAGE_URL env var.
 # Formats:
