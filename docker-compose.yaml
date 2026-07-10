@@ -25,6 +25,8 @@ x-django-service: &django-service
     - IS_DEMO=${IS_DEMO}
     - LOGOUT_REDIRECT_URL=${LOGOUT_REDIRECT_URL:-/login/}
     - AUTH_PROXY_COOKIE_NAME=${AUTH_PROXY_COOKIE_NAME:-AUTH_TOKEN}
+    - EMAIL_INBOX_DSN=${EMAIL_INBOX_DSN:-smtp://0.0.0.0:2525?max_size=10485760}
+    - USER_EMAIL_INBOX_DOMAIN=${USER_EMAIL_INBOX_DOMAIN:-tasks.docker.test}
   volumes: &django-volumes
     - media_data:/app/media
     - uv_cache:/root/.cache/uv
@@ -83,6 +85,16 @@ services:
     volumes:
       - celery_beat_data:/celerybeat-schedule
     command: celery -A task_processor beat -l info
+  mail:
+    <<: *django-service
+    command: python manage.py mail_inbox
+    ports:
+      - "2525:2525"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; socket.create_connection(('127.0.0.1', 2525), 2)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 volumes:
   postgres_data:
   redis_data:

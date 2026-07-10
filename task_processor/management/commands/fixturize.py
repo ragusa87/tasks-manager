@@ -1,7 +1,7 @@
 import random
 from datetime import timedelta
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission, User
 from django.core import management
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
@@ -15,7 +15,17 @@ from task_processor.constants import (
     Priority,
     ReviewType,
 )
-from task_processor.models import ApiKey, Area, Context, Item, Review, Tag
+from task_processor.models import (
+    AllowedSender,
+    ApiKey,
+    Area,
+    Context,
+    EmailInbox,
+    Item,
+    Review,
+    Tag,
+)
+from task_processor.models.email_inbox import EMAIL_INBOX_GROUP
 
 
 class Command(BaseCommand):
@@ -63,6 +73,8 @@ class Command(BaseCommand):
                 self.create_items(user, options["items_per_user"])
                 self.create_reviews(user)
                 self.create_api_key(user)
+            if users:
+                self.create_email_inbox(users[0])
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -125,6 +137,27 @@ class Command(BaseCommand):
             return
         _, raw_key = ApiKey.generate(user, name)
         self.stdout.write(f"  API key for {user.username}: {raw_key}")
+
+    def create_email_inbox(self, user):
+        """Give a demo user a working email-to-task inbox"""
+        group, _ = Group.objects.get_or_create(name=EMAIL_INBOX_GROUP)
+        permission = Permission.objects.get(
+            codename="use_email_inbox",
+            content_type__app_label="task_processor",
+        )
+        group.permissions.add(permission)
+        user.groups.add(group)
+
+        # Deterministic identifier so demo mails can be scripted
+        inbox, _ = EmailInbox.objects.update_or_create(
+            user=user,
+            defaults={"identifier": f"inbox-{user.username}", "enabled": True},
+        )
+        AllowedSender.objects.get_or_create(inbox=inbox, email=user.email)
+        self.stdout.write(
+            f"Email inbox for {user.username}: {inbox.address} "
+            f"(whitelisted sender: {user.email})"
+        )
 
     def create_contexts_areas_and_tags(self, user):
         """Create contexts, areas, and tags for user"""

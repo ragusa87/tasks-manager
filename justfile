@@ -83,4 +83,8 @@ uv *args:
 
 sprites:
     @just manage sprites
+
+# Send a test email to the local mail inbox (from must be a whitelisted sender)
+mail-send to from="user1@example.com" subject="Test task" body="Created by just mail-send":
+  docker compose exec {{BACKEND_CONTAINER}} python -c "import smtplib; from email.message import EmailMessage; m = EmailMessage(); m['From'] = '{{from}}'; m['To'] = '{{to}}'; m['Subject'] = '{{subject}}'; m.set_content('{{body}}'); s = smtplib.SMTP('mail', 2525); s.send_message(m); s.quit(); print('sent')"
 import? 'override.justfile'

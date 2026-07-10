@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 
 from .constants import GTDConfig, GTDDuration, GTDEnergy, GTDStatus, Priority
 from .models.base_models import Area, Context, Tag
+from .models.email_inbox import AllowedSender, EmailInbox
 from .models.item import Item, ItemFlow
 
 
@@ -475,6 +476,58 @@ class ContextForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.user = self.user
+        if commit:
+            instance.save()
+        return instance
+
+
+class EmailInboxForm(forms.ModelForm):
+    """Form to enable/disable the user's email inbox"""
+
+    class Meta:
+        model = EmailInbox
+        fields = ["enabled"]
+        widgets = {
+            "enabled": forms.CheckboxInput(
+                attrs={
+                    "class": "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded",
+                }
+            ),
+        }
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+
+class AllowedSenderForm(forms.ModelForm):
+    """Form to whitelist a sender address for the user's email inbox"""
+
+    class Meta:
+        model = AllowedSender
+        fields = ["email"]
+        widgets = {
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "placeholder": "sender@example.com",
+                }
+            ),
+        }
+
+    def __init__(self, inbox, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inbox = inbox
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if self.inbox.allowed_senders.filter(email=email).exists():
+            raise ValidationError("This sender is already whitelisted.")
+        return email
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.inbox = self.inbox
         if commit:
             instance.save()
         return instance

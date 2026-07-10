@@ -34,10 +34,12 @@ if not os.getenv("DB_NAME"):
         }
     }
 
-# Disable caching in development
+# Per-process in-memory cache: the mail-inbox rate limiter needs a working
+# cache (DummyCache would make it fail open); only the mail listener process
+# enforces limits, so a local cache is enough in development.
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
 

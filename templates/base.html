@@ -53,6 +53,12 @@
                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         Tags
                                     </a>
+                                    {% if perms.task_processor.use_email_inbox %}
+                                    <a href="{% url 'email_inbox_settings' %}"
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        Email inbox
+                                    </a>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -108,6 +114,12 @@
                                    class="block px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md">
                                     Tags
                                 </a>
+                                {% if perms.task_processor.use_email_inbox %}
+                                <a href="{% url 'email_inbox_settings' %}"
+                                   class="block px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                                    Email inbox
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
 

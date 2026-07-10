@@ -196,6 +196,11 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+        "task_processor.mail_inbox": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
     "root": {
         "handlers": ["console"],
@@ -279,6 +284,46 @@ EMAIL_BACKEND = email_config["EMAIL_BACKEND"]
 EMAIL_USE_TLS = email_config["EMAIL_USE_TLS"]
 EMAIL_USE_SSL = email_config["EMAIL_USE_SSL"]
 FRONTEND_URL = get_env_variable("FRONTEND_URL", "https://tasks.docker.test")
+
+# Email-to-task inbox (receiving side, see task_processor/mail_inbox/)
+# DSN selects and configures the ingestion engine:
+#   smtp://0.0.0.0:2525?max_size=10485760   local SMTP server (aiosmtpd)
+#   imaps://user:pass@host:993/INBOX?poll=60  remote IMAP polling (not implemented yet)
+EMAIL_INBOX_DSN = get_env_variable(
+    "EMAIL_INBOX_DSN", "smtp://0.0.0.0:2525?max_size=10485760"
+)
+# Domain of per-user inbox addresses: <identifier>@USER_EMAIL_INBOX_DOMAIN
+USER_EMAIL_INBOX_DOMAIN = get_env_variable(
+    "USER_EMAIL_INBOX_DOMAIN", "tasks.docker.test"
+)
+EMAIL_INBOX_MAX_ATTACHMENTS = 5
+EMAIL_INBOX_ATTACHMENT_MAX_SIZE = MAX_FILE_SIZE
+EMAIL_INBOX_ATTACHMENT_ALLOWED_TYPES = [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/webp",
+    # Audio, so voice notes can be captured as tasks. python-magic reports
+    # m4a containers as video/mp4, hence its presence here.
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/x-m4a",
+    "video/mp4",
+    "audio/ogg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/webm",
+    "audio/aac",
+    "audio/flac",
+    "audio/amr",
+]
+# {limit_name: (max_messages, window_seconds)}
+EMAIL_INBOX_RATE_LIMITS = {
+    "per_sender": (10, 3600),
+    "per_sender_recipient": (5, 600),
+    "per_recipient": (30, 3600),
+}
 
 SHOW_DJANGO_DEBUG_TOOLBAR = False
 
