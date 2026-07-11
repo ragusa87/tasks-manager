@@ -26,6 +26,7 @@ dependencies = [
     "django-storages>=1.14.0",
     "boto3>=1.42.94",
     "python-magic>=0.4.27",
+    "django-ninja>=1.6.2",
 ]
 
 [dependency-groups]

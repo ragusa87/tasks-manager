@@ -15,7 +15,7 @@ from task_processor.constants import (
     Priority,
     ReviewType,
 )
-from task_processor.models import Area, Context, Item, Review, Tag
+from task_processor.models import ApiKey, Area, Context, Item, Review, Tag
 
 
 class Command(BaseCommand):
@@ -62,6 +62,7 @@ class Command(BaseCommand):
                 self.create_contexts_areas_and_tags(user)
                 self.create_items(user, options["items_per_user"])
                 self.create_reviews(user)
+                self.create_api_key(user)
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -116,6 +117,14 @@ class Command(BaseCommand):
                 user.save()
             users.append(user)
         return users
+
+    def create_api_key(self, user):
+        """Create an API key for user, printing the raw key once."""
+        name = "Development key"
+        if user.api_keys.filter(name=name).exists():
+            return
+        _, raw_key = ApiKey.generate(user, name)
+        self.stdout.write(f"  API key for {user.username}: {raw_key}")
 
     def create_contexts_areas_and_tags(self, user):
         """Create contexts, areas, and tags for user"""
