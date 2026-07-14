@@ -28,6 +28,7 @@ dependencies = [
     "boto3>=1.43.54",
     "python-magic>=0.4.27",
     "django-ninja>=1.6.2",
+    "celery-redbeat>=2.3.3",
 ]
 
 [dependency-groups]

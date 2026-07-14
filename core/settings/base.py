@@ -158,6 +158,10 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_ENABLE_UTC = True
 
+# Beat scheduler backed by Redis (celery-redbeat), no local schedule file needed
+CELERY_BEAT_SCHEDULER = "redbeat.RedBeatScheduler"
+CELERY_REDBEAT_REDIS_URL = os.getenv("REDBEAT_REDIS_URL", CELERY_BROKER_URL)
+
 # Logging
 LOGGING = {
     "version": 1,

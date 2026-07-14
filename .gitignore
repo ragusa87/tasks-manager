@@ -49,7 +49,7 @@ documents/
 logs/
 
 # Celery
-celerybeat-schedule
+celerybeat-schedule*
 celerybeat.pid
 
 # uv

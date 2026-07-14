@@ -156,6 +156,21 @@ wheels = [
 ]
 
 [[package]]
+name = "celery-redbeat"
+version = "2.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "celery" },
+    { name = "python-dateutil" },
+    { name = "redis" },
+    { name = "tenacity" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/d5/cebf6a03a4716ae33315ce1dad68f2465ea30491a560293ecd2a4ad3148a/celery_redbeat-2.3.3.tar.gz", hash = "sha256:f52664b490b2923a787d9f348f291243601430bf8ec383b6e79870a1731ee92a", size = 34429, upload-time = "2025-07-02T13:08:55.251Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/c1/ea03e5c737b4b0f4054001d8db64bec693b1506cbb68f93ebecd710b2785/celery_redbeat-2.3.3-py2.py3-none-any.whl", hash = "sha256:0d6da101c46c0147b88f3ae2bfaed42548545934263a31d325a8b0e6585c3fb1", size = 14674, upload-time = "2025-07-02T13:08:54.062Z" },
+]
+
+[[package]]
 name = "certifi"
 version = "2026.2.25"
 source = { registry = "https://pypi.org/simple" }
@@ -1504,6 +1519,7 @@ dependencies = [
     { name = "aiosmtpd" },
     { name = "boto3" },
     { name = "celery" },
+    { name = "celery-redbeat" },
     { name = "channels" },
     { name = "channels-redis" },
     { name = "dj-email-url" },
@@ -1544,6 +1560,7 @@ requires-dist = [
     { name = "aiosmtpd", specifier = ">=1.4.6" },
     { name = "boto3", specifier = ">=1.43.54" },
     { name = "celery", specifier = ">=5.6.3" },
+    { name = "celery-redbeat", specifier = ">=2.3.3" },
     { name = "channels", specifier = ">=4.0.0" },
     { name = "channels-redis", specifier = ">=4.2.0" },
     { name = "dj-email-url", specifier = ">=1.0.6" },
@@ -1577,6 +1594,15 @@ dev = [
     { name = "pytest-cov", specifier = ">=6.2.1" },
     { name = "pytest-django", specifier = ">=4.11.1" },
     { name = "ruff", specifier = ">=0.15.22" },
+]
+
+[[package]]
+name = "tenacity"
+version = "9.1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/c6/ee486fd809e357697ee8a44d3d69222b344920433d3b6666ccd9b374630c/tenacity-9.1.4.tar.gz", hash = "sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a", size = 49413, upload-time = "2026-02-07T10:45:33.841Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55", size = 28926, upload-time = "2026-02-07T10:45:32.24Z" },
 ]
 
 [[package]]

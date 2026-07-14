@@ -52,6 +52,7 @@ All environment variables must be documented here (this is enforced as a project
 | `DB_NAME` / `DB_USER` / `DB_PASSWORD` / `DB_HOST` / `DB_PORT` | `task_processing` / `postgres` / `""` / `localhost` / `5432` | PostgreSQL connection; dev falls back to SQLite when `DB_NAME` is unset |
 | `CELERY_BROKER_URL` | `redis://localhost:6379/0` | Celery broker |
 | `CELERY_RESULT_BACKEND` | `redis://localhost:6379/0` | Celery result backend |
+| `REDBEAT_REDIS_URL` | `CELERY_BROKER_URL` value | Redis URL for the RedBeat beat scheduler (stores the schedule in Redis) |
 | `REDIS_CHANNEL_URL` | `redis://redis:6379/1` | Django Channels layer |
 | `CACHE_URL` | `redis://127.0.0.1:6379/1` | Redis cache (production settings only) |
 | `STORAGE_URL` | `file://media` | Document storage: `file://<dir>` or `s3://key:secret@endpoint/bucket/prefix?region=...` |
