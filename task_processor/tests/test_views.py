@@ -216,3 +216,48 @@ class TestItemViews(TestCase):
         # Should redirect to login
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login/", response.url)
+
+
+class TestLogoutView(TestCase):
+    """Test the logout view clears every session layer"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass"
+        )
+
+    def test_logout_redirects_to_logout_redirect_url(self):
+        """Logout redirects to LOGOUT_REDIRECT_URL (Keycloak end-session in prod)"""
+        self.client.force_login(self.user)
+        with self.settings(
+            LOGOUT_REDIRECT_URL="https://keycloak.example.com/realms/x/protocol/openid-connect/logout"
+        ):
+            response = self.client.get(reverse("logout"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            "https://keycloak.example.com/realms/x/protocol/openid-connect/logout",
+        )
+
+    def test_logout_clears_django_session(self):
+        """Logout de-authenticates the Django session"""
+        self.client.force_login(self.user)
+        self.client.get(reverse("logout"))
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)
+
+    def test_logout_deletes_auth_proxy_cookie(self):
+        """Logout expires the auth proxy (traefik keycloakopenid) cookie"""
+        self.client.force_login(self.user)
+        self.client.cookies["AUTH_TOKEN"] = "some-jwt"
+        response = self.client.get(reverse("logout"))
+        cookie = response.cookies["AUTH_TOKEN"]
+        self.assertEqual(cookie.value, "")
+        self.assertEqual(cookie["max-age"], 0)
+
+    def test_logout_when_anonymous_still_redirects(self):
+        """Logout works without an authenticated user"""
+        response = self.client.get(reverse("logout"))
+        self.assertEqual(response.status_code, 302)
