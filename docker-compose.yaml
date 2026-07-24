@@ -23,6 +23,8 @@ x-django-service: &django-service
     - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
     - CUSTOM_AUTHENTICATION_BACKEND=${CUSTOM_AUTHENTICATION_BACKEND}
     - IS_DEMO=${IS_DEMO}
+    - LOGOUT_REDIRECT_URL=${LOGOUT_REDIRECT_URL:-/login/}
+    - AUTH_PROXY_COOKIE_NAME=${AUTH_PROXY_COOKIE_NAME:-AUTH_TOKEN}
   volumes: &django-volumes
     - media_data:/app/media
     - uv_cache:/root/.cache/uv
