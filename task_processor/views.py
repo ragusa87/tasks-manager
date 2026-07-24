@@ -160,7 +160,9 @@ class LogoutView(View):
             username = request.user.first_name or request.user.username
             logout(request)
             messages.success(request, f"Goodbye, {username}! You have been logged out.")
-        return redirect("login")
+        response = redirect(settings.LOGOUT_REDIRECT_URL)
+        response.delete_cookie(settings.AUTH_PROXY_COOKIE_NAME)
+        return response
 
     def post(self, request):
         """Handle logout via POST"""

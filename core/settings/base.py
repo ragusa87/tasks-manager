@@ -109,7 +109,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Authentication settings
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/login/"
+# When behind the auth proxy, point this at the Keycloak end-session endpoint,
+# e.g. https://keycloak.example.com/realms/<realm>/protocol/openid-connect/logout
+LOGOUT_REDIRECT_URL = get_env_variable("LOGOUT_REDIRECT_URL", "/login/")
+# Session cookie set by the auth proxy (traefik keycloakopenid plugin),
+# deleted on logout so the proxy re-authenticates on the next request.
+AUTH_PROXY_COOKIE_NAME = get_env_variable("AUTH_PROXY_COOKIE_NAME", "AUTH_TOKEN")
 
 
 # Internationalization
