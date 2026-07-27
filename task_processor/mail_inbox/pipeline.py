@@ -13,6 +13,7 @@ Security notes:
 
 import enum
 import logging
+import posixpath
 from dataclasses import dataclass, field
 from email import message_from_bytes, policy
 from email.utils import parseaddr
@@ -58,6 +59,17 @@ class IngestResult:
 
 def _addr_spec(value):
     return parseaddr(value or "")[1].strip().lower()
+
+
+def _upload_name(name):
+    """Cap the attacker-controlled filename handed to upload_to.
+
+    Only the extension survives into the storage path, but an oversized one
+    would overflow the FileField max_length and turn the whole message into
+    a 451. Document.file_name keeps the original (truncated) name.
+    """
+    stem, ext = posixpath.splitext(name)
+    return f"{stem[:64] or 'attachment'}{ext[:16]}"
 
 
 def resolve_recipient(mail_from, rcpt_to):
@@ -203,7 +215,7 @@ def ingest_message(raw, mail_from, rcpt_to):
                 Document.objects.create(
                     item=item,
                     user=inbox.user,
-                    file=ContentFile(data, name=name),
+                    file=ContentFile(data, name=_upload_name(name)),
                     file_name=name[:255],
                     file_size=len(data),
                     content_type=content_type,

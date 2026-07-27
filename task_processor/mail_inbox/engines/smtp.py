@@ -59,12 +59,29 @@ class InboxSMTPHandler:
         return "250 OK"
 
     async def handle_DATA(self, server, session, envelope):
+        delivered = 0
+        failures = []
         for rcpt in envelope.rcpt_tos:
             result = await self._ingest(
                 envelope.original_content, envelope.mail_from or "", rcpt
             )
-            if not result.accepted:
-                return result.smtp_message
+            if result.accepted:
+                delivered += 1
+            else:
+                failures.append((rcpt, result))
+        if not failures:
+            return pipeline.ACCEPTED
+        if not delivered:
+            return failures[0][1].smtp_message
+        # A failure reply here would make the client retry the whole message
+        # and duplicate the items already created for the delivered
+        # recipients, so accept it and drop the failed ones.
+        for rcpt, result in failures:
+            logger.warning(
+                "Dropped recipient after partial delivery to=%s reason=%s",
+                rcpt,
+                result.reason.value if result.reason else "unknown",
+            )
         return pipeline.ACCEPTED
 
 

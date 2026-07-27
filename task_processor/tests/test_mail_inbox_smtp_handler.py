@@ -103,3 +103,48 @@ class HandleDATATests(SimpleTestCase):
             resolve=resolve_ok, ingest=ingest, limiter=FakeLimiter()
         )
         self.assertEqual(self.data(handler, envelope), pipeline.REJECT_RCPT)
+
+    def test_all_recipients_rejected_propagates_first_reply(self):
+        def ingest(raw, mail_from, rcpt_to):
+            return IngestResult(
+                accepted=False,
+                smtp_message=pipeline.REJECT_RCPT,
+                reason=RejectReason.DISABLED,
+            )
+
+        envelope = make_envelope()
+        envelope.rcpt_tos = [
+            "inbox-abc@tasks.example.com",
+            "inbox-def@tasks.example.com",
+        ]
+        handler = InboxSMTPHandler(
+            resolve=resolve_ok, ingest=ingest, limiter=FakeLimiter()
+        )
+        self.assertEqual(self.data(handler, envelope), pipeline.REJECT_RCPT)
+
+    def test_partial_delivery_is_accepted_to_avoid_duplicates(self):
+        # If one recipient was already ingested, a failure reply would make
+        # the client retry the whole message and duplicate that item.
+        ingested = []
+
+        def ingest(raw, mail_from, rcpt_to):
+            ingested.append(rcpt_to)
+            if rcpt_to.startswith("inbox-abc"):
+                return IngestResult(accepted=True, smtp_message=pipeline.ACCEPTED)
+            return IngestResult(
+                accepted=False,
+                smtp_message=pipeline.REJECT_RCPT,
+                reason=RejectReason.DISABLED,
+            )
+
+        envelope = make_envelope()
+        envelope.rcpt_tos = [
+            "inbox-abc@tasks.example.com",
+            "inbox-def@tasks.example.com",
+        ]
+        handler = InboxSMTPHandler(
+            resolve=resolve_ok, ingest=ingest, limiter=FakeLimiter()
+        )
+        with self.assertLogs("task_processor.mail_inbox", level="WARNING"):
+            self.assertEqual(self.data(handler, envelope), pipeline.ACCEPTED)
+        self.assertEqual(len(ingested), 2)

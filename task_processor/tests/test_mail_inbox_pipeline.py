@@ -195,6 +195,20 @@ class IngestMessageTests(MailInboxPipelineTestCase):
             self.assertEqual(fh.read(), PDF_BYTES)
         document.delete()
 
+    def test_attachment_with_oversized_filename_still_saved(self):
+        # The filename is attacker-controlled; a huge "extension" must not
+        # overflow the FileField max_length and 451 the whole message.
+        name = "report." + "a" * 600
+        raw = build_raw(attachments=[(name, PDF_BYTES, "application", "pdf")])
+        result = self.ingest(raw)
+        self.assertTrue(result.accepted)
+        document = Document.objects.get(item=result.item)
+        self.assertEqual(document.file_name, name[:255])
+        self.assertLessEqual(
+            len(document.file.name), Document._meta.get_field("file").max_length
+        )
+        document.delete()
+
     def test_image_and_audio_attachments_allowed(self):
         raw = build_raw(
             attachments=[
