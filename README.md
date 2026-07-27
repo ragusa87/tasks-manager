@@ -18,7 +18,7 @@ I don't intent to maintain this project in the long term.
 - Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)
 - Bach actions support: `tag<->area` conversion, `+tag`, `-tag`, `+area`, `-area` etc
 - New transition: Convert whole project to references
-- Email inbox: IMAP polling engine (`imaps://` DSN) as an alternative to the local SMTP server; SPF/DKIM verification
+- Email inbox: SPF/DKIM verification (IMAP polling via `imaps://` DSN is implemented)
 - Add custom *rrule* JS picker <https://demo.mobiscroll.com/vue/scheduler/recurring-events>
 - DateTime picker could respect the user's locale.
 - htmx show connectivity issue and 500.
@@ -94,17 +94,57 @@ and whitelists `user1@example.com`.
 
 ### Running the listener
 
-The `mail` docker-compose service runs `python manage.py mail_inbox`, a small
-SMTP server (aiosmtpd) listening on port **2525**. The engine is configured by
-`EMAIL_INBOX_DSN`:
+The `mail` docker-compose service runs `python manage.py mail_inbox`. The engine
+is selected by the `EMAIL_INBOX_DSN` scheme:
 
 ```
-smtp://0.0.0.0:2525?max_size=10485760   # local SMTP server (implemented)
-imaps://user:pass@host:993/INBOX?poll=60  # IMAP polling (reserved, not implemented)
+smtp://0.0.0.0:2525?max_size=10485760      # local SMTP server (aiosmtpd), port 2525
+imaps://user:pass@host:993/INBOX?poll=60   # poll a remote IMAP mailbox over TLS
+imap://user:pass@host:143/INBOX?poll=60    # same, plaintext
 ```
 
 `manage.py mail_inbox --host ... --port ...` overrides the DSN values.
-Try it locally with `just mail-send inbox-user1@tasks.docker.test`.
+Try the SMTP engine locally with `just mail-send inbox-user1@tasks.docker.test`.
+
+**IMAP polling.** The engine connects to the mailbox every `poll` seconds
+(default 60), runs each message through the same pipeline as SMTP, and enforces
+the per-inbox policy via the message's recipient/sender:
+
+* a message is turned into a task only if the addressed inbox is enabled
+  ("Accept incoming email") **and** the `From` is a whitelisted trusted sender;
+* **every message the engine handles is deleted** (flagged `\Deleted`, then
+  expunged) so the mailbox never fills up — this includes mail dropped because
+  the inbox is disabled or the sender is untrusted. Each outcome is logged
+  (`Delivered mail …` / `Dropping mail … reason=…`) by the
+  `task_processor.mail_inbox` logger. A transient/internal failure leaves the
+  message in place to be retried on the next poll.
+
+**Login username.** An `@` can't appear in the DSN userinfo (it would be read
+as the host separator), so the login name is completed by appending the inbox
+domain: `inbox-x` → `inbox-x@<USER_EMAIL_INBOX_DOMAIN>`. Override with the
+`domain_in_username` query option — the leading `@` is **optional**, both forms
+produce the same login name:
+
+```
+?domain_in_username=0                # send the username verbatim (no domain)
+?domain_in_username=@constantin.dev  # → inbox-x@constantin.dev
+?domain_in_username=constantin.dev   # → inbox-x@constantin.dev  (same thing)
+```
+
+**Dry run.** Add `?dry_run=1` to make the IMAP engine read-only: it connects,
+resolves each message and logs the action it *would* take (`Would deliver …` /
+`Dropping … would delete (dry-run)`), but creates no tasks and deletes no mail.
+Point it at a live mailbox and watch the log before letting it consume the
+inbox for real.
+
+**Percent-encoding credentials.** The DSN is a URL, so reserved characters in
+the username/password must be percent-encoded: `@` → `%40`, `:` → `%3A`, and —
+importantly — a literal **`%` must be written as `%25`**. For example the
+password `1129ku!GtL-%lV*F` is carried in the DSN as `1129ku!GtL-%25lV*F`; the
+parser decodes `%25` back to a single `%`, so the server receives the exact
+16-character password. (A stray `%` that isn't a valid `%XX` escape happens to
+survive decoding, but relying on that is fragile — always encode it as `%25`.)
+Keep the DSN in `.env` (git-ignored) — it holds the mailbox password.
 
 ### Security / operations notes
 
