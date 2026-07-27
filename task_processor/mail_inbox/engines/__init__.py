@@ -22,6 +22,21 @@ def build_engine(dsn, host=None, port=None):
             port=port or dsn.port,
             data_size_limit=dsn.max_size,
         )
+    if dsn.scheme in ("imap", "imaps"):
+        from django.conf import settings
+
+        from .imap import ImapEngine
+
+        return ImapEngine(
+            host=host or dsn.host,
+            port=port or dsn.port,
+            username=dsn.login_username(settings.USER_EMAIL_INBOX_DOMAIN),
+            password=dsn.password,
+            mailbox=dsn.mailbox,
+            poll_interval=dsn.poll_interval,
+            use_ssl=dsn.use_ssl,
+            dry_run=dsn.dry_run,
+        )
     raise CommandError(
-        f"Engine {dsn.scheme!r} is not implemented yet (only 'smtp' is available)"
+        f"Engine {dsn.scheme!r} is not implemented (available: 'smtp', 'imap', 'imaps')"
     )

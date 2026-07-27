@@ -25,7 +25,58 @@ class ParseDSNTests(SimpleTestCase):
         self.assertEqual(dsn.username, "user@host")
         self.assertEqual(dsn.password, "pa:ss")
         self.assertEqual(dsn.path, "/INBOX")
+        self.assertEqual(dsn.mailbox, "INBOX")
         self.assertEqual(dsn.poll_interval, 30)
+        self.assertTrue(dsn.use_ssl)
+
+    def test_imaps_default_port_mailbox_and_poll(self):
+        dsn = parse_dsn("imaps://user:pass@mail.example.com")
+        self.assertEqual(dsn.port, 993)
+        self.assertEqual(dsn.mailbox, "INBOX")
+        self.assertEqual(dsn.poll_interval, 60)
+        self.assertTrue(dsn.use_ssl)
+
+    def test_imap_plaintext_is_not_ssl(self):
+        dsn = parse_dsn("imap://user:pass@mail.example.com/Archive")
+        self.assertEqual(dsn.port, 143)
+        self.assertEqual(dsn.mailbox, "Archive")
+        self.assertFalse(dsn.use_ssl)
+
+    def test_percent_in_password_must_be_encoded_as_25(self):
+        # A literal '%' in the password is carried as '%25' and decodes back to
+        # a single '%', so the server receives the exact original password.
+        dsn = parse_dsn("imaps://user:1129ku!GtL-%25lV%2AF@mail.example.com")
+        self.assertEqual(dsn.password, "1129ku!GtL-%lV*F")
+
+    def test_login_username_appends_default_domain(self):
+        dsn = parse_dsn("imaps://inbox-x:pw@mail.example.com")
+        self.assertEqual(dsn.login_username("tasks.test"), "inbox-x@tasks.test")
+
+    def test_login_username_disabled(self):
+        dsn = parse_dsn("imaps://inbox-x:pw@mail.example.com?domain_in_username=0")
+        self.assertEqual(dsn.login_username("tasks.test"), "inbox-x")
+
+    def test_login_username_override_with_at(self):
+        dsn = parse_dsn(
+            "imaps://inbox-x:pw@mail.example.com?domain_in_username=@gmail.com"
+        )
+        self.assertEqual(dsn.login_username("tasks.test"), "inbox-x@gmail.com")
+
+    def test_login_username_override_without_at(self):
+        dsn = parse_dsn(
+            "imaps://inbox-x:pw@mail.example.com?domain_in_username=gmail.com"
+        )
+        self.assertEqual(dsn.login_username("tasks.test"), "inbox-x@gmail.com")
+
+    def test_login_username_none_when_no_user(self):
+        dsn = parse_dsn("imaps://mail.example.com")
+        self.assertIsNone(dsn.login_username("tasks.test"))
+
+    def test_dry_run_defaults_off_and_parses_truthy(self):
+        self.assertFalse(parse_dsn("imaps://u:p@mail.example.com").dry_run)
+        self.assertTrue(parse_dsn("imaps://u:p@mail.example.com?dry_run=1").dry_run)
+        self.assertTrue(parse_dsn("imaps://u:p@mail.example.com?dry_run=true").dry_run)
+        self.assertFalse(parse_dsn("imaps://u:p@mail.example.com?dry_run=0").dry_run)
 
     def test_unknown_scheme_raises(self):
         with self.assertRaises(ImproperlyConfigured):

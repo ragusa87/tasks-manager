@@ -291,8 +291,16 @@ FRONTEND_URL = get_env_variable("FRONTEND_URL", "https://tasks.docker.test")
 
 # Email-to-task inbox (receiving side, see task_processor/mail_inbox/)
 # DSN selects and configures the ingestion engine:
-#   smtp://0.0.0.0:2525?max_size=10485760   local SMTP server (aiosmtpd)
-#   imaps://user:pass@host:993/INBOX?poll=60  remote IMAP polling (not implemented yet)
+#   smtp://0.0.0.0:2525?max_size=10485760     local SMTP server (aiosmtpd)
+#   imaps://user:pass@host:993/INBOX?poll=60  remote IMAP polling over TLS
+#   imap://user:pass@host:143/INBOX?poll=60   remote IMAP polling (plaintext)
+# The IMAP engine deletes every message it handles (delivered or dropped by the
+# inbox policy) so the mailbox never fills up. Percent-encode credentials — a
+# literal '%' in the password must be written as '%25'.
+# The login name gets USER_EMAIL_INBOX_DOMAIN appended (an '@' can't live in the
+# DSN userinfo); override via ?domain_in_username=other.tld (leading '@'
+# optional) or disable with =0. Add ?dry_run=1 to run read-only (no tasks
+# created, no mail deleted) while watching the log.
 EMAIL_INBOX_DSN = get_env_variable(
     "EMAIL_INBOX_DSN", "smtp://0.0.0.0:2525?max_size=10485760"
 )
