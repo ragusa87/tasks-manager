@@ -18,6 +18,8 @@ Including another URLconf
 from django.urls import path
 
 from .views import (
+    AllowedSenderCreateView,
+    AllowedSenderDeleteView,
     AreaCreateView,
     AreaDeleteView,
     AreaListView,
@@ -33,6 +35,8 @@ from .views import (
     DocumentDeleteView,
     DocumentDownloadView,
     DocumentUploadView,
+    EmailInboxRegenerateView,
+    EmailInboxSettingsView,
     ItemCreateView,
     ItemDetailView,
     ItemTransitionView,
@@ -100,6 +104,27 @@ urlpatterns = [
         "contexts/<int:context_id>/delete/",
         ContextDeleteView.as_view(),
         name="context_delete",
+    ),
+    # Email inbox settings
+    path(
+        "settings/email-inbox/",
+        EmailInboxSettingsView.as_view(),
+        name="email_inbox_settings",
+    ),
+    path(
+        "settings/email-inbox/regenerate/",
+        EmailInboxRegenerateView.as_view(),
+        name="email_inbox_regenerate",
+    ),
+    path(
+        "settings/email-inbox/senders/add/",
+        AllowedSenderCreateView.as_view(),
+        name="email_inbox_sender_add",
+    ),
+    path(
+        "settings/email-inbox/senders/<int:sender_id>/delete/",
+        AllowedSenderDeleteView.as_view(),
+        name="email_inbox_sender_delete",
     ),
     # Tags
     path("tags/", TagListView.as_view(), name="tag_list"),

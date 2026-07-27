@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.http import FileResponse, HttpResponseRedirect, JsonResponse
@@ -27,8 +28,16 @@ from django.views.generic import (
 from factory.django import get_model
 
 from .constants import GTDConfig, GTDStatus
-from .forms import AreaForm, ContextForm, ItemForm, TagForm
-from .models import Area, Context, Document, Item, Tag
+from .forms import (
+    AllowedSenderForm,
+    AreaForm,
+    ContextForm,
+    EmailInboxForm,
+    ItemForm,
+    TagForm,
+)
+from .models import AllowedSender, Area, Context, Document, EmailInbox, Item, Tag
+from .models.email_inbox import EMAIL_INBOX_PERMISSION
 from .search import FilterCategory
 
 
@@ -1199,3 +1208,112 @@ class DocumentDownloadView(View):
             content_type=document.content_type or "application/octet-stream",
             as_attachment=False,
         )
+
+
+# ============================================================================
+# EMAIL INBOX SETTINGS VIEWS
+# ============================================================================
+
+
+@method_decorator(login_required, name="dispatch")
+class EmailInboxSettingsView(PermissionRequiredMixin, UpdateView):
+    """Configure the user's email-to-task inbox"""
+
+    model = EmailInbox
+    form_class = EmailInboxForm
+    template_name = "email_inbox/settings.html"
+    permission_required = EMAIL_INBOX_PERMISSION
+    raise_exception = True
+    success_url = reverse_lazy("email_inbox_settings")
+
+    def get_object(self, queryset=None):
+        inbox, _ = EmailInbox.objects.get_or_create(user=self.request.user)
+        return inbox
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["allowed_senders"] = self.object.allowed_senders.all()
+        context.setdefault("sender_form", AllowedSenderForm(inbox=self.object))
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        state = "enabled" if self.object.enabled else "disabled"
+        messages.success(self.request, f"Email inbox {state}.")
+        return response
+
+
+@method_decorator(login_required, name="dispatch")
+class EmailInboxRegenerateView(PermissionRequiredMixin, View):
+    """Regenerate the secret inbox address"""
+
+    permission_required = EMAIL_INBOX_PERMISSION
+    raise_exception = True
+
+    def post(self, request):
+        inbox, _ = EmailInbox.objects.get_or_create(user=request.user)
+        inbox.regenerate_identifier()
+        messages.success(request, f"New inbox address generated: {inbox.address}")
+        return redirect("email_inbox_settings")
+
+
+@method_decorator(login_required, name="dispatch")
+class AllowedSenderCreateView(PermissionRequiredMixin, CreateView):
+    """Whitelist a sender address"""
+
+    model = AllowedSender
+    form_class = AllowedSenderForm
+    permission_required = EMAIL_INBOX_PERMISSION
+    raise_exception = True
+    success_url = reverse_lazy("email_inbox_settings")
+    # Submitted from the settings page; there is no standalone form template
+    http_method_names = ["post"]
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        inbox, _ = EmailInbox.objects.get_or_create(user=self.request.user)
+        kwargs["inbox"] = inbox
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Sender '{self.object.email}' whitelisted.")
+        return response
+
+    def form_invalid(self, form):
+        view = EmailInboxSettingsView()
+        view.request = self.request
+        view.object = form.inbox
+        view.kwargs = {}
+        context = view.get_context_data(
+            form=EmailInboxForm(user=self.request.user, instance=form.inbox),
+            sender_form=form,
+        )
+        return render(self.request, "email_inbox/settings.html", context)
+
+
+@method_decorator(login_required, name="dispatch")
+class AllowedSenderDeleteView(PermissionRequiredMixin, DeleteView):
+    """Remove a whitelisted sender address"""
+
+    model = AllowedSender
+    pk_url_kwarg = "sender_id"
+    permission_required = EMAIL_INBOX_PERMISSION
+    raise_exception = True
+    success_url = reverse_lazy("email_inbox_settings")
+    # Deleted via the settings page form; there is no confirmation template
+    http_method_names = ["post"]
+
+    def get_queryset(self):
+        return AllowedSender.objects.filter(inbox__user=self.request.user)
+
+    def form_valid(self, form):
+        email = self.object.email
+        response = super().form_valid(form)
+        messages.success(self.request, f"Sender '{email}' removed.")
+        return response
