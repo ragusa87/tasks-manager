@@ -109,12 +109,25 @@ class ItemManager(models.Manager):
             queryset = queryset.filter(follow_up_date__lte=today)
         return queryset
 
-    def projects(self, user, active_only=True):
-        """Get projects, optionally only active ones"""
-        queryset = self.filter(user=user, status=GTDStatus.PROJECT)
+    def projects(self, user, active_only=True, include_ids=None):
+        """Get projects, optionally only active ones.
+
+        Completing a project transitions its status to COMPLETED, so
+        ``active_only`` (excluding ``is_completed`` items) is normally
+        redundant with the ``status=PROJECT`` filter.
+
+        ``include_ids`` force-includes specific projects by id even when
+        they are completed. This is used to keep a ``project:<id>`` filter
+        that is present in the current search query visible in the
+        suggestions, so it can still be seen and removed.
+        """
+        selector = models.Q(status=GTDStatus.PROJECT)
         if active_only:
-            queryset = queryset.filter(is_completed=False)
-        return queryset
+            selector &= models.Q(is_completed=False)
+        if include_ids:
+            # Resurface completed projects referenced explicitly by id.
+            selector |= models.Q(is_completed=True, id__in=include_ids)
+        return self.filter(selector, user=user)
 
     def someday_maybe(self, user, needs_review=False):
         """Get someday/maybe items, optionally only those needing review"""

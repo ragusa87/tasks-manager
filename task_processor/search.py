@@ -795,6 +795,23 @@ class SearchParser:
             collection[field].append(value)
 
 
+def extract_referenced_ids(query: str, field_name: str) -> List[int]:
+    """Return integer ids referenced by ``field_name:<id>`` tokens in a query.
+
+    Looks at both included (``project:4``) and excluded (``-project:4``)
+    tokens. Non-integer values (e.g. ``project:"name"``) are ignored.
+    """
+    tokens = SearchParser().parse(query or "")
+    values = tokens.included.get(field_name, []) + tokens.excluded.get(field_name, [])
+    ids = []
+    for value in values:
+        try:
+            ids.append(int(value))
+        except (ValueError, TypeError):
+            continue
+    return ids
+
+
 def apply_search(queryset, query: str, **kwargs):
     """
     Apply advanced search filters to a queryset based on parsed search tokens.
