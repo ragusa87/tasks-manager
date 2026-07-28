@@ -19,6 +19,47 @@ def make_pdf(content=b"PDF test content") -> bytes:
     return body
 
 
+def make_png() -> bytes:
+    """Return a minimal 1x1 PNG that python-magic recognises as image/png."""
+    import struct
+    import zlib
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data))
+        )
+
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 0, 0, 0, 0)  # 1x1, 8-bit grayscale
+    idat = zlib.compress(b"\x00\x00")  # one scanline: filter byte + pixel
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", idat)
+        + chunk(b"IEND", b"")
+    )
+
+
+def make_wav() -> bytes:
+    """Return a minimal WAV header that python-magic recognises as audio."""
+    import struct
+
+    fmt = struct.pack("<HHIIHH", 1, 1, 8000, 8000, 1, 8)  # PCM mono 8kHz 8-bit
+    data = b"\x80" * 8  # 1ms of silence
+    body = (
+        b"WAVE"
+        + b"fmt "
+        + struct.pack("<I", len(fmt))
+        + fmt
+        + b"data"
+        + struct.pack("<I", len(data))
+        + data
+    )
+    return b"RIFF" + struct.pack("<I", len(body)) + body
+
+
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
@@ -136,6 +177,72 @@ class DocumentUploadViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "test.pdf")
         self.assertContains(response, "document-list")
+
+    def test_upload_png_success(self):
+        """Images are accepted and stored with their sniffed content type."""
+        self.client.force_login(self.user)
+
+        png_file = io.BytesIO(make_png())
+        png_file.name = "photo.png"
+
+        response = self.client.post(
+            reverse("document_upload", args=[self.item.id]),
+            {"files": png_file},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        document = Document.objects.get()
+        self.assertEqual(document.content_type, "image/png")
+        self.assertEqual(document.icon, "lucide-image")
+
+    def test_upload_wav_success(self):
+        """Audio files are accepted and stored with their sniffed content type."""
+        self.client.force_login(self.user)
+
+        wav_file = io.BytesIO(make_wav())
+        wav_file.name = "note.wav"
+
+        response = self.client.post(
+            reverse("document_upload", args=[self.item.id]),
+            {"files": wav_file},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        document = Document.objects.get()
+        self.assertTrue(document.content_type.startswith("audio/"))
+        self.assertEqual(document.icon, "lucide-music")
+
+    def test_upload_disallowed_type_rejected(self):
+        """Types outside the allow-list are rejected by magic-byte detection,
+        even with an allowed extension and Content-Type."""
+        self.client.force_login(self.user)
+
+        text_file = io.BytesIO(b"#!/bin/sh\necho hello\n")
+        text_file.name = "script.pdf"  # lying extension
+
+        response = self.client.post(
+            reverse("document_upload", args=[self.item.id]),
+            {"files": text_file},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Document.objects.count(), 0)
+        self.assertContains(response, "file type not allowed")
+
+    def test_document_icon_per_content_type(self):
+        """The icon property maps content types to sprite names, including the
+        m4a-as-video/mp4 quirk."""
+        cases = [
+            ("application/pdf", "lucide-file"),
+            ("image/jpeg", "lucide-image"),
+            ("audio/mpeg", "lucide-music"),
+            ("video/mp4", "lucide-music"),  # m4a container
+            ("", "lucide-file"),
+        ]
+        for content_type, expected in cases:
+            with self.subTest(content_type=content_type):
+                document = Document(content_type=content_type)
+                self.assertEqual(document.icon, expected)
 
 
 @override_settings(

@@ -535,7 +535,7 @@
                    data-item-id="{{ item.id }}"
                    data-upload-url="{% url 'document_upload' item.id %}">
                 {% sprite "lucide-upload" 16 class="shrink-0" %}
-                <span class="font-medium">Attach PDF file</span>
+                <span class="font-medium">Attach {{ ALLOWED_TYPES_LABEL }}</span>
                 <span class="text-xs text-gray-400">(max {{ MAX_FILE_SIZE_MB }} MB)</span>
                 <input type="file"
                        id="document-input-{{ item.id }}"
@@ -543,7 +543,7 @@
                        data-item-id="{{ item.id }}"
                        data-upload-url="{% url 'document_upload' item.id %}"
                        multiple
-                       accept=".pdf,application/pdf">
+                       accept="{{ ALLOWED_TYPES_ACCEPT }}">
             </label>
             <div id="upload-progress-{{ item.id }}" class="hidden">
                 <div class="flex items-center gap-2">

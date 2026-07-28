@@ -15,7 +15,7 @@
     <div class="group flex items-center justify-between px-3 py-2.5 bg-white rounded-md border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
          id="document-{{ document.id }}" data-document-id="{{ document.id }}">
         <div class="flex items-center gap-2.5 min-w-0">
-            {% sprite "lucide-file" 18 class="shrink-0" %}
+            {% sprite document.icon 18 class="shrink-0" %}
             <div class="min-w-0">
                 <a href="{% url 'document_download' document.id %}"
                    class="block text-sm font-medium text-gray-800 hover:text-blue-600 truncate"

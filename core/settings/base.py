@@ -212,7 +212,31 @@ LOGGING = {
     },
 }
 
-ALLOWED_TYPES = ["application/pdf"]
+# Attachment allow-list shared by web uploads and the mail inbox. Checked
+# against magic-byte detection, never the client-supplied Content-Type.
+# image/svg+xml is deliberately absent: documents are served inline
+# (as_attachment=False) and SVG can carry scripts.
+ALLOWED_TYPES = [
+    "application/pdf",
+    # Images
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/webp",
+    # Audio, so voice notes can be captured as tasks. python-magic reports
+    # m4a containers as video/mp4, hence its presence here.
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/x-m4a",
+    "video/mp4",
+    "audio/ogg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/webm",
+    "audio/aac",
+    "audio/flac",
+    "audio/amr",
+]
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
 # Minimum age of ApiKey.last_used_at before it is refreshed on an
@@ -310,26 +334,7 @@ USER_EMAIL_INBOX_DOMAIN = get_env_variable(
 )
 EMAIL_INBOX_MAX_ATTACHMENTS = 5
 EMAIL_INBOX_ATTACHMENT_MAX_SIZE = MAX_FILE_SIZE
-EMAIL_INBOX_ATTACHMENT_ALLOWED_TYPES = [
-    "application/pdf",
-    "image/png",
-    "image/jpeg",
-    "image/gif",
-    "image/webp",
-    # Audio, so voice notes can be captured as tasks. python-magic reports
-    # m4a containers as video/mp4, hence its presence here.
-    "audio/mpeg",
-    "audio/mp4",
-    "audio/x-m4a",
-    "video/mp4",
-    "audio/ogg",
-    "audio/wav",
-    "audio/x-wav",
-    "audio/webm",
-    "audio/aac",
-    "audio/flac",
-    "audio/amr",
-]
+EMAIL_INBOX_ATTACHMENT_ALLOWED_TYPES = ALLOWED_TYPES
 # {limit_name: (max_messages, window_seconds)}
 EMAIL_INBOX_RATE_LIMITS = {
     "per_sender": (10, 3600),
