@@ -27,6 +27,8 @@ from django.views.generic import (
 )
 from factory.django import get_model
 
+from core.upload_types import describe_types
+
 from .constants import GTDConfig, GTDStatus
 from .forms import (
     AllowedSenderForm,
@@ -1215,7 +1217,10 @@ class DocumentUploadView(View):
             detected_type = magic.from_buffer(file.read(2048), mime=True)
             file.seek(0)
             if allowed_types and detected_type not in allowed_types:
-                errors.append(f"{file.name}: file type not allowed (only PDF)")
+                errors.append(
+                    f"{file.name}: file type not allowed "
+                    f"({describe_types(allowed_types)})"
+                )
                 continue
 
             Document.objects.create(
