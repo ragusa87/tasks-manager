@@ -425,8 +425,25 @@ class ItemTransitionView(FormView):
 
     template_name = "transitions/form.html"
 
+    def _is_htmx(self):
+        return self.request.headers.get("HX-Request") == "true"
+
+    def get_template_names(self):
+        # HTMX requests get the in-place modal partial; plain requests get the
+        # full-page form (robust fallback for direct URLs / no-JS).
+        if self._is_htmx():
+            return ["transitions/_modal.html"]
+        return [self.template_name]
+
     def get_form_class(self):
         return self.transition.form_class
+
+    def get_form_kwargs(self):
+        # Transition forms extend TransitionForm and receive the target item
+        # so they can build item-aware choices (e.g. valid parents).
+        kwargs = super().get_form_kwargs()
+        kwargs["item"] = self.item
+        return kwargs
 
     def dispatch(self, request, *args, **kwargs):
         """Initialize transition data and validate availability"""
@@ -476,7 +493,23 @@ class ItemTransitionView(FormView):
         """Handle valid form submission - execute transition with form data"""
         self._execute_transition(**form.cleaned_data if form is not None else {})
 
+        if self._is_htmx():
+            # Body is only the OOB flash-messages swap; the empty main content
+            # clears #modal-container (closing the modal). HX-Trigger refreshes
+            # the item list in place.
+            response = render(self.request, "partials/_messages_oob.html")
+            response["HX-Trigger"] = "refreshItems"
+            return response
+
         return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Re-render the form with errors (in the modal for HTMX requests)."""
+        if self._is_htmx():
+            # 400 so base.js swaps the body back into #modal-container
+            # (htmx.config.responseHandling: 4xx -> swap, no error).
+            return self.render_to_response(self.get_context_data(form=form), status=400)
+        return super().form_invalid(form)
 
     def _execute_transition(self, **kwargs):
         """Execute transition without form (for direct transitions)"""
@@ -490,6 +523,51 @@ class ItemTransitionView(FormView):
             )
         except Exception as e:
             messages.error(self.request, f"Error applying transition: {str(e)}")
+
+
+@method_decorator(login_required, name="dispatch")
+class ItemDeleteView(View):
+    """
+    Permanently delete an item. A hardcoded action (not an FSM transition),
+    available on every item. HTMX requests get a confirmation modal then an
+    in-place list refresh (matching the transition modal flow); plain requests
+    get a full-page confirmation and a redirect.
+    """
+
+    def _is_htmx(self):
+        return self.request.headers.get("HX-Request") == "true"
+
+    def _get_item(self, request, item_id):
+        return get_object_or_404(Item, id=item_id, user=request.user)
+
+    def get_success_url(self):
+        return self.request.GET.get("returnUrl", reverse("dashboard"))
+
+    def get(self, request, item_id):
+        item = self._get_item(request, item_id)
+        template = (
+            "items/_delete_modal.html"
+            if self._is_htmx()
+            else "items/delete_confirm.html"
+        )
+        return render(
+            request,
+            template,
+            {"item": item, "return_url": self.get_success_url()},
+        )
+
+    def post(self, request, item_id):
+        item = self._get_item(request, item_id)
+        title = item.title
+        item.delete()
+        messages.success(request, f"Deleted '{title}'.")
+        if self._is_htmx():
+            # Empty main body clears #modal-container (closes the modal); the
+            # OOB swap updates the flash messages; HX-Trigger refreshes the list.
+            response = render(request, "partials/_messages_oob.html")
+            response["HX-Trigger"] = "refreshItems"
+            return response
+        return redirect(self.get_success_url())
 
 
 @method_decorator(login_required, name="dispatch")

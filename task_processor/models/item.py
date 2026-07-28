@@ -444,7 +444,7 @@ class ItemFlow:
         GTDStatus.NEXT_ACTION.value: ("lucide-zap", "🚀"),
         GTDStatus.WAITING_FOR.value: ("lucide-hourglass", "👤"),
         GTDStatus.SOMEDAY_MAYBE.value: ("lucide-history", "💭"),
-        GTDStatus.REFERENCE.value: ("lucide-archive", "📁"),
+        GTDStatus.REFERENCE.value: ("lucide-book-marked", "📚"),
         GTDStatus.PROJECT.value: ("lucide-briefcase", "💼"),
         GTDStatus.COMPLETED.value: ("lucide-badge-check", "✅"),
         GTDStatus.CANCELLED.value: ("lucide-trash-2", "🚫"),
@@ -484,23 +484,24 @@ class ItemFlow:
         if not self.item.last_reviewed:
             self.item.last_reviewed = timezone.now().date()
 
+    @requires_form("task_processor.forms.ReferenceForm")
     @state_field.transition(
         source=GTDStatus.INBOX,
         target=GTDStatus.REFERENCE,
         label=_("Convert as Reference"),
     )
-    def process_as_reference(self):
+    def process_as_reference(self, parent=None):
         """Process inbox item as reference material"""
-        pass
+        self.item.parent = parent
 
+    @requires_form("task_processor.forms.ReferenceForm")
     @state_field.transition(
         source=GTDStatus.NEXT_ACTION,
         target=GTDStatus.REFERENCE,
         label=_("Convert as Reference"),
     )
-    def convert_as_reference(self):
-        self.item.parent = None
-        pass
+    def convert_as_reference(self, parent=None):
+        self.item.parent = parent
 
     @requires_form("task_processor.forms.WaitingForForm")
     @state_field.transition(
