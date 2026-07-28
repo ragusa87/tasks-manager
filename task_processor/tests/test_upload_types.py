@@ -2,7 +2,12 @@
 
 from django.conf import settings
 
-from core.upload_types import accept_attribute, describe_types, type_categories
+from core.upload_types import (
+    accept_attribute,
+    describe_types,
+    recording_enabled,
+    type_categories,
+)
 
 FULL_LIST = [
     "application/pdf",
@@ -22,8 +27,12 @@ class TestTypeCategories:
         assert type_categories(["application/pdf"]) == ["PDF"]
 
     def test_video_counts_when_no_audio(self):
-        # Without audio in the list, video/mp4 is genuinely video.
+        # Without audio in the list, video/mp4 and video/webm are genuinely video.
         assert type_categories(["video/mp4"]) == ["video"]
+        assert type_categories(["video/webm"]) == ["video"]
+
+    def test_webm_container_alias_is_not_video(self):
+        assert type_categories(["audio/ogg", "video/webm"]) == ["audio"]
 
     def test_unknown_type_is_generic_file(self):
         assert type_categories(["application/zip"]) == ["file"]
@@ -62,6 +71,24 @@ class TestAcceptAttribute:
     def test_unknown_type_passes_through(self):
         assert accept_attribute(["application/zip"]) == "application/zip"
 
+    def test_webm_hint_only_with_audio(self):
+        assert accept_attribute(["audio/ogg", "video/webm"]) == "audio/*,.webm"
+        assert accept_attribute(["video/webm"]) == "video/webm"
+
+
+class TestRecordingEnabled:
+    """The recorder always uploads WAV, which magic detects as audio/x-wav;
+    that exact entry gates the feature."""
+
+    def test_requires_the_detected_type(self):
+        assert recording_enabled(["audio/x-wav"]) is True
+        # audio/wav alone is not enough: magic reports audio/x-wav.
+        assert recording_enabled(["audio/wav"]) is False
+
+    def test_disabled_without_wav(self):
+        assert recording_enabled(["application/pdf", "audio/webm"]) is False
+        assert recording_enabled([]) is False
+
 
 class TestAgainstRealSettings:
     """The derivations must stay coherent with the deployed allow-list."""
@@ -75,5 +102,8 @@ class TestAgainstRealSettings:
         assert "audio/*" in accept
         assert ".pdf" in accept
         assert ".m4a" in accept
-        # the m4a container quirk must not leak a video/* picker entry
+        # the container quirks must not leak a video/* picker entry
         assert "video" not in accept
+
+    def test_settings_enable_the_recorder(self):
+        assert recording_enabled(settings.ALLOWED_TYPES) is True

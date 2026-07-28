@@ -1,0 +1,47 @@
+{% load sprite_tags %}
+{# Upload zone for an item's documents: dropzone + file picker, voice-note #}
+{# recorder (mic/stop button + live level meter, max 1 min) and progress #}
+{# bar. Requires item_id in context; wired up by documents.js and #}
+{# audio-recorder.js. #}
+<div class="flex items-stretch gap-2">
+    <label for="document-input-{{ item_id }}"
+           class="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer document-dropzone"
+           id="document-dropzone-{{ item_id }}"
+           data-item-id="{{ item_id }}"
+           data-upload-url="{% url 'document_upload' item_id %}">
+        {% sprite "lucide-upload" 16 class="shrink-0" %}
+        <span class="font-medium">Attach {{ ALLOWED_TYPES_LABEL }}</span>
+        <span class="text-xs text-gray-400">(max {{ MAX_FILE_SIZE_MB }} MB)</span>
+        <input type="file"
+               id="document-input-{{ item_id }}"
+               class="sr-only document-file-input"
+               data-item-id="{{ item_id }}"
+               data-upload-url="{% url 'document_upload' item_id %}"
+               multiple
+               accept="{{ ALLOWED_TYPES_ACCEPT }}">
+    </label>
+    {% if RECORDING_ENABLED %}
+    <button type="button"
+            class="audio-record-btn flex items-center justify-center px-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+            data-item-id="{{ item_id }}"
+            data-upload-url="{% url 'document_upload' item_id %}"
+            title="Record a voice note (max 1 min)"
+            aria-label="Record a voice note (max 1 min)">
+        <span data-icon-record>{% sprite "lucide-mic" 16 class="shrink-0" %}</span>
+        <span data-icon-stop class="hidden">{% sprite "lucide-square" 16 class="shrink-0" %}</span>
+    </button>
+    {% endif %}
+</div>
+<div id="audio-record-meter-{{ item_id }}"
+     class="hidden items-center gap-3 px-3 py-2 border border-red-200 bg-red-50 rounded-lg">
+    <div data-meter-bars class="flex items-end gap-0.5 h-5 flex-1"></div>
+    <span data-meter-time class="text-xs font-medium tabular-nums text-red-600 shrink-0">0:00 / 1:00</span>
+</div>
+<div id="upload-progress-{{ item_id }}" class="hidden">
+    <div class="flex items-center gap-2">
+        <div class="flex-1 bg-gray-200 rounded-full h-1.5">
+            <div data-progress-bar class="bg-blue-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
+        </div>
+        <p class="text-xs text-gray-500 shrink-0">Uploading…</p>
+    </div>
+</div>

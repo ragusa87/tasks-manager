@@ -128,7 +128,7 @@ function handleFileSelect(e) {
     input.value = '';
 }
 
-function uploadFiles(itemId, uploadUrl, files, onDone) {
+export function uploadFiles(itemId, uploadUrl, files, onDone) {
     var formData = new FormData();
     for (var i = 0; i < files.length; i++) {
         formData.append('files', files[i]);
@@ -198,7 +198,7 @@ function flashUploadErrors() {
     if (messages.length) showToast(messages.join('\n'), 'error', 5000);
 }
 
-function showToast(message, type, duration) {
+export function showToast(message, type, duration) {
     var toast = document.createElement('div');
     toast.className = 'fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 whitespace-pre-line ' + (type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white');
     toast.textContent = message;
