@@ -16,6 +16,7 @@ from task_processor.constants import (
     GTDStatus,
     Priority,
 )
+from task_processor.markdown_utils import sanitize_markdown
 
 from .base_models import Area, Context, Tag
 
@@ -262,6 +263,10 @@ class Item(models.Model):
         return self.title
 
     def save(self, *args, **kwargs):
+        # Description is user-authored Markdown limited to an inline subset;
+        # re-sanitize on every write since the client is not a trust boundary.
+        self.description = sanitize_markdown(self.description)
+
         # Auto-set completion timestamp
         if self.is_completed and not self.completed_at:
             self.completed_at = timezone.now()

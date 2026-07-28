@@ -1,5 +1,6 @@
 {% load static %}
 {% load sprite_tags %}
+{% load markdown_tags %}
 
 <div class="space-y-3 sm:space-y-0" data-item="{{ item.id }}" >
     <!-- Main content row -->
@@ -23,7 +24,7 @@
                         </h3>
                         {% if item.description %}
                         <p class="text-sm text-gray-500 truncate">
-                            {{ item.description }}
+                            {{ item.description|strip_markdown }}
                         </p>
                         {% endif %}
                         <button class="expand-target" data-detail-url="{% url 'item_detail' item_id=item.id %}"></button>
