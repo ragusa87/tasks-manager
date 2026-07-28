@@ -1,3 +1,4 @@
+import hashlib
 import os
 import uuid
 
@@ -15,6 +16,16 @@ def document_upload_path(instance, filename):
     return f"documents/{date_prefix}/{new_filename}"
 
 
+def compute_content_hash(file) -> str:
+    """SHA-256 hex digest of a Django File, streamed; rewinds the file."""
+    hasher = hashlib.sha256()
+    file.seek(0)
+    for chunk in file.chunks():
+        hasher.update(chunk)
+    file.seek(0)
+    return hasher.hexdigest()
+
+
 class Document(models.Model):
     item = models.ForeignKey(
         "task_processor.Item",
@@ -25,6 +36,11 @@ class Document(models.Model):
     file_name = models.CharField(max_length=255)
     file_size = models.BigIntegerField()
     content_type = models.CharField(max_length=100, blank=True, default="")
+    # SHA-256 of the file content, filled automatically on save; used to
+    # refuse duplicate attachments on the same item regardless of file name.
+    content_hash = models.CharField(
+        max_length=64, blank=True, default="", db_index=True
+    )
     uploaded_at = models.DateTimeField(default=timezone.now)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -42,6 +58,13 @@ class Document(models.Model):
 
     def __str__(self):
         return self.file_name
+
+    def save(self, *args, **kwargs):
+        # Hash here (not in the views) so every creation path — web upload,
+        # mail inbox attachments, shell — gets a content hash.
+        if not self.content_hash and self.file:
+            self.content_hash = compute_content_hash(self.file)
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         if self.file:

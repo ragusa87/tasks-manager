@@ -39,6 +39,7 @@ from .forms import (
     TagForm,
 )
 from .models import AllowedSender, Area, Context, Document, EmailInbox, Item, Tag
+from .models.document import compute_content_hash
 from .models.email_inbox import EMAIL_INBOX_PERMISSION
 from .search import FilterCategory
 
@@ -1206,6 +1207,7 @@ class DocumentUploadView(View):
         max_size = settings.MAX_FILE_SIZE
 
         errors = []
+        batch_hashes = set()
         for file in files:
             if file.size > max_size:
                 errors.append(
@@ -1223,12 +1225,24 @@ class DocumentUploadView(View):
                 )
                 continue
 
+            # Refuse content already attached to this item (or duplicated
+            # within this batch), regardless of file name.
+            content_hash = compute_content_hash(file)
+            if (
+                content_hash in batch_hashes
+                or item.documents.filter(content_hash=content_hash).exists()
+            ):
+                errors.append(f"{file.name}: identical file already attached")
+                continue
+            batch_hashes.add(content_hash)
+
             Document.objects.create(
                 item=item,
                 file=file,
                 file_name=file.name,
                 file_size=file.size,
                 content_type=detected_type,
+                content_hash=content_hash,
                 user=request.user,
             )
 

@@ -134,6 +134,7 @@ const ICONS = {
     strikethrough:
         '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>',
     link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    'loader-circle': '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
     list: '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
     'list-ordered':
         '<line x1="10" x2="21" y1="6" y2="6"/><line x1="10" x2="21" y1="12" y2="12"/><line x1="10" x2="21" y1="18" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
@@ -256,6 +257,17 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 this._buttons.set(action.name, btn);
             });
 
+            // Loader shown while a pasted attachment uploads (see
+            // _interceptFilePaste); documents.js hides it via detail.done().
+            this._uploadIndicator = document.createElement('span');
+            this._uploadIndicator.className =
+                'hidden items-center gap-1.5 ml-auto text-xs text-gray-500';
+            this._uploadIndicator.innerHTML = `${svg('loader-circle').replace(
+                '<svg ',
+                '<svg class="animate-spin" '
+            )}Uploading attachment…`;
+            toolbar.appendChild(this._uploadIndicator);
+
             this._host = document.createElement('div');
             this._host.className = 'markdown-host';
 
@@ -279,6 +291,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                             class: 'markdown-prose',
                             spellcheck: 'true',
                         },
+                        handlePaste: (_view, event) => this._interceptFilePaste(event),
                     }));
                     ctx.get(listenerCtx)
                         .markdownUpdated((_, markdown) => {
@@ -312,6 +325,36 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
 
         _focusEditor() {
             this._editor?.action((ctx) => ctx.get(editorViewCtx).focus());
+        }
+
+        /** Pasted files don't belong in the markdown (the sanitizer would drop
+         *  them anyway) — offer them to the page as attachments instead. Emits
+         *  a cancelable event; if a listener claims it (documents.js routes the
+         *  files through the dropzone upload), the paste is swallowed and a
+         *  loader shows until the listener calls detail.done(). With no
+         *  listener (e.g. unsaved item, no upload target) the default paste
+         *  proceeds. */
+        _interceptFilePaste(event) {
+            const files = Array.from(event.clipboardData?.files || []);
+            if (!files.length) return false;
+
+            const claimed = !this.dispatchEvent(
+                new CustomEvent('markdown-editor:attach', {
+                    detail: { files, done: () => this._setUploading(false) },
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
+            if (!claimed) return false;
+
+            event.preventDefault();
+            this._setUploading(true);
+            return true;
+        }
+
+        _setUploading(on) {
+            this._uploadIndicator.classList.toggle('hidden', !on);
+            this._uploadIndicator.classList.toggle('flex', on);
         }
 
         /** The link mark (with range) covering the cursor, or null. */

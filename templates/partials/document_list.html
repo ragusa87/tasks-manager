@@ -1,6 +1,7 @@
 {% load sprite_tags %}
 {% if errors %}
-<ul class="mb-3 space-y-1 p-3 bg-red-50 border border-red-200 rounded-md">
+{# documents.js lifts this block into an auto-dismissing toast after the swap #}
+<ul data-upload-errors class="mb-3 space-y-1 p-3 bg-red-50 border border-red-200 rounded-md">
     {% for error in errors %}
     <li class="text-sm text-red-600 flex items-center gap-1.5">
         {% sprite "lucide-circle-alert" 14 class="shrink-0" %}
