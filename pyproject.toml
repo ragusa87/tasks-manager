@@ -29,6 +29,9 @@ dependencies = [
     "python-magic>=0.4.27",
     "django-ninja>=1.6.2",
     "celery-redbeat>=2.3.3",
+    "markdown>=3.10.2",
+    "nh3>=0.3.6",
+    "markdownify>=1.2.3",
 ]
 
 [dependency-groups]

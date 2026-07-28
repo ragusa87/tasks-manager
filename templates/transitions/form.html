@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load sprite_tags %}
+{% load markdown_tags %}
 
 {% block title %}{{ transition.label }} - {{ item.title }}{% endblock %}
 
@@ -34,7 +35,7 @@
                 <div class="mt-1 text-sm text-blue-700">
                     <p><strong>Title:</strong> {{ item.title }}</p>
                     {% if item.description %}
-                        <p><strong>Description:</strong> {{ item.description|truncatechars:100 }}</p>
+                        <p><strong>Description:</strong> {{ item.description|strip_markdown|truncatechars:100 }}</p>
                     {% endif %}
                     <p><strong>Current Status:</strong> {{ item.get_status_display }}</p>
                 </div>
