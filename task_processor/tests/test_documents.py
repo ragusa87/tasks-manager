@@ -16,7 +16,9 @@ def make_pdf(content=b"PDF test content") -> bytes:
         b"trailer\n<< /Size 4 /Root 1 0 R >>\n"
         b"startxref\n190\n%%EOF\n"
     )
-    return body
+    # Embed the payload as a trailing comment so different `content` values
+    # produce different bytes (needed by the duplicate-detection tests).
+    return body + b"% " + content + b"\n"
 
 
 def make_png() -> bytes:
@@ -149,9 +151,9 @@ class DocumentUploadViewTests(TestCase):
         """Test uploading multiple files"""
         self.client.force_login(self.user)
 
-        pdf1 = io.BytesIO(make_pdf())
+        pdf1 = io.BytesIO(make_pdf(b"first file"))
         pdf1.name = "test1.pdf"
-        pdf2 = io.BytesIO(make_pdf())
+        pdf2 = io.BytesIO(make_pdf(b"second file"))
         pdf2.name = "test2.pdf"
 
         response = self.client.post(
@@ -228,6 +230,77 @@ class DocumentUploadViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Document.objects.count(), 0)
         self.assertContains(response, "file type not allowed")
+
+    def test_upload_duplicate_content_rejected(self):
+        """Re-uploading identical content is refused even under another name."""
+        self.client.force_login(self.user)
+
+        first = io.BytesIO(make_pdf())
+        first.name = "report.pdf"
+        self.client.post(
+            reverse("document_upload", args=[self.item.id]), {"files": first}
+        )
+
+        again = io.BytesIO(make_pdf())
+        again.name = "renamed-copy.pdf"
+        response = self.client.post(
+            reverse("document_upload", args=[self.item.id]), {"files": again}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Document.objects.count(), 1)
+        self.assertContains(response, "identical file already attached")
+
+    def test_upload_duplicate_within_batch_rejected(self):
+        """Two identical files in one multi-upload store only one document."""
+        self.client.force_login(self.user)
+
+        copy1 = io.BytesIO(make_pdf())
+        copy1.name = "a.pdf"
+        copy2 = io.BytesIO(make_pdf())
+        copy2.name = "b.pdf"
+        response = self.client.post(
+            reverse("document_upload", args=[self.item.id]),
+            {"files": [copy1, copy2]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Document.objects.count(), 1)
+        self.assertContains(response, "identical file already attached")
+
+    def test_same_content_allowed_on_other_item(self):
+        """Dedup is per item: another task may attach the same file."""
+        self.client.force_login(self.user)
+        other_item = Item.objects.create(
+            title="Other own item",
+            status=GTDStatus.INBOX,
+            priority=Priority.NORMAL,
+            user=self.user,
+        )
+
+        for target in (self.item, other_item):
+            pdf = io.BytesIO(make_pdf())
+            pdf.name = "same.pdf"
+            self.client.post(
+                reverse("document_upload", args=[target.id]), {"files": pdf}
+            )
+
+        self.assertEqual(Document.objects.count(), 2)
+
+    def test_content_hash_populated_on_save(self):
+        """Document.save() hashes the file, so all creation paths get a hash."""
+        import hashlib
+
+        content = make_pdf()
+        pdf = io.BytesIO(content)
+        pdf.name = "hashed.pdf"
+        self.client.force_login(self.user)
+        self.client.post(
+            reverse("document_upload", args=[self.item.id]), {"files": pdf}
+        )
+
+        document = Document.objects.get()
+        self.assertEqual(document.content_hash, hashlib.sha256(content).hexdigest())
 
     def test_document_icon_per_content_type(self):
         """The icon property maps content types to sprite names, including the
