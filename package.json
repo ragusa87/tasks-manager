@@ -6,7 +6,8 @@
     "dev": "vite -l info",
     "build": "vite build",
     "preview": "vite preview",
-    "vite": "vite"
+    "vite": "vite",
+    "test:js": "node --test 'frontend/js/**/*.test.js'"
   },
   "type": "module",
   "devDependencies": {
@@ -16,6 +17,7 @@
     "@tailwindcss/vite": "^4.1.13",
     "air-datepicker": "^3.6.0",
     "htmx.org": "^2.0.7",
+    "rrule": "^2.8.1",
     "tailwindcss": "^4.1.13"
   },
   "sideEffects": [

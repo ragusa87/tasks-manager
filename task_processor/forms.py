@@ -238,7 +238,7 @@ class ItemForm(forms.ModelForm):
 
     rrule = RecurrenceField(
         widget=RecurrenceWidget(),
-        help_text="Recurrence pattern using RRULE format. Leave empty for one-time reminder.",
+        help_text="",
     )
 
     # Custom fields for autocomplete (to handle comma-separated values)
