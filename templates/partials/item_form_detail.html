@@ -53,18 +53,18 @@
 
 <!-- Accordion: Classification -->
 {% if form.contexts or form.area or form.tags or form.parent %}
-<div class="accordion-item border-t border-gray-200 pt-6" data-has-errors="{% if form.contexts.errors or form.area.errors or form.tags.errors or form.parent.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-2 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-base font-medium text-gray-900 flex items-center">
-            {% sprite "lucide-folder" 20 class="mr-2" %}
+<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.contexts.errors or form.area.errors or form.tags.errors or form.parent.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
+        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+            {% sprite "lucide-folder" 16 class="mr-2" %}
             Classification
         </h3>
-        <svg class="accordion-icon w-5 h-5 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
     <div class="accordion-content">
-        <div class="pt-4 space-y-6">
+        <div class="pt-2 space-y-3">
             <!-- Contexts Field -->
             {% if form.contexts %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
@@ -88,7 +88,7 @@
                     {% if form.contexts.errors %}
                     <p class="mt-2 text-sm text-red-600">{{ form.contexts.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-2 text-sm text-gray-500">Where or how will you work on this? Type to search or create new
+                    <p class="mt-1 text-xs text-gray-500">Where or how will you work on this? Type to search or create new
                         contexts.</p>
                 </div>
             </div>
@@ -115,7 +115,7 @@
                     {% if form.area.errors %}
                     <p class="mt-2 text-sm text-red-600">{{ form.area.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-2 text-sm text-gray-500">Which area of responsibility?</p>
+                    <p class="mt-1 text-xs text-gray-500">Which area of responsibility?</p>
                 </div>
             </div>
             {% endif %}
@@ -143,7 +143,7 @@
                     {% if form.tags.errors %}
                     <p class="mt-2 text-sm text-red-600">{{ form.tags.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-2 text-sm text-gray-500">Add tags to categorize this item. Type to search or create new
+                    <p class="mt-1 text-xs text-gray-500">Add tags to categorize this item. Type to search or create new
                         tags.</p>
                 </div>
             </div>
@@ -170,7 +170,7 @@
                     {% if form.parent.errors %}
                     <p class="mt-2 text-sm text-red-600">{{ form.parent.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-2 text-sm text-gray-500">Is this part of a larger project or another reference ?</p>
+                    <p class="mt-1 text-xs text-gray-500">Is this part of a larger project or another reference ?</p>
                 </div>
             </div>
             {% endif %}
@@ -181,18 +181,18 @@
 
 <!-- Accordion: Priority & Organization -->
 {% if form.priority %}
-<div class="accordion-item border-t border-gray-200 pt-6" data-has-errors="{% if form.priority.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-2 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-base font-medium text-gray-900 flex items-center">
-            {% sprite "lucide-target" 20 class="mr-2" %}
+<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.priority.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
+        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+            {% sprite "lucide-target" 16 class="mr-2" %}
             Priority
         </h3>
-        <svg class="accordion-icon w-5 h-5 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
     <div class="accordion-content">
-        <div class="pt-4 space-y-6">
+        <div class="pt-2 space-y-3">
             {% if form.priority %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
                 <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
@@ -232,7 +232,7 @@
                     {% if form.priority.errors %}
                     <p class="mt-2 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-2 text-sm text-gray-500">Set the priority level for this item</p>
+                    <p class="mt-1 text-xs text-gray-500">Set the priority level for this item</p>
                 </div>
             </div>
             {% endif %}
@@ -242,18 +242,18 @@
 {% endif %}
 <!-- Accordion: Scheduling & Time -->
 {% if form.due_date or form.start_date or form.estimated_duration or form.energy %}
-<div class="accordion-item border-t border-gray-200 pt-6" data-has-errors="{% if form.due_date.errors or form.start_date.errors or form.estimated_duration.errors or form.energy.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-2 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-base font-medium text-gray-900 flex items-center">
-            {% sprite "lucide-calendar-clock" 20 class="mr-2" %}
+<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.due_date.errors or form.start_date.errors or form.estimated_duration.errors or form.energy.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
+        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+            {% sprite "lucide-calendar-clock" 16 class="mr-2" %}
             Scheduling & Time
         </h3>
-        <svg class="accordion-icon w-5 h-5 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
     <div class="accordion-content">
-        <div class="pt-4 space-y-6">
+        <div class="pt-2 space-y-3">
     <!-- Due Date Field -->
     {% if form.due_date %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
@@ -267,7 +267,7 @@
             {% if form.due_date.errors %}
             <p class="mt-2 text-sm text-red-600">{{ form.due_date.errors.0 }}</p>
             {% endif %}
-            <p class="mt-2 text-sm text-gray-500">When does this need to be completed?</p>
+            <p class="mt-1 text-xs text-gray-500">When does this need to be completed?</p>
         </div>
     </div>
     {% endif %}
@@ -286,7 +286,7 @@
             {% if form.start_date.errors %}
             <p class="mt-2 text-sm text-red-600">{{ form.start_date.errors.0 }}</p>
             {% endif %}
-            <p class="mt-2 text-sm text-gray-500">When can you start working on this?</p>
+            <p class="mt-1 text-xs text-gray-500">When can you start working on this?</p>
         </div>
     </div>
     {% endif %}
@@ -339,7 +339,7 @@
             {% if form.estimated_duration.errors %}
             <p class="mt-2 text-sm text-red-600">{{ form.estimated_duration.errors.0 }}</p>
             {% endif %}
-            <p class="mt-2 text-sm text-gray-500">Choose duration category based on GTD methodology</p>
+            <p class="mt-1 text-xs text-gray-500">Choose duration category based on GTD methodology</p>
         </div>
     </div>
     {% endif %}
@@ -384,7 +384,7 @@
             {% if form.energy.errors %}
             <p class="mt-2 text-sm text-red-600">{{ form.energy.errors.0 }}</p>
             {% endif %}
-            <p class="mt-2 text-sm text-gray-500">How much energy do you need?</p>
+            <p class="mt-1 text-xs text-gray-500">How much energy do you need?</p>
         </div>
     </div>
     {% endif %}
@@ -404,7 +404,7 @@
             {% if form.waiting_for_person.errors %}
             <p class="mt-2 text-sm text-red-600">{{ form.waiting_for_person.errors.0 }}</p>
             {% endif %}
-            <p class="mt-2 text-sm text-gray-500">Waiting for who/what ?</p>
+            <p class="mt-1 text-xs text-gray-500">Waiting for who/what ?</p>
         </div>
     </div>
     {% endif %}
@@ -423,7 +423,7 @@
             {% if form.follow_up_date.errors %}
             <p class="mt-2 text-sm text-red-600">{{ form.follow_up_date.errors.0 }}</p>
             {% endif %}
-            <p class="mt-2 text-sm text-gray-500">When to follow up on this waiting item</p>
+            <p class="mt-1 text-xs text-gray-500">When to follow up on this waiting item</p>
         </div>
     </div>
     {% endif %}
@@ -443,7 +443,7 @@
             {% if form.review_frequency_days.errors %}
             <p class="mt-2 text-sm text-red-600">{{ form.review_frequency_days.errors.0 }}</p>
             {% endif %}
-            <p class="mt-2 text-sm text-gray-500">How often to review this someday/maybe item (in days)</p>
+            <p class="mt-1 text-xs text-gray-500">How often to review this someday/maybe item (in days)</p>
         </div>
     </div>
     {% endif %}
@@ -454,18 +454,18 @@
 
 <!-- Accordion: Reminders -->
 {% if form.remind_at or form.rrule %}
-<div class="accordion-item border-t border-gray-200 pt-6" data-has-errors="{% if form.remind_at.errors or form.rrule.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-2 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-base font-medium text-gray-900 flex items-center">
-            {% sprite "lucide-bell" 20 class="mr-2" %}
+<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.remind_at.errors or form.rrule.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
+        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+            {% sprite "lucide-bell" 16 class="mr-2" %}
             Reminders
         </h3>
-        <svg class="accordion-icon w-5 h-5 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
     <div class="accordion-content">
-        <div class="pt-4 space-y-6">
+        <div class="pt-2 space-y-3">
             <!-- Remind At Field -->
             {% if form.remind_at %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
@@ -479,7 +479,7 @@
                     {% if form.remind_at.errors %}
                     <p class="mt-2 text-sm text-red-600">{{ form.remind_at.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-2 text-sm text-gray-500">When to send the first reminder notification</p>
+                    <p class="mt-1 text-xs text-gray-500">When to send the first reminder notification</p>
                 </div>
             </div>
             {% endif %}
@@ -499,7 +499,7 @@
                     <p class="mt-2 text-sm text-red-600">{{ form.rrule.errors.0 }}</p>
                     {% endif %}
                     {% if form.rrule.help_text %}
-                    <p class="mt-2 text-sm text-gray-500">{{ form.rrule.help_text }}</p>
+                    <p class="mt-1 text-xs text-gray-500">{{ form.rrule.help_text }}</p>
                     {% endif %}
 
                     <!-- RRULE Examples -->
@@ -528,14 +528,13 @@
 {% endif %}
 
 <!-- Accordion: Documents -->
-<div class="accordion-item border-t border-gray-200 pt-6" data-has-errors="false">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-2 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-base font-medium text-gray-900 flex items-center gap-2">
-            {% sprite "lucide-file" 20 %}
+<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="false">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
+        <h3 class="text-sm font-medium text-gray-900 flex items-center gap-2">
+            {% sprite "lucide-file" 16 %}
             Documents
-
         </h3>
-        <svg class="accordion-icon w-5 h-5 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
