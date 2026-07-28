@@ -5,6 +5,7 @@ import localeEn from 'air-datepicker/locale/en';
 import localeFr from 'air-datepicker/locale/fr';
 import htmx from 'htmx.org';
 import { initDocumentUpload } from './documents.js';
+import { initAudioRecorders } from './audio-recorder.js';
 import './rrule-picker.js';
 import './markdown-editor.js';
 window.htmx = htmx
@@ -628,6 +629,7 @@ const init = () => {
     initializeDatePicker();
     initializeMobileMenu();
     initDocumentUpload();
+    initAudioRecorders();
 }
 document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('htmx:afterSwap', init);
