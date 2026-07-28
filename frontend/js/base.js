@@ -5,6 +5,7 @@ import localeEn from 'air-datepicker/locale/en';
 import localeFr from 'air-datepicker/locale/fr';
 import htmx from 'htmx.org';
 import { initDocumentUpload } from './documents.js';
+import './rrule-picker.js';
 window.htmx = htmx
 htmx.config.responseHandling = [
     {code: "204", swap: false},
