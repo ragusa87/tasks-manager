@@ -79,7 +79,7 @@
                         {% if item.parent %}
                             {% if item.parent.is_reference %}
                                 <span class="inline-flex items-center text-blue-600 {{item_secondary_classes}}" data-filter="project:{{ item.parent.pk }}">
-                                    {% sprite "lucide-archive" 12 class="mr-1" %}
+                                    {% sprite "lucide-book-marked" 12 class="mr-1" %}
                                     {{ item.parent.title }}
                                 </span>
                             {% else %}

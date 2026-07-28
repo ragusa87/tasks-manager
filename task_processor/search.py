@@ -160,7 +160,7 @@ class SearchFilter:
                 FilterOption(
                     "Reference",
                     "in:reference",
-                    "lucide-archive",
+                    "lucide-book-marked",
                     "blue",
                     FilterCategory.STATUS,
                 ),

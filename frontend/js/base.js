@@ -22,6 +22,80 @@ document.body.addEventListener('htmx:configRequest', function(evt) {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Generic modal handling (item detail + any @requires_form transition form).
+// Lives in base.js so it works on every page that loads base.html, not just
+// the dashboard. The modal is loaded into #modal-container (see base.html).
+// ---------------------------------------------------------------------------
+const MODAL_SELECTOR = 'modal';
+const getModal = () => document.getElementById(MODAL_SELECTOR);
+
+function closeItemModal() {
+    const modal = getModal();
+    if (modal) {
+        modal.style.display = 'none';
+        modal.remove();
+    }
+}
+
+const modalIsOpen = () => {
+    const modal = getModal();
+    return modal && modal.style.display !== 'none';
+};
+
+// Close on overlay / close-button click, or Escape.
+document.addEventListener('click', function(e) {
+    if (modalIsOpen() && (e.target === getModal() || e.target.id === 'close-modal' || e.target.id === 'close-modal-btn')) {
+        closeItemModal();
+    }
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeItemModal();
+    }
+});
+
+// Open the item-detail modal via [data-detail-url] (fetch + inject).
+function openItemModal(url) {
+    fetch(url, { headers: { 'HX-Request': 'true' } })
+        .then(response => response.text())
+        .then(html => {
+            const container = document.querySelector('#modal-container');
+            if (!container) return;
+            container.innerHTML = html;
+            const modal = getModal();
+            if (modal) {
+                modal.style.display = 'block';
+                htmx.process(modal);
+                document.dispatchEvent(new CustomEvent('openmodal'));
+            }
+        })
+        .catch((error) => console.error('Modal request failed:', error));
+}
+document.addEventListener('click', function(e) {
+    const itemElement = e.target.closest('[data-detail-url]');
+    if (!itemElement) return;
+    e.preventDefault();
+    openItemModal(itemElement.getAttribute('data-detail-url'));
+});
+
+// Refresh the item list after a modal action. Two triggers:
+//  - a 200 swap of the #modal itself (item-detail save), and
+//  - the `refreshItems` event fired by a successful transition (HX-Trigger).
+// Guarded so it is a no-op on pages without the search box (e.g. stats).
+function refreshItemList() {
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.dispatchEvent(new Event('search'));
+    }
+}
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.matches('#' + MODAL_SELECTOR) && evt.detail.xhr.status === 200) {
+        refreshItemList();
+    }
+});
+document.body.addEventListener('refreshItems', refreshItemList);
+
 // Simple dropdown toggle functionality
 function initializeDropdowns() {
     // Remove existing listeners to avoid duplicates

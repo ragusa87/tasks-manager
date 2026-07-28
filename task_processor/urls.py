@@ -38,6 +38,7 @@ from .views import (
     EmailInboxRegenerateView,
     EmailInboxSettingsView,
     ItemCreateView,
+    ItemDeleteView,
     ItemDetailView,
     ItemTransitionView,
     ItemUpdateView,
@@ -56,6 +57,7 @@ urlpatterns = [
     path("item/create/", ItemCreateView.as_view(), name="item_create"),
     path("item/<int:item_id>/detail/", ItemDetailView.as_view(), name="item_detail"),
     path("item/<int:item_id>/update/", ItemUpdateView.as_view(), name="item_update"),
+    path("item/<int:item_id>/delete/", ItemDeleteView.as_view(), name="item_delete"),
     path(
         "item/<int:item_id>/transition/<str:transition_slug>/",
         ItemTransitionView.as_view(),

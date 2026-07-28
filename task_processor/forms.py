@@ -4,6 +4,8 @@ from dateutil.rrule import rrulestr
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 
 from .constants import GTDConfig, GTDDuration, GTDEnergy, GTDStatus, Priority
 from .models.base_models import Area, Context, Tag
@@ -102,7 +104,64 @@ class RecurrenceWidget(forms.TextInput):
         super().__init__(default_attrs)
 
 
-class WaitingForForm(forms.Form):
+class AutocompleteWidget(forms.Widget):
+    """
+    Renders the app's custom searchable autocomplete (see
+    ``initializeAutocomplete`` in ``frontend/js/base.js``). Reusable for any
+    field backed by the ``/autocomplete/search/<field_type>/`` endpoint; the JS
+    re-initializes it on ``htmx:afterSwap`` / ``openmodal`` so it works inside
+    HTMX-loaded modals.
+    """
+
+    def __init__(
+        self,
+        field_type,
+        allow_multiple=False,
+        allow_create=False,
+        placeholder="Search...",
+        attrs=None,
+    ):
+        self.field_type = field_type
+        self.allow_multiple = allow_multiple
+        self.allow_create = allow_create
+        self.placeholder = placeholder
+        super().__init__(attrs)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        # render_to_string uses the standard template engine (project DIRS +
+        # app_dirs), unlike the default form renderer which only searches
+        # app_dirs and would not find a project-level widget template.
+        return mark_safe(
+            render_to_string(
+                "widgets/autocomplete.html",
+                {
+                    "field_type": self.field_type,
+                    "allow_multiple": self.allow_multiple,
+                    "allow_create": self.allow_create,
+                    "placeholder": self.placeholder,
+                    "name": name,
+                    "value": value if value not in (None, "") else "",
+                },
+            )
+        )
+
+
+class TransitionForm(forms.Form):
+    """
+    Base class for @requires_form transition forms.
+
+    The ItemTransitionView passes the target ``item`` so forms can build
+    item-aware choices (e.g. valid parents). Forms that don't need it may
+    simply ignore ``self.item``. Every @requires_form form should extend this
+    so the view can pass ``item`` uniformly.
+    """
+
+    def __init__(self, *args, item=None, **kwargs):
+        self.item = item
+        super().__init__(*args, **kwargs)
+
+
+class WaitingForForm(TransitionForm):
     """
     Form for delegating items to someone else (transition to waiting_for).
     """
@@ -119,6 +178,43 @@ class WaitingForForm(forms.Form):
         ),
         help_text="Person or organization you're delegating this to",
     )
+
+
+class ReferenceForm(TransitionForm):
+    """
+    Form shown when converting an item to a Reference: choose an optional
+    parent (a Project or another Reference) to file it under.
+    """
+
+    parent = forms.ModelChoiceField(
+        queryset=Item.objects.none(),
+        required=False,
+        label="File under",
+        widget=AutocompleteWidget(
+            field_type="parent",
+            allow_multiple=False,
+            allow_create=False,
+            placeholder="Search projects or references…",
+        ),
+        help_text="Optionally file this reference under a project or another reference.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        queryset = Item.objects.none()
+        if self.item is not None:
+            # Mirror the /autocomplete/search/parent/ endpoint: the user's own
+            # top-level projects/references, excluding the item being converted.
+            queryset = (
+                Item.objects.filter(
+                    user=self.item.user,
+                    status__in=GTDConfig.STATUS_WITH_PARENT_ALLOWED,
+                    parent__isnull=True,
+                )
+                .exclude(pk=self.item.pk)
+                .order_by("title")
+            )
+        self.fields["parent"].queryset = queryset
 
 
 class ItemForm(forms.ModelForm):

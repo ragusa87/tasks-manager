@@ -147,6 +147,9 @@
         {% block content %}
         {% endblock %}
     </main>
+    <div id="modal-container">
+        <div id="modal" style="display: none"></div>
+    </div>
     {% sprite_svg %}
     {% block extra_body %}
         {% vite_asset 'frontend/js/base.js' %}

@@ -1,0 +1,6 @@
+{% comment %}
+Out-of-band flash-messages update. Rendered as the sole body of an HTMX response so
+htmx swaps the messages into #flash-messages while leaving the main target emptied
+(used to close the transition modal on success).
+{% endcomment %}
+{% include "partials/messages.html" with oob=True %}
