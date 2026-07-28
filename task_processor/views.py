@@ -315,13 +315,19 @@ class DashboardView(ListView):
         )
 
         # Create search filter instance
-        from .search import SearchFilter
+        from .search import SearchFilter, extract_referenced_ids
+
+        # Keep any project explicitly queried (project:<id>) visible in the
+        # suggestions even when it is completed.
+        queried_project_ids = extract_referenced_ids(self.get_search_query(), "project")
 
         search_filter = SearchFilter(
             user=self.request.user,
             areas=areas,
             contexts=contexts,
-            projects=Item.objects.projects(self.request.user),
+            projects=Item.objects.projects(
+                self.request.user, include_ids=queried_project_ids
+            ),
         )
 
         context = super().get_context_data(object_list=object_list, **kwargs)

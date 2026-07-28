@@ -10,6 +10,7 @@ from task_processor.search import (
     SearchFilter,
     SearchParser,
     SearchTokens,
+    extract_referenced_ids,
 )
 
 
@@ -486,3 +487,73 @@ class TestFilterStrategy(TestCase):
             '-area:"work"', area_filter, current_state
         )
         self.assertEqual(next_query.strip(), "")
+
+
+class TestExtractReferencedIds(TestCase):
+    """Test the extract_referenced_ids helper"""
+
+    def test_included_ids(self):
+        self.assertEqual(extract_referenced_ids("project:4", "project"), [4])
+
+    def test_excluded_ids(self):
+        self.assertEqual(extract_referenced_ids("-project:7", "project"), [7])
+
+    def test_included_and_excluded(self):
+        ids = extract_referenced_ids("project:4 -project:7", "project")
+        self.assertEqual(sorted(ids), [4, 7])
+
+    def test_non_integer_values_ignored(self):
+        self.assertEqual(extract_referenced_ids('project:"My project"', "project"), [])
+
+    def test_other_fields_ignored(self):
+        self.assertEqual(extract_referenced_ids("in:next area:3", "project"), [])
+
+    def test_empty_query(self):
+        self.assertEqual(extract_referenced_ids("", "project"), [])
+
+
+class TestProjectsManagerIncludeIds(TestCase):
+    """Test Item.objects.projects() with the include_ids argument"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com"
+        )
+        self.active_project = Item.objects.create(
+            title="Active project", status=GTDStatus.PROJECT, user=self.user
+        )
+        self.completed_project = Item.objects.create(
+            title="Done project", status=GTDStatus.PROJECT, user=self.user
+        )
+        self.completed_project.flow.complete()
+        self.completed_project.refresh_from_db()
+
+    def test_completed_project_becomes_completed_status(self):
+        # Sanity check: completing a project moves it out of status=PROJECT.
+        self.assertEqual(self.completed_project.status, GTDStatus.COMPLETED)
+        self.assertTrue(self.completed_project.is_completed)
+
+    def test_completed_projects_excluded_by_default(self):
+        projects = Item.objects.projects(self.user)
+        self.assertIn(self.active_project, projects)
+        self.assertNotIn(self.completed_project, projects)
+
+    def test_include_ids_resurfaces_completed_project(self):
+        projects = Item.objects.projects(
+            self.user, include_ids=[self.completed_project.pk]
+        )
+        self.assertIn(self.active_project, projects)
+        self.assertIn(self.completed_project, projects)
+
+    def test_include_ids_does_not_leak_other_users(self):
+        other = User.objects.create_user(username="other", email="other@example.com")
+        other_completed = Item.objects.create(
+            title="Other done", status=GTDStatus.PROJECT, user=other
+        )
+        other_completed.flow.complete()
+        projects = Item.objects.projects(self.user, include_ids=[other_completed.pk])
+        self.assertNotIn(other_completed, projects)
+
+    def test_empty_include_ids_behaves_like_default(self):
+        projects = Item.objects.projects(self.user, include_ids=[])
+        self.assertNotIn(self.completed_project, projects)
