@@ -1,7 +1,7 @@
 # Task Manager
 A Django web task manager, based on the GTM™ Methodology (but not affiliated with it).
 
-<img width="1271" height="872" alt="image" src="https://github.com/user-attachments/assets/b5b5e46a-fbd9-421a-8f94-b550b69cdce7" />
+![Dashboard](docs/img/dashboard.png)
 
 ## Disclamer
 
@@ -13,6 +13,23 @@ I don't intent to maintain this project in the long term.
 * Import existing tasks from NirvanaHQ (via command line)
 * Search and review tasks to decide on next actions
 * Capture tasks by email: each user gets a secret inbox address, incoming mail becomes an inbox task (see [Email inbox](#email-inbox))
+* Attach documents to tasks (PDF, images, audio), uploaded via drag & drop, stored on local disk or S3-compatible storage (see `STORAGE_URL`)
+* Capture with the microphone or the camera: voice notes and photos become task attachments
+* Offload: a mobile-first capture page, installable as an app (PWA)
+
+## Screenshots
+
+* ![Item detail](docs/img/item_detail.png)
+* ![Documents attached to a task](docs/img/item_documents.png)
+* ![Recording a voice note on a task](docs/img/item_recording.png)
+* ![Offload](docs/img/offload.png)
+* ![Offload, recording a voice note](docs/img/offload_voice.png)
+* ![Dashboard, light theme](docs/img/dashboard_light.png)
+
+The screenshots (including the dashboard above) live in `docs/img/` and are
+regenerated with `just capture-docs` against a running local instance.
+**Warning: it resets the local database** (`just fixturize --clear`) to get
+representative demo data before capturing.
 
 ### TODOS
 - Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)

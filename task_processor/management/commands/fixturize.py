@@ -1,8 +1,14 @@
+import base64
+import io
+import math
 import random
+import struct
+import wave
 from datetime import timedelta
 
 from django.contrib.auth.models import Group, Permission, User
 from django.core import management
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
 from django.utils import timezone
@@ -26,6 +32,12 @@ from task_processor.models import (
     Tag,
 )
 from task_processor.models.email_inbox import EMAIL_INBOX_GROUP
+from task_processor.uploads import attach_document
+
+# Item every user gets with sample documents attached (a PDF, an image and a
+# voice note), so document handling has demo data too. The docs screenshots
+# (scripts/capture_docs_screenshots.mjs) open this item by title.
+DOCUMENTS_ITEM_TITLE = "Prepare quarterly review meeting"
 
 
 class Command(BaseCommand):
@@ -71,6 +83,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"Creating data for user: {user.username}")
                 self.create_contexts_areas_and_tags(user)
                 self.create_items(user, options["items_per_user"])
+                self.create_documents_item(user)
                 self.create_reviews(user)
                 self.create_api_key(user)
             if users:
@@ -158,6 +171,63 @@ class Command(BaseCommand):
             f"Email inbox for {user.username}: {inbox.address} "
             f"(whitelisted sender: {user.email})"
         )
+
+    def create_documents_item(self, user):
+        """Create a next action holding sample documents of each kind."""
+        item, _ = Item.objects.get_or_create(
+            title=DOCUMENTS_ITEM_TITLE,
+            user=user,
+            defaults={
+                "description": "Gather the material for the quarterly review: "
+                "agenda, whiteboard notes and the recorded walkthrough.",
+                "status": GTDStatus.NEXT_ACTION,
+                "priority": Priority.HIGH,
+            },
+        )
+        if item.documents.exists():
+            return
+        for name, content in (
+            ("meeting-agenda.pdf", self.sample_pdf()),
+            ("whiteboard-photo.png", self.sample_png()),
+            ("voice-note.wav", self.sample_wav()),
+        ):
+            attach_document(item, user, ContentFile(content, name=name))
+
+    def sample_pdf(self):
+        """A minimal but valid single-page PDF."""
+        return (
+            b"%PDF-1.4\n"
+            b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+            b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+            b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >> endobj\n"
+            b"trailer << /Root 1 0 R >>\n"
+            b"%%EOF\n"
+        )
+
+    def sample_png(self):
+        """A 1x1 pixel PNG."""
+        return base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"
+            "AAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        )
+
+    def sample_wav(self):
+        """Two seconds of a 440 Hz tone, playable in the audio preview."""
+        rate = 8000
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(rate)
+            w.writeframes(
+                b"".join(
+                    struct.pack(
+                        "<h", int(12000 * math.sin(2 * math.pi * 440 * t / rate))
+                    )
+                    for t in range(rate * 2)
+                )
+            )
+        return buf.getvalue()
 
     def create_contexts_areas_and_tags(self, user):
         """Create contexts, areas, and tags for user"""

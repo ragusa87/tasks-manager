@@ -84,6 +84,14 @@ uv *args:
 sprites:
     @just manage sprites
 
+# Regenerate the README screenshots (docs/img/) from a running instance.
+# Destructive — wipes local data (fixturize --clear). Playwright/npx run on the
+# HOST (not in Docker); Playwright is auto-provisioned via npx (override with
+# PLAYWRIGHT_MODULE if needed).
+capture-docs base_url="https://tasks.docker.test":
+  just fixturize --clear
+  BASE_URL="{{base_url}}" node scripts/capture_docs_screenshots.mjs
+
 # Send a test email to the local mail inbox (from must be a whitelisted sender)
 mail-send to from="user1@example.com" subject="Test task" body="Created by just mail-send":
   docker compose exec {{BACKEND_CONTAINER}} python -c "import smtplib, sys; from email.message import EmailMessage; m = EmailMessage(); m['From'] = sys.argv[1]; m['To'] = sys.argv[2]; m['Subject'] = sys.argv[3]; m.set_content(sys.argv[4]); s = smtplib.SMTP('mail', 2525); s.send_message(m); s.quit(); print('sent')" {{quote(from)}} {{quote(to)}} {{quote(subject)}} {{quote(body)}}
