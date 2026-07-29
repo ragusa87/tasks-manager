@@ -1,7 +1,6 @@
 {% load sprite_tags %}
 
-<!-- Desktop: Dropdown menu -->
-<div class="relative inline-block text-left hidden sm:block">
+<div class="relative inline-block text-left">
     <button type="button" class="btn-icon" id="options-menu-{{ item.id }}" aria-expanded="false" aria-haspopup="true">
         {% sprite "lucide-chevron-down" 24 %}
     </button>
@@ -38,33 +37,4 @@
             </a>
         </div>
     </div>
-</div>
-
-<!-- Mobile: Icon buttons -->
-<div class="flex flex-wrap gap-2 sm:hidden">
-    {% for transition in item.get_available_transitions %}
-        {% if transition.form_class %}
-            <a href="#"
-               hx-get="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}"
-               hx-target="#modal-container" hx-swap="innerHTML"
-               class="btn-secondary flex-col gap-1 text-xs min-w-0" title="{{ transition.label }}">
-                {% sprite transition.sprite 20 class="mb-1" %}
-                <span class="text-xs truncate max-w-full">{{ transition.label }}</span>
-            </a>
-        {% else %}
-            <a href="{% url 'item_transition' item_id=item.id transition_slug=transition.name %}?returnUrl={{ request.get_full_path|urlencode }}" class="btn-secondary flex-col gap-1 text-xs min-w-0" title="{{ transition.label }}">
-                {% sprite transition.sprite 20 class="mb-1" %}
-                <span class="text-xs truncate max-w-full">{{ transition.label }}</span>
-            </a>
-        {% endif %}
-    {% empty %}
-        <span class="text-xs text-muted italic">No actions</span>
-    {% endfor %}
-    <a href="#"
-       hx-get="{% url 'item_delete' item_id=item.id %}"
-       hx-target="#modal-container" hx-swap="innerHTML"
-       class="btn-secondary flex-col gap-1 text-xs min-w-0 text-danger border-danger/40 hover:bg-danger-ground focus:ring-danger" title="Delete">
-        {% sprite "lucide-trash-2" 20 class="mb-1" %}
-        <span class="text-xs truncate max-w-full">Delete</span>
-    </a>
 </div>

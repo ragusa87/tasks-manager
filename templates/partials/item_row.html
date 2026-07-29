@@ -1,9 +1,9 @@
 {% load static %}
 {% load sprite_tags %}
 
-<div class="space-y-3 sm:space-y-0" data-item="{{ item.id }}" >
+<div data-item="{{ item.id }}" >
     <!-- Main content row -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-2">
         <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-3">
                 <div class="flex-shrink-0">
@@ -117,19 +117,7 @@
             </div>
         </div>
         <div class="flex-shrink-0">
-            <!-- Edit Button -->
-<!--            <a href="{% url 'item_update' item_id=item.id %}" class="btn-icon" title="Edit item">-->
-<!--                {% sprite "lucide-pencil" 24 %}-->
-<!--            </a>-->
-            <!-- Process Actions - Desktop only -->
-            <div class="hidden sm:block">
-                {% include "partials/item_dropdown.html" with item=item %}
-            </div>
+            {% include "partials/item_dropdown.html" with item=item %}
         </div>
-    </div>
-
-    <!-- Mobile actions row -->
-    <div class="sm:hidden">
-        {% include "partials/item_dropdown.html" with item=item %}
     </div>
 </div>
