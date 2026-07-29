@@ -4,6 +4,7 @@ from dateutil.rrule import rrulestr
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
@@ -302,10 +303,14 @@ class ItemForm(forms.ModelForm):
 
         # set user-specific querysets
         if user:
+            parent_selector = models.Q(status=current_status, parent__pk=None)
+            if self.instance and self.instance.parent_id:
+                # The stored parent may have left the selectable set (e.g. a
+                # completed project). Keep it as a valid choice so the item
+                # stays saveable without forcing the user to drop it.
+                parent_selector |= models.Q(pk=self.instance.parent_id)
             self.fields["parent"].queryset = Item.objects.filter(
-                user=user,
-                status=current_status,
-                parent__pk=None,
+                parent_selector, user=user
             )
             self.fields["contexts"].queryset = Context.objects.filter(user=user)
             self.fields["area"].queryset = Area.objects.filter(user=user)
@@ -382,7 +387,11 @@ class ItemForm(forms.ModelForm):
     def clean_parent(self):
         parent = self.cleaned_data.get("parent")
         if parent:
-            # Check if parent is actually a project
+            # Keeping the stored parent is always allowed, even when its
+            # status has since left the allowed set (completed project);
+            # only a newly chosen parent must be a project/reference.
+            if parent.pk == self.instance.parent_id:
+                return parent
             if parent.status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
                 raise ValidationError(
                     "Parent must be in "
