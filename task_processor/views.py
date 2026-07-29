@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import boto3
-import magic
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -27,8 +26,6 @@ from django.views.generic import (
 )
 from factory.django import get_model
 
-from core.upload_types import describe_types
-
 from .constants import GTDConfig, GTDStatus
 from .forms import (
     AllowedSenderForm,
@@ -39,9 +36,9 @@ from .forms import (
     TagForm,
 )
 from .models import AllowedSender, Area, Context, Document, EmailInbox, Item, Tag
-from .models.document import compute_content_hash
 from .models.email_inbox import EMAIL_INBOX_PERMISSION
 from .search import FilterCategory
+from .uploads import DocumentValidationError, attach_document
 
 
 class ForceHtmxRequestMixin(object):
@@ -1203,48 +1200,13 @@ class DocumentUploadView(View):
         item = get_object_or_404(Item, id=item_id, user=request.user)
         files = request.FILES.getlist("files")
 
-        allowed_types = settings.ALLOWED_TYPES
-        max_size = settings.MAX_FILE_SIZE
-
         errors = []
         batch_hashes = set()
         for file in files:
-            if file.size > max_size:
-                errors.append(
-                    f"{file.name}: file exceeds the {max_size // (1024 * 1024)} MB limit"
-                )
-                continue
-
-            # Validate file type using magic bytes, not the browser-supplied Content-Type.
-            detected_type = magic.from_buffer(file.read(2048), mime=True)
-            file.seek(0)
-            if allowed_types and detected_type not in allowed_types:
-                errors.append(
-                    f"{file.name}: file type not allowed "
-                    f"({describe_types(allowed_types)})"
-                )
-                continue
-
-            # Refuse content already attached to this item (or duplicated
-            # within this batch), regardless of file name.
-            content_hash = compute_content_hash(file)
-            if (
-                content_hash in batch_hashes
-                or item.documents.filter(content_hash=content_hash).exists()
-            ):
-                errors.append(f"{file.name}: identical file already attached")
-                continue
-            batch_hashes.add(content_hash)
-
-            Document.objects.create(
-                item=item,
-                file=file,
-                file_name=file.name,
-                file_size=file.size,
-                content_type=detected_type,
-                content_hash=content_hash,
-                user=request.user,
-            )
+            try:
+                attach_document(item, request.user, file, batch_hashes=batch_hashes)
+            except DocumentValidationError as error:
+                errors.append(f"{file.name}: {error}")
 
         documents = item.documents.all()
         return render(
