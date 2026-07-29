@@ -35,25 +35,32 @@
         <p class="mt-2 text-muted italic hidden sm:block">
             Pro tip: You can negate a filter by adding a minus before (Ex: <span class="font-light">-in:cancelled</span>).
         </p>
-        <!-- Filter Suggestions -->
+        <!-- Filter Suggestions: status chips always visible, the other
+             categories collapse behind "See more" (toggled by dashboard.js,
+             which also re-applies the state after each OOB swap). -->
         <div class="mt-4" hx-swap-oob="true" id="filter_container">
-            <div class="flex flex-wrap gap-2">
-                {% if search_filters and filter_categories %}
-                    {% for category in filter_categories %}
-                        {% for filter_option in search_filters|lookup:category.value %}
-                            <button type="button"
-                                    class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ filter_option.current_classes }}"
-                                    data-filter="{{ filter_option.filter_query }}"
-                                    data-next-query="{{ filter_option.next_query }}"
-                                    data-color="{{ filter_option.color }}"
-                            >
-                                {% sprite filter_option.icon 12 class="mr-1" %}
-                                {{ filter_option.label }}
-                            </button>
-                        {% endfor %}
+            {% if search_filters and filter_categories %}
+                <div class="flex flex-wrap items-center gap-2">
+                    {% for filter_option in search_filters|lookup:"status" %}
+                        {% include "./filter_chip.html" %}
                     {% endfor %}
-                {% endif %}
-            </div>
+                    <button type="button" id="filter-more-toggle"
+                            aria-expanded="false" aria-controls="filter-more"
+                            class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-surface text-muted shadow-sm ring-1 ring-line hover:bg-ground hover:text-body transition-all">
+                        <span data-label>See more</span>
+                        {% sprite "lucide-chevron-down" 12 class="ml-1 transition-transform" %}
+                    </button>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-2 hidden" id="filter-more">
+                    {% for category in filter_categories %}
+                        {% if category.value != "status" %}
+                            {% for filter_option in search_filters|lookup:category.value %}
+                                {% include "./filter_chip.html" %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

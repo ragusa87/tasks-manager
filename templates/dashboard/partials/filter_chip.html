@@ -1,0 +1,10 @@
+{% load sprite_tags %}
+<button type="button"
+        class="filter-suggestion inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ filter_option.current_classes }}"
+        data-filter="{{ filter_option.filter_query }}"
+        data-next-query="{{ filter_option.next_query }}"
+        data-color="{{ filter_option.color }}"
+>
+    {% sprite filter_option.icon 12 class="mr-1" %}
+    {{ filter_option.label }}
+</button>
