@@ -5,7 +5,7 @@ from ninja import Field, ModelSchema, Schema
 from pydantic import field_validator, model_validator
 
 from task_processor.constants import GTDDuration, GTDEnergy, GTDStatus, Priority
-from task_processor.models import Area, Context, Item, Tag
+from task_processor.models import Area, Context, Document, Item, Tag
 
 # Creating an already-dead item makes no sense (and Item.save() would fight it)
 CREATABLE_STATUSES = [
@@ -102,6 +102,14 @@ class ItemIn(Schema):
         if self.remind_at and self.remind_at < timezone.now():
             raise ValueError("Reminder date must be in the future")
         return self
+
+
+class DocumentOut(ModelSchema):
+    # No `file` (the storage path is internal; downloads go through the web
+    # view) and no `content_hash` for now.
+    class Meta:
+        model = Document
+        fields = ["id", "item", "file_name", "file_size", "content_type", "uploaded_at"]
 
 
 class ItemOut(ModelSchema):
