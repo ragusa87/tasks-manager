@@ -39,7 +39,7 @@
                 </button>
                 {% endif %}
                 <button type="button"
-                        class="ml-2 shrink-0 p-1 rounded text-faint hover:text-danger hover:bg-danger-ground transition-colors cursor-pointer delete-doc-btn opacity-0 group-hover:opacity-100"
+                        class="ml-2 shrink-0 p-1 rounded text-faint hover:text-danger hover:bg-danger-ground transition-colors cursor-pointer delete-doc-btn pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100"
                         title="Delete document"
                         data-item-id="{{ item_id }}"
                         data-delete-url="{% url 'document_delete' document.id %}">
