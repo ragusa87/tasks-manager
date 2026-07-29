@@ -358,6 +358,17 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// Clone an inert markup fragment rendered by base.html. Display identity
+// (classes, icons) lives in the template; JS fills textContent and behavior.
+function cloneTemplate(id) {
+    const template = document.getElementById(id);
+    if (!template || !template.content.firstElementChild) {
+        console.warn(`Missing <template id="${id}"> in the page`);
+        return null;
+    }
+    return template.content.firstElementChild.cloneNode(true);
+}
+
 // Autocomplete functionality
 function initializeAutocomplete() {
     console.log("Initializing autocomplete fields");
@@ -485,18 +496,12 @@ function initializeAutocomplete() {
 
             if (results.length === 0 && allowCreate && query) {
                 // Show create option
-                const createItem = document.createElement('div');
-                createItem.className = 'px-3 py-2 cursor-pointer hover:bg-accent/10 border-b border-line text-accent';
-                createItem.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                        <span>Create "${query}"</span>
-                    </div>
-                `;
-                createItem.addEventListener('click', () => createNewTag(query));
-                dropdown.appendChild(createItem);
+                const createItem = cloneTemplate('autocomplete-create-template');
+                if (createItem) {
+                    createItem.querySelector('[data-create-label]').textContent = `Create "${query}"`;
+                    createItem.addEventListener('click', () => createNewTag(query));
+                    dropdown.appendChild(createItem);
+                }
             }
 
             results.forEach(item => {
@@ -505,8 +510,8 @@ function initializeAutocomplete() {
                     return;
                 }
 
-                const resultItem = document.createElement('div');
-                resultItem.className = 'px-3 py-2 cursor-pointer hover:bg-ground border-b border-line last:border-b-0';
+                const resultItem = cloneTemplate('autocomplete-result-template');
+                if (!resultItem) return;
                 resultItem.textContent = item.text;
                 resultItem.addEventListener('click', () => selectItem(item));
                 dropdown.appendChild(resultItem);
@@ -551,16 +556,9 @@ function initializeAutocomplete() {
 
             if (allowMultiple) {
                 selectedItems.forEach(item => {
-                    const badge = document.createElement('span');
-                    badge.className = 'badge-accent';
-                    badge.innerHTML = `
-                        ${item.text}
-                        <button type="button" class="ml-1 text-accent hover:text-accent-hover">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                            </svg>
-                        </button>
-                    `;
+                    const badge = cloneTemplate('autocomplete-badge-template');
+                    if (!badge) return;
+                    badge.querySelector('[data-badge-label]').textContent = item.text;
                     badge.querySelector('button').addEventListener('click', () => removeItem(item.id));
                     selectedContainer.appendChild(badge);
                 });

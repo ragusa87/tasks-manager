@@ -8,7 +8,7 @@
 import { barLevels } from './audio-recorder-utils.js';
 
 const BAR_COUNT = 24;
-const BAR_CLASS = 'flex-1 bg-danger rounded-sm transition-[height] duration-75';
+const BAR_CLASS = 'audio-meter-bar'; // appearance defined in main.css
 const IDLE_HEIGHT = '8%';
 
 /**

@@ -132,6 +132,21 @@
   .alert-danger {
     @apply alert bg-danger-ground border-danger/30 text-danger;
   }
+
+  /* Weekday chips of <rrule-picker>: state lives in aria-pressed (set by
+     rrule-picker.js), appearance only here. */
+  .rrule-weekday {
+    @apply px-2.5 py-1 text-xs font-medium rounded-md border cursor-pointer transition-colors bg-surface text-body border-line hover:bg-ground;
+  }
+  .rrule-weekday[aria-pressed="true"] {
+    @apply bg-accent text-on-accent border-accent;
+  }
+
+  /* One bar of the recording level meter (built by audio-meter.js; height is
+     animated per frame from the analyser data). */
+  .audio-meter-bar {
+    @apply flex-1 bg-danger rounded-sm transition-[height] duration-75;
+  }
 }
 
 /* air-datepicker ships a light-only palette; remap its custom properties
