@@ -17,15 +17,19 @@ import {
     recordingFilename,
 } from './audio-recorder-utils.js';
 
-// startCaptureSession(stream, { fftSize, onStop }) -> { analyser, startedAt, stop }
+// startCaptureSession(stream, { fftSize, maxMs, onStop })
+//     -> { analyser, startedAt, stop }
 //
 // Owns the AudioContext graph (source -> analyser + ScriptProcessor), the
-// MAX_RECORDING_MS auto-stop timer, and the WAV encoding. `analyser` is for
-// the caller's visualization loop. stop() is idempotent: it tears the graph
-// down, then calls onStop(file) exactly once -- file is null when nothing
-// was captured. The caller keeps its own rAF loop and cancels it in onStop.
+// auto-stop timer (`maxMs`, normally the server-injected recording limit;
+// MAX_RECORDING_MS is only the fallback) and the WAV encoding. `analyser` is
+// for the caller's visualization loop. stop() is idempotent: it tears the
+// graph down, then calls onStop(file) exactly once -- file is null when
+// nothing was captured. The caller keeps its own rAF loop and cancels it in
+// onStop.
 export function startCaptureSession(stream, options) {
     var onStop = options.onStop;
+    var maxMs = options.maxMs || MAX_RECORDING_MS;
 
     var audioContext = new (window.AudioContext || window.webkitAudioContext)();
     var source = audioContext.createMediaStreamSource(stream);
@@ -47,7 +51,7 @@ export function startCaptureSession(stream, options) {
 
     var maxTimer = setTimeout(function() {
         session.stop();
-    }, MAX_RECORDING_MS);
+    }, maxMs);
 
     var stopped = false;
     var session = {
