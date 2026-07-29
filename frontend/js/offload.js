@@ -4,14 +4,18 @@
 // attaches files through POST /api/items/{id}/documents.
 import '../css/main.css';
 import '../css/offload.css';
-import { MAX_RECORDING_MS, formatClock } from './audio-recorder-utils.js';
+import {
+    MAX_RECORDING_MS as DEFAULT_RECORDING_MS,
+    formatClock,
+} from './audio-recorder-utils.js';
 import { startCaptureSession } from './audio-capture.js';
 import {
     MAX_TITLE_LENGTH as DEFAULT_TITLE_LIMIT,
     composeNote,
     fmtSize,
 } from './offload-utils.js';
-import { initThemeToggle, resolveColor } from './theme.js';
+import { initThemeToggle } from './theme.js';
+import { startLevelMeter } from './audio-meter.js';
 
 const EP = {
     items: '/api/items',
@@ -21,6 +25,8 @@ const EP = {
 // settings.MAX_FILE_SIZE / the model title limit.
 const MAX_BYTES = Number(document.body.dataset.maxBytes) || 10 * 1024 * 1024;
 const MAX_TITLE_LENGTH = Number(document.body.dataset.maxTitleLength) || DEFAULT_TITLE_LIMIT;
+const MAX_RECORDING_MS =
+    Number(document.body.dataset.maxRecordingSeconds) * 1000 || DEFAULT_RECORDING_MS;
 const LIMIT_LABEL = fmtSize(MAX_BYTES);
 
 const $ = (id) => document.getElementById(id);
@@ -270,12 +276,11 @@ document.addEventListener('visibilitychange', () => {
     if (!document.hidden && MIC.state !== 'granted' && MIC.state !== 'checking') probeMic();
 });
 
-/* -- voice capture (shared WAV pipeline, see audio-capture.js) -- */
+/* -- voice capture (shared WAV pipeline, see audio-capture.js;
+      level meter shared with the dropzone recorder, see audio-meter.js) -- */
 let session = null;
-let raf = null;
+let meter = null;
 let tick = null;
-const canvas = $('scope');
-const cx = canvas.getContext('2d');
 
 $('recBtn').onclick = () => {
     if (session) return session.stop();
@@ -308,19 +313,22 @@ async function startRec() {
     say('Recording\u2026', 'idle');
 
     session = startCaptureSession(stream, {
-        fftSize: 1024,
+        fftSize: 256,
+        maxMs: MAX_RECORDING_MS,
         onStop: finishRec,
     });
     tick = setInterval(() => {
         $('clock').textContent = formatClock(Date.now() - session.startedAt);
     }, 200);
-    drawScope(session.analyser);
+    meter = startLevelMeter(session.analyser, $('scope'));
 }
 
 function finishRec(file) {
     clearInterval(tick);
-    cancelAnimationFrame(raf);
-    cx.clearRect(0, 0, canvas.width, canvas.height);
+    if (meter) {
+        meter.stop();
+        meter = null;
+    }
     state.audioMs = Math.min(Date.now() - session.startedAt, MAX_RECORDING_MS);
     session = null;
     setRecLive(false);
@@ -340,40 +348,6 @@ function finishRec(file) {
     } else {
         say(`Memo ready \u00b7 ${formatClock(state.audioMs)} \u00b7 ${fmtSize(file.size)}`, 'idle');
     }
-}
-
-function sizeScope() {
-    canvas.width = canvas.offsetWidth * devicePixelRatio;
-    canvas.height = canvas.offsetHeight * devicePixelRatio;
-}
-addEventListener('resize', sizeScope);
-
-function drawScope(analyser) {
-    const buf = new Uint8Array(analyser.fftSize);
-    // resolveColor, not getPropertyValue: the token is a light-dark()
-    // expression that canvas strokeStyle cannot consume unresolved.
-    const stroke = resolveColor('--color-danger');
-    // Assigning canvas.width resets the bitmap, so measure once (and on
-    // resize), not inside the animation loop.
-    sizeScope();
-    const paint = () => {
-        const w = canvas.width;
-        const h = canvas.height;
-        analyser.getByteTimeDomainData(buf);
-        cx.clearRect(0, 0, w, h);
-        cx.lineWidth = 1.5 * devicePixelRatio;
-        cx.strokeStyle = stroke;
-        cx.beginPath();
-        for (let i = 0; i < buf.length; i++) {
-            const x = i / buf.length * w;
-            const y = (buf[i] / 128) * h / 2;
-            if (i) cx.lineTo(x, y);
-            else cx.moveTo(x, y);
-        }
-        cx.stroke();
-        raf = requestAnimationFrame(paint);
-    };
-    paint();
 }
 
 /* -- send ----------------------------------------------------- */

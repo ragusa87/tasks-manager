@@ -6,14 +6,15 @@
 // The capture itself (PCM -> 16 kHz mono WAV) lives in audio-capture.js,
 // shared with the offload page.
 import { uploadFiles, showToast } from './documents.js';
-import {
-    MAX_RECORDING_MS,
-    formatClock,
-    barLevels,
-} from './audio-recorder-utils.js';
+import { MAX_RECORDING_MS, formatClock } from './audio-recorder-utils.js';
 import { startCaptureSession } from './audio-capture.js';
+import { startLevelMeter } from './audio-meter.js';
 
-const BAR_COUNT = 24;
+// Recording cap injected by the template (settings.MAX_RECORDING_SECONDS);
+// MAX_RECORDING_MS is only the fallback.
+function maxRecordingMs(btn) {
+    return Number(btn.dataset.maxRecordingSeconds) * 1000 || MAX_RECORDING_MS;
+}
 
 // Only one recording at a time; the active session owns its stop() cleanup.
 let activeSession = null;
@@ -50,24 +51,26 @@ function startRecording(btn, stream) {
     var itemId = btn.dataset.itemId;
     var uploadUrl = btn.dataset.uploadUrl;
 
-    var meter = document.getElementById('audio-record-meter-' + itemId);
-    var bars = buildBars(meter);
-    var timeEl = meter ? meter.querySelector('[data-meter-time]') : null;
-    if (meter) {
-        meter.classList.remove('hidden');
-        meter.classList.add('flex');
+    var meterEl = document.getElementById('audio-record-meter-' + itemId);
+    var barsEl = meterEl ? meterEl.querySelector('[data-meter-bars]') : null;
+    var timeEl = meterEl ? meterEl.querySelector('[data-meter-time]') : null;
+    if (meterEl) {
+        meterEl.classList.remove('hidden');
+        meterEl.classList.add('flex');
     }
     setRecordingUi(btn, true);
 
-    var rafId = null;
+    var maxMs = maxRecordingMs(btn);
+    var meter = null;
     var session = startCaptureSession(stream, {
         fftSize: 256,
+        maxMs: maxMs,
         onStop: function(file) {
-            cancelAnimationFrame(rafId);
+            if (meter) meter.stop();
             setRecordingUi(btn, false);
-            if (meter) {
-                meter.classList.add('hidden');
-                meter.classList.remove('flex');
+            if (meterEl) {
+                meterEl.classList.add('hidden');
+                meterEl.classList.remove('flex');
             }
             activeSession = null;
 
@@ -78,25 +81,20 @@ function startRecording(btn, stream) {
     });
     session.btn = btn;
 
-    var freqData = new Uint8Array(session.analyser.frequencyBinCount);
-
-    function draw() {
-        // The modal can be closed mid-recording; treat that as an abort.
-        if (!btn.isConnected) {
-            session.stop();
-            return;
-        }
-        session.analyser.getByteFrequencyData(freqData);
-        var levels = barLevels(freqData, bars.length);
-        for (var i = 0; i < bars.length; i++) {
-            bars[i].style.height = Math.max(8, Math.round(levels[i] * 100)) + '%';
-        }
-        if (timeEl) {
-            timeEl.textContent = formatClock(Date.now() - session.startedAt) + ' / ' + formatClock(MAX_RECORDING_MS);
-        }
-        rafId = requestAnimationFrame(draw);
+    if (barsEl) {
+        meter = startLevelMeter(session.analyser, barsEl, {
+            onFrame: function() {
+                // The modal can be closed mid-recording; treat that as an abort.
+                if (!btn.isConnected) {
+                    session.stop();
+                    return false;
+                }
+                if (timeEl) {
+                    timeEl.textContent = formatClock(Date.now() - session.startedAt) + ' / ' + formatClock(maxMs);
+                }
+            },
+        });
     }
-    rafId = requestAnimationFrame(draw);
 
     activeSession = session;
 }
@@ -109,25 +107,12 @@ function setRecordingUi(btn, recording) {
     btn.classList.toggle('border-danger', recording);
     btn.classList.toggle('text-danger', recording);
     btn.classList.toggle('bg-danger-ground', recording);
-    // The icon swap is color/shape only; mirror the state for AT users.
-    btn.setAttribute('aria-pressed', recording ? 'true' : 'false');
-    btn.setAttribute(
-        'aria-label',
-        recording ? 'Stop recording' : 'Record a voice note (max 1 min)'
-    );
-}
-
-function buildBars(meter) {
-    var container = meter ? meter.querySelector('[data-meter-bars]') : null;
-    if (!container) return [];
-    container.innerHTML = '';
-    var bars = [];
-    for (var i = 0; i < BAR_COUNT; i++) {
-        var bar = document.createElement('div');
-        bar.className = 'flex-1 bg-danger rounded-sm transition-[height] duration-75';
-        bar.style.height = '8%';
-        container.appendChild(bar);
-        bars.push(bar);
+    // The icon swap is color/shape only; mirror the state for AT users. The
+    // idle label is the template-rendered one (it embeds the recording limit),
+    // so remember it rather than duplicating the wording here.
+    if (!btn.dataset.idleLabel) {
+        btn.dataset.idleLabel = btn.getAttribute('aria-label') || 'Record a voice note';
     }
-    return bars;
+    btn.setAttribute('aria-pressed', recording ? 'true' : 'false');
+    btn.setAttribute('aria-label', recording ? 'Stop recording' : btn.dataset.idleLabel);
 }

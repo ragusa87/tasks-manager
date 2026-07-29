@@ -14,9 +14,13 @@ def theme(request):
 
 
 def site_settings(request):
+    minutes, seconds = divmod(settings.MAX_RECORDING_SECONDS, 60)
     return {
         "MAX_FILE_SIZE": settings.MAX_FILE_SIZE,
         "MAX_FILE_SIZE_MB": settings.MAX_FILE_SIZE // (1024 * 1024),
+        "MAX_RECORDING_SECONDS": settings.MAX_RECORDING_SECONDS,
+        # m:ss display of the same limit, matching the JS clock format.
+        "MAX_RECORDING_CLOCK": f"{minutes}:{seconds:02d}",
         # Derived from ALLOWED_TYPES so labels/pickers follow the config.
         "ALLOWED_TYPES_LABEL": describe_types(settings.ALLOWED_TYPES),
         "ALLOWED_TYPES_ACCEPT": accept_attribute(settings.ALLOWED_TYPES),
