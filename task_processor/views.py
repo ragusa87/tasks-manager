@@ -41,13 +41,6 @@ from .search import FilterCategory
 from .uploads import DocumentValidationError, attach_document
 
 
-class ForceHtmxRequestMixin(object):
-    def dispatch(self, request, *args, **kwargs):
-        if request.method == "GET" and request.headers.get("HX-Request") != "true":
-            return redirect(reverse_lazy("dashboard"))
-        return super().dispatch(request, *args, **kwargs)
-
-
 class ReturnRefererMixin(object):
     fallback_url = reverse_lazy("dashboard")
 
@@ -585,16 +578,25 @@ class ItemDeleteView(HtmxModalActionMixin, DeleteView):
 
 @method_decorator(login_required, name="dispatch")
 @method_decorator(csrf_exempt, name="dispatch")
-class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
+class ItemDetailView(UpdateView):
     """
-    View for displaying item details in a modal.
+    Item detail/edit. HTMX requests get the in-place modal partial; plain
+    requests (deep link, refresh on the pushed /item/<id>/detail/ URL) get a
+    full page with the same form.
     """
 
     model = Item
     pk_url_kwarg = "item_id"
-    template_name = "partials/item_detail_modal.html"
     form_class = ItemForm
     context_object_name = "item"
+
+    def _is_htmx(self):
+        return self.request.headers.get("HX-Request") == "true"
+
+    def get_template_names(self):
+        if self._is_htmx():
+            return ["partials/item_detail_modal.html"]
+        return ["items/detail.html"]
 
     def get_form_kwargs(self):
         return {
@@ -605,11 +607,17 @@ class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
 
     def form_valid(self, form):
         self.object = form.save()
-        # Return the updated modal content after successful save
-        return self.render_to_response(self.get_context_data())
+        if self._is_htmx():
+            # Return the updated modal content after successful save
+            return self.render_to_response(self.get_context_data())
+        # Plain form post: redirect-after-post to avoid resubmission prompts.
+        return HttpResponseRedirect(self.request.path)
 
     def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form), status=400)
+        # 400 so base.js swaps the body back into #modal-container; the plain
+        # full-page form re-renders with errors as a normal 200.
+        status = 400 if self._is_htmx() else 200
+        return self.render_to_response(self.get_context_data(form=form), status=status)
 
     def get_queryset(self):
         return Item.objects.for_user(self.request.user)
