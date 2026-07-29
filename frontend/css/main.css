@@ -430,8 +430,12 @@
   outline: none;
 }
 
-/* Placeholder rendered by Milkdown when the doc is empty */
-.markdown-host .markdown-prose .ProseMirror-placeholder,
+/* Placeholder decoration added by markdown-editor.js when the doc is empty
+   (the text comes from the enhanced textarea's placeholder attribute) */
 .markdown-host .markdown-prose p.is-empty::before {
+  content: attr(data-placeholder);
   color: var(--color-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }

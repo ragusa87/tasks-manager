@@ -6,8 +6,11 @@ simply doesn't apply to them).
 """
 
 import hashlib
+import logging
 
 from django.db import migrations
+
+logger = logging.getLogger(__name__)
 
 
 def backfill_hashes(apps, schema_editor):
@@ -18,7 +21,16 @@ def backfill_hashes(apps, schema_editor):
                 hasher = hashlib.sha256()
                 for chunk in fh.chunks():
                     hasher.update(chunk)
-        except (FileNotFoundError, ValueError, OSError):
+        except (FileNotFoundError, ValueError, OSError) as exc:
+            # Skipped documents keep an empty hash and stay exempt from dedup,
+            # so leave an operator-visible trace (a transient storage error
+            # here would otherwise be indistinguishable from a missing file).
+            logger.warning(
+                "content_hash backfill skipped document %s (%s): %s",
+                document.pk,
+                document.file.name,
+                exc,
+            )
             continue
         document.content_hash = hasher.hexdigest()
         document.save(update_fields=["content_hash"])

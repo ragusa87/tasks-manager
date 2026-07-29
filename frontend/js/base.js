@@ -7,9 +7,23 @@ import htmx from 'htmx.org';
 import { initDocumentUpload } from './documents.js';
 import { initAudioRecorders } from './audio-recorder.js';
 import { initThemeToggle } from './theme.js';
-import './rrule-picker.js';
-import './markdown-editor.js';
 window.htmx = htmx
+
+// Heavy custom elements (Milkdown/ProseMirror, rrule.js) are only needed
+// inside the item-detail modal, so they are code-split out of the base bundle
+// and imported the first time their tag shows up in the DOM. Once the module
+// runs customElements.define(), existing tags upgrade in place.
+const LAZY_ELEMENTS = {
+    'markdown-editor': () => import('./markdown-editor.js'),
+    'rrule-picker': () => import('./rrule-picker.js'),
+};
+function loadLazyElements() {
+    Object.entries(LAZY_ELEMENTS).forEach(([tag, load]) => {
+        if (!customElements.get(tag) && document.querySelector(tag)) {
+            load().catch((error) => console.error(`Failed to load <${tag}>:`, error));
+        }
+    });
+}
 htmx.config.responseHandling = [
     {code: "204", swap: false},
     {code: "[23]..", swap: true},
@@ -34,11 +48,31 @@ document.body.addEventListener('htmx:configRequest', function(evt) {
 const MODAL_SELECTOR = 'modal';
 const getModal = () => document.getElementById(MODAL_SELECTOR);
 
+// Element that had focus before the modal opened, restored on close so
+// keyboard/screen-reader users don't lose their place in the page.
+let modalReturnFocus = null;
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function focusModal(modal) {
+    if (document.activeElement && !modal.contains(document.activeElement)) {
+        modalReturnFocus = document.activeElement;
+    }
+    const target = modal.querySelector('[autofocus]') || modal.querySelector(FOCUSABLE) || modal;
+    target.focus();
+}
+
 function closeItemModal() {
     const modal = getModal();
     if (modal) {
         modal.style.display = 'none';
         modal.remove();
+    }
+    if (modalReturnFocus) {
+        if (modalReturnFocus.isConnected) {
+            modalReturnFocus.focus();
+        }
+        modalReturnFocus = null;
     }
 }
 
@@ -56,13 +90,35 @@ document.addEventListener('click', function(e) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeItemModal();
+        return;
+    }
+    // Keep Tab cycling inside the open modal (focus trap).
+    if (e.key === 'Tab' && modalIsOpen()) {
+        const modal = getModal();
+        const focusable = Array.from(modal.querySelectorAll(FOCUSABLE))
+            .filter(el => el.offsetParent !== null);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+            e.preventDefault();
+            first.focus();
+        }
     }
 });
 
 // Open the item-detail modal via [data-detail-url] (fetch + inject).
 function openItemModal(url) {
     fetch(url, { headers: { 'HX-Request': 'true' } })
-        .then(response => response.text())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} loading ${url}`);
+            }
+            return response.text();
+        })
         .then(html => {
             const container = document.querySelector('#modal-container');
             if (!container) return;
@@ -72,10 +128,20 @@ function openItemModal(url) {
                 modal.style.display = 'block';
                 htmx.process(modal);
                 document.dispatchEvent(new CustomEvent('openmodal'));
+                focusModal(modal);
             }
         })
         .catch((error) => console.error('Modal request failed:', error));
 }
+
+// Modals injected by HTMX itself (delete confirmation, transition forms swap
+// into #modal-container) go through afterSwap, not openItemModal, so hook
+// focus handling there too.
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.id === 'modal-container' && modalIsOpen()) {
+        focusModal(getModal());
+    }
+});
 document.addEventListener('click', function(e) {
     const itemElement = e.target.closest('[data-detail-url]');
     if (!itemElement) return;
@@ -626,6 +692,7 @@ function initializeMobileMenu() {
 
 // Initialize on page load
 const init = () => {
+    loadLazyElements();
     initializeAutocomplete();
     initializeAccordions();
     initializeDatePicker();

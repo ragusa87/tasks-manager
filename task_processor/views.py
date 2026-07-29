@@ -10,10 +10,10 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.http import FileResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.utils.http import is_same_domain
+from django.utils.http import is_same_domain, url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import (
     CreateView,
@@ -63,7 +63,37 @@ class ReturnRefererMixin(object):
         return self.get_return_url()
 
     def get_return_url(self):
-        return self.request.GET.get("returnUrl", self.fallback_url)
+        # returnUrl is caller-controlled: without validation it is an open
+        # redirect (and a javascript: URL when rendered into an href).
+        url = self.request.GET.get("returnUrl")
+        if url and url_has_allowed_host_and_scheme(
+            url,
+            allowed_hosts={self.request.get_host()},
+            require_https=self.request.is_secure(),
+        ):
+            return url
+        return self.fallback_url
+
+
+class HtmxModalActionMixin(ReturnRefererMixin):
+    """Modal actions launched from the item list (transitions, delete).
+
+    HTMX requests answer with an empty main body (clears #modal-container,
+    closing the modal), an OOB flash-messages swap and an HX-Trigger that
+    refreshes the list in place; plain requests redirect to a validated
+    returnUrl.
+    """
+
+    def _is_htmx(self):
+        return self.request.headers.get("HX-Request") == "true"
+
+    def _htmx_refresh_response(self):
+        response = render(self.request, "partials/_messages_oob.html")
+        response["HX-Trigger"] = "refreshItems"
+        return response
+
+    def get_success_url(self):
+        return self.get_return_url()
 
 
 @method_decorator(login_required, name="dispatch")
@@ -423,16 +453,13 @@ class StatsView(View):
 
 
 @method_decorator(login_required, name="dispatch")
-class ItemTransitionView(FormView):
+class ItemTransitionView(HtmxModalActionMixin, FormView):
     """
     Handle item state transitions for logged-in users.
     Supports form-based transitions for decorated methods.
     """
 
     template_name = "transitions/form.html"
-
-    def _is_htmx(self):
-        return self.request.headers.get("HX-Request") == "true"
 
     def get_template_names(self):
         # HTMX requests get the in-place modal partial; plain requests get the
@@ -491,21 +518,12 @@ class ItemTransitionView(FormView):
         )
         return context
 
-    def get_success_url(self):
-        """Get the URL to redirect to after successful transition"""
-        return self.request.GET.get("returnUrl", reverse("dashboard"))
-
     def form_valid(self, form):
         """Handle valid form submission - execute transition with form data"""
         self._execute_transition(**form.cleaned_data if form is not None else {})
 
         if self._is_htmx():
-            # Body is only the OOB flash-messages swap; the empty main content
-            # clears #modal-container (closing the modal). HX-Trigger refreshes
-            # the item list in place.
-            response = render(self.request, "partials/_messages_oob.html")
-            response["HX-Trigger"] = "refreshItems"
-            return response
+            return self._htmx_refresh_response()
 
         return super().form_valid(form)
 
@@ -532,7 +550,7 @@ class ItemTransitionView(FormView):
 
 
 @method_decorator(login_required, name="dispatch")
-class ItemDeleteView(View):
+class ItemDeleteView(HtmxModalActionMixin, DeleteView):
     """
     Permanently delete an item. A hardcoded action (not an FSM transition),
     available on every item. HTMX requests get a confirmation modal then an
@@ -540,40 +558,29 @@ class ItemDeleteView(View):
     get a full-page confirmation and a redirect.
     """
 
-    def _is_htmx(self):
-        return self.request.headers.get("HX-Request") == "true"
+    pk_url_kwarg = "item_id"
+    context_object_name = "item"
 
-    def _get_item(self, request, item_id):
-        return get_object_or_404(Item, id=item_id, user=request.user)
+    def get_queryset(self):
+        return Item.objects.filter(user=self.request.user)
 
-    def get_success_url(self):
-        return self.request.GET.get("returnUrl", reverse("dashboard"))
-
-    def get(self, request, item_id):
-        item = self._get_item(request, item_id)
-        template = (
-            "items/_delete_modal.html"
-            if self._is_htmx()
-            else "items/delete_confirm.html"
-        )
-        return render(
-            request,
-            template,
-            {"item": item, "return_url": self.get_success_url()},
-        )
-
-    def post(self, request, item_id):
-        item = self._get_item(request, item_id)
-        title = item.title
-        item.delete()
-        messages.success(request, f"Deleted '{title}'.")
+    def get_template_names(self):
         if self._is_htmx():
-            # Empty main body clears #modal-container (closes the modal); the
-            # OOB swap updates the flash messages; HX-Trigger refreshes the list.
-            response = render(request, "partials/_messages_oob.html")
-            response["HX-Trigger"] = "refreshItems"
-            return response
-        return redirect(self.get_success_url())
+            return ["items/_delete_modal.html"]
+        return ["items/delete_confirm.html"]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["return_url"] = self.get_return_url()
+        return context
+
+    def form_valid(self, form):
+        title = self.object.title
+        self.object.delete()
+        messages.success(self.request, f"Deleted '{title}'.")
+        if self._is_htmx():
+            return self._htmx_refresh_response()
+        return HttpResponseRedirect(self.get_success_url())
 
 
 @method_decorator(login_required, name="dispatch")
@@ -622,6 +629,13 @@ class ItemOffloadView(TemplateView):
     """
 
     template_name = "items/offload.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Single source for the client-side title limit (the API schema
+        # mirrors the same model constraint).
+        context["MAX_TITLE_LENGTH"] = Item._meta.get_field("title").max_length
+        return context
 
 
 @method_decorator(login_required, name="dispatch")

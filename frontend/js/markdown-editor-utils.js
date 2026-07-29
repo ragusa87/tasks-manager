@@ -31,3 +31,22 @@ export function resolveLinkEdit(text, oldHref, newHref) {
     const keepLabel = text && !isUrlLike(text) && text !== oldHref;
     return { text: keepLabel ? text : newHref, href: newHref };
 }
+
+/**
+ * Attrs for a list item rebuilt while converting a list between bullet and
+ * ordered. Never copy attrs verbatim: Milkdown's markdown parser stamps
+ * `spread` as a *string* ("true"/"false") while the schema validates a
+ * boolean, so recreating nodes from copied attrs throws — which is what
+ * silently broke ordered->bullet. Coerce and set explicitly.
+ *
+ * @param {object} attrs  the item's current attrs
+ * @param {boolean} isOrdered  whether the target list is ordered
+ * @param {number} index  zero-based item position (for the ordered label)
+ */
+export function convertedListItemAttrs(attrs, isOrdered, index) {
+    return {
+        spread: attrs.spread === true || attrs.spread === 'true',
+        listType: isOrdered ? 'ordered' : 'bullet',
+        label: isOrdered ? `${index + 1}.` : '•',
+    };
+}

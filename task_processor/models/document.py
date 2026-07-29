@@ -27,13 +27,15 @@ def compute_content_hash(file) -> str:
 
 
 class Document(models.Model):
+    FILE_NAME_MAX_LENGTH = 255
+
     item = models.ForeignKey(
         "task_processor.Item",
         on_delete=models.CASCADE,
         related_name="documents",
     )
     file = models.FileField(upload_to=document_upload_path, max_length=500)
-    file_name = models.CharField(max_length=255)
+    file_name = models.CharField(max_length=FILE_NAME_MAX_LENGTH)
     file_size = models.BigIntegerField()
     content_type = models.CharField(max_length=100, blank=True, default="")
     # SHA-256 of the file content, filled automatically on save; used to
@@ -54,6 +56,16 @@ class Document(models.Model):
             models.Index(fields=["item"]),
             models.Index(fields=["user"]),
             models.Index(fields=["uploaded_at"]),
+        ]
+        constraints = [
+            # DB-level backing for the duplicate check in uploads.attach_document:
+            # the exists()-then-create there is racy under concurrent uploads.
+            # Empty hashes (backfill couldn't read the file) are exempt.
+            models.UniqueConstraint(
+                fields=["item", "content_hash"],
+                condition=~models.Q(content_hash=""),
+                name="unique_document_content_per_item",
+            ),
         ]
 
     def __str__(self):

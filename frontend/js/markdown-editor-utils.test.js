@@ -1,7 +1,38 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { AUTOLINK_RE, isUrlLike, resolveLinkEdit } from './markdown-editor-utils.js';
+import {
+    AUTOLINK_RE,
+    convertedListItemAttrs,
+    isUrlLike,
+    resolveLinkEdit,
+} from './markdown-editor-utils.js';
+
+test('convertedListItemAttrs: coerces the parser\'s string spread to boolean', () => {
+    assert.deepEqual(convertedListItemAttrs({ spread: 'true' }, true, 0), {
+        spread: true,
+        listType: 'ordered',
+        label: '1.',
+    });
+    assert.deepEqual(convertedListItemAttrs({ spread: 'false' }, true, 1), {
+        spread: false,
+        listType: 'ordered',
+        label: '2.',
+    });
+});
+
+test('convertedListItemAttrs: boolean spread passes through', () => {
+    assert.equal(convertedListItemAttrs({ spread: true }, false, 0).spread, true);
+    assert.equal(convertedListItemAttrs({ spread: false }, false, 0).spread, false);
+});
+
+test('convertedListItemAttrs: bullet items get the bullet label', () => {
+    assert.deepEqual(convertedListItemAttrs({ spread: 'false' }, false, 3), {
+        spread: false,
+        listType: 'bullet',
+        label: '•',
+    });
+});
 
 test('isUrlLike: accepts http/https URLs', () => {
     assert.equal(isUrlLike('https://example.com'), true);

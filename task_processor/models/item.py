@@ -16,7 +16,7 @@ from task_processor.constants import (
     GTDStatus,
     Priority,
 )
-from task_processor.markdown_utils import sanitize_markdown
+from task_processor.markdown_utils import sanitize_markdown, strip_markdown
 
 from .base_models import Area, Context, Tag
 
@@ -127,6 +127,11 @@ class ItemManager(models.Manager):
             selector &= models.Q(is_completed=False)
         if include_ids:
             # Resurface completed projects referenced explicitly by id.
+            # Completion rewrites status to COMPLETED for every item kind, so
+            # there is no DB-level marker distinguishing a completed project
+            # from any other completed item here; ids are already scoped to
+            # the user, so the worst case is the user's own completed
+            # non-project appearing when they hand-typed its id.
             selector |= models.Q(is_completed=True, id__in=include_ids)
         return self.filter(selector, user=user)
 
@@ -166,6 +171,9 @@ class Item(models.Model):
 
     title = models.CharField(max_length=1024)
     description = models.TextField(blank=True)
+    # Plain-text flattening of ``description``, maintained in save(). List
+    # rows render this instead of stripping Markdown per row per request.
+    description_preview = models.TextField(blank=True, default="", editable=False)
 
     # State machine field - this enforces valid transitions
     status = models.CharField(
@@ -266,6 +274,7 @@ class Item(models.Model):
         # Description is user-authored Markdown limited to an inline subset;
         # re-sanitize on every write since the client is not a trust boundary.
         self.description = sanitize_markdown(self.description)
+        self.description_preview = strip_markdown(self.description)
 
         # Auto-set completion timestamp
         if self.is_completed and not self.completed_at:

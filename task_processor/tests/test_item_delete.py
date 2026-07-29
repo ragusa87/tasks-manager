@@ -52,6 +52,18 @@ class ItemDeleteViewTests(TestCase):
         self.assertEqual(response.url, "/")
         self.assertFalse(Item.objects.filter(pk=self.item.pk).exists())
 
+    def test_external_return_url_falls_back_to_dashboard(self):
+        # returnUrl is caller-controlled; off-site values must not become an
+        # open redirect after the delete.
+        response = self.client.post(self._url() + "?returnUrl=https://evil.example")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("dashboard"))
+
+    def test_javascript_return_url_not_rendered_in_cancel_link(self):
+        response = self.client.get(self._url() + "?returnUrl=javascript:alert(1)")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "javascript:alert(1)")
+
     def test_delete_cascades_to_sub_items(self):
         child = Item.objects.create(
             title="Child",
