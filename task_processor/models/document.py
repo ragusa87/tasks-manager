@@ -86,11 +86,16 @@ class Document(models.Model):
         super().delete(*args, **kwargs)
 
     @property
+    def is_audio(self):
+        """Whether the stored content is playable audio (in-browser preview)."""
+        return self.content_type.startswith("audio/")
+
+    @property
     def icon(self):
         """Sprite name for the stored content type (image / audio / generic)."""
         if self.content_type.startswith("image/"):
             return "lucide-image"
-        if self.content_type.startswith("audio/"):
+        if self.is_audio:
             return "lucide-music"
         return "lucide-file"
 
