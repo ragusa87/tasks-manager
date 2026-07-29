@@ -18,13 +18,10 @@ I don't intent to maintain this project in the long term.
 - Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)
 - Bach actions support: `tag<->area` conversion, `+tag`, `-tag`, `+area`, `-area` etc
 - New transition: Convert whole project to references
-- Email inbox: SPF/DKIM verification (IMAP polling via `imaps://` DSN is implemented)
-- Add custom *rrule* JS picker <https://demo.mobiscroll.com/vue/scheduler/recurring-events>
 - DateTime picker could respect the user's locale.
 - htmx show connectivity issue and 500.
 - Allow checking item to archive them
 - Delete archived item automatically after 30 days ?
-- Create a site.webmanifest with a PWA page to add a new task
 
 ## Linting and Formatting
 
