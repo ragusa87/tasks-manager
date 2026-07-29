@@ -186,13 +186,16 @@ class Item(models.Model):
     priority = models.IntegerField(choices=Priority.choices, default=Priority.NORMAL)
 
     # GTD-specific fields
+    # No limit_choices_to here: the allowed parent statuses (project OR
+    # reference) plus the grandfathering of a parent that has since been
+    # completed are enforced in clean() / ItemForm, and a field-level filter
+    # would make items with a completed parent fail full_clean() forever.
     parent = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name="sub_items",
-        limit_choices_to={"status": GTDStatus.PROJECT},
     )
     contexts = models.ManyToManyField(Context, blank=True)
     area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
@@ -422,7 +425,14 @@ class Item(models.Model):
 
         # Validate project hierarchy depth
         if self.parent:
-            if self.parent.status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
+            if (
+                self.parent.status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED
+                and not self._parent_unchanged()
+            ):
+                # Completing a project moves it out of the allowed statuses;
+                # its children keep pointing at it. Keeping that existing
+                # parent must stay saveable — only a newly chosen parent has
+                # to be a project/reference.
                 raise ValidationError(
                     "Parent must be of type: "
                     + ", ".join(GTDConfig.STATUS_WITH_PARENT_ALLOWED)
@@ -439,6 +449,18 @@ class Item(models.Model):
                 raise ValidationError(
                     f"Circular project reference detected: {self.parent.pk}"
                 )
+
+    def _parent_unchanged(self):
+        """Whether parent_id matches what is already stored in the DB."""
+        if not self.pk:
+            return False
+        stored = (
+            type(self)
+            .objects.filter(pk=self.pk)
+            .values_list("parent_id", flat=True)
+            .first()
+        )
+        return stored == self.parent_id
 
     def _check_circular_reference(self, potential_parent):
         """Check for circular references in project hierarchy"""
