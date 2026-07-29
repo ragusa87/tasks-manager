@@ -13,7 +13,11 @@ router = Router(tags=["documents"])
 
 
 def upload_document(user, item_id: int, file) -> Document:
-    """Attach one uploaded file to the user's item (HTTP-free unit)."""
+    """Attach one uploaded file to the user's item.
+
+    API-layer glue: maps lookup/validation failures onto HttpError. The
+    HTTP-free unit is uploads.attach_document, shared with the web view.
+    """
     item = Item.objects.filter(user=user, pk=item_id).first()
     if item is None:
         # Same 404 for missing and foreign items: don't leak existence.

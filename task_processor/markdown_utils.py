@@ -34,14 +34,35 @@ ALLOWED_ATTRIBUTES = {"a": {"href", "title"}}
 ALLOWED_URL_SCHEMES = {"http", "https", "mailto"}
 
 
+# A single render/clean/convert pass is not idempotent: markdownify unescapes
+# HTML entities, so e.g. ``&lt;script&gt;`` comes back as a raw ``<script>``
+# tag that only the *next* pass would strip. Iterating to a fixed point closes
+# that hole — a string equal to its own sanitisation cannot contain any markup
+# nh3 would reject, encoded or not.
+_MAX_SANITIZE_PASSES = 10
+
+
 def sanitize_markdown(text: str | None) -> str:
     """Return ``text`` reduced to the allowed inline Markdown subset.
 
-    Idempotent: sanitising already-clean Markdown yields the same string.
+    The result is a fixed point of the sanitisation pass, so it is idempotent
+    and free of raw or entity-encoded HTML outside the allow-list.
     """
     if not text or not text.strip():
         return ""
 
+    result = text
+    for _ in range(_MAX_SANITIZE_PASSES):
+        cleaned = _sanitize_once(result)
+        if cleaned == result:
+            return cleaned
+        result = cleaned
+    # No fixed point within the cap (adversarial nesting): degrade to plain
+    # text rather than store something that would keep mutating on save.
+    return strip_markdown(result)
+
+
+def _sanitize_once(text: str) -> str:
     dirty_html = markdown_lib.markdown(text)
     safe_html = nh3.clean(
         dirty_html,

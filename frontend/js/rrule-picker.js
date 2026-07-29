@@ -78,7 +78,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
 
             const chips = WEEKDAYS.map(
                 (w) =>
-                    `<button type="button" class="${CHIP_BASE} ${CHIP_OFF}" data-code="${w.code}" data-active="false">${w.label}</button>`
+                    `<button type="button" class="${CHIP_BASE} ${CHIP_OFF}" data-code="${w.code}" data-active="false" aria-pressed="false">${w.label}</button>`
             ).join('');
 
             this.innerHTML = `
@@ -94,12 +94,13 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                         </div>
                     </div>
                     <div data-role="weekdays" class="flex flex-wrap gap-1.5">${chips}</div>
-                    <p data-role="preview" class="text-xs text-muted"></p>
+                    <p data-role="preview" class="text-xs text-muted" aria-live="polite"></p>
                     <div>
-                        <button type="button" data-role="advanced-toggle" class="text-xs text-accent hover:underline">Edit raw pattern</button>
-                        <input type="text" name="${this.name}" value="${initial}" data-role="raw"
+                        <button type="button" data-role="advanced-toggle" aria-expanded="false" class="text-xs text-accent hover:underline">Edit raw pattern</button>
+                        <input type="text" data-role="raw"
                                class="${INPUT_CLASSES} mt-1 hidden font-mono"
-                               placeholder="e.g. FREQ=MONTHLY;BYMONTHDAY=1">
+                               placeholder="e.g. FREQ=MONTHLY;BYMONTHDAY=1"
+                               aria-label="Raw recurrence pattern">
                     </div>
                 </div>
             `;
@@ -113,6 +114,11 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
             this._preview = this.querySelector('[data-role="preview"]');
             this._raw = this.querySelector('[data-role="raw"]');
             this._advancedToggle = this.querySelector('[data-role="advanced-toggle"]');
+            // name/value are set via properties, never string-interpolated into
+            // innerHTML: the value round-trips user input on failed form
+            // validation, so interpolation would be a DOM-XSS sink.
+            this._raw.name = this.name;
+            this._raw.value = initial;
         }
 
         _bind() {
@@ -139,12 +145,14 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 this._preview.textContent = describeRRule(this._raw.value);
             });
             this._advancedToggle.addEventListener('click', () => {
-                this._raw.classList.toggle('hidden');
+                const visible = this._raw.classList.toggle('hidden') === false;
+                this._advancedToggle.setAttribute('aria-expanded', String(visible));
             });
         }
 
         _setChip(chip, active) {
             chip.dataset.active = active ? 'true' : 'false';
+            chip.setAttribute('aria-pressed', active ? 'true' : 'false');
             const on = CHIP_ON.split(' ');
             const off = CHIP_OFF.split(' ');
             chip.classList.remove(...(active ? off : on));

@@ -6,14 +6,22 @@ import '../css/main.css';
 import '../css/offload.css';
 import { MAX_RECORDING_MS, formatClock } from './audio-recorder-utils.js';
 import { startCaptureSession } from './audio-capture.js';
-import { MAX_TITLE_LENGTH, composeNote, fmtSize } from './offload-utils.js';
+import {
+    MAX_TITLE_LENGTH as DEFAULT_TITLE_LIMIT,
+    composeNote,
+    fmtSize,
+} from './offload-utils.js';
 import { initThemeToggle, resolveColor } from './theme.js';
 
 const EP = {
     items: '/api/items',
     docs: (id) => `/api/items/${id}/documents`,
 };
-const MAX_BYTES = 10 * 1024 * 1024; // settings.MAX_FILE_SIZE
+// Server policy, injected by the template so it cannot drift from
+// settings.MAX_FILE_SIZE / the model title limit.
+const MAX_BYTES = Number(document.body.dataset.maxBytes) || 10 * 1024 * 1024;
+const MAX_TITLE_LENGTH = Number(document.body.dataset.maxTitleLength) || DEFAULT_TITLE_LIMIT;
+const LIMIT_LABEL = fmtSize(MAX_BYTES);
 
 const $ = (id) => document.getElementById(id);
 
@@ -41,17 +49,33 @@ function say(text, kind) {
 /* -- mode strip + swipe --------------------------------------- */
 const track = $('track');
 const tabs = [...$('modes').querySelectorAll('button')];
+const panels = [...track.querySelectorAll('[role="tabpanel"]')];
 
 function paintMode(i) {
     state.mode = i;
     $('rule').style.transform = `translateX(${i * 100}%)`;
-    tabs.forEach((t, n) => t.setAttribute('aria-selected', String(n === i)));
+    tabs.forEach((t, n) => {
+        t.setAttribute('aria-selected', String(n === i));
+        t.tabIndex = n === i ? 0 : -1;
+    });
+    // Off-screen panels stay in the snap track but must not be reachable by
+    // Tab: focusing one would scroll it into view without updating the mode,
+    // desyncing what gets submitted.
+    panels.forEach((p, n) => { p.inert = n !== i; });
 }
-tabs.forEach((t) => t.addEventListener('click', () => {
-    const i = +t.dataset.i;
+function selectMode(i) {
     track.scrollTo({ left: track.clientWidth * i, behavior: 'smooth' });
     paintMode(i);
-}));
+}
+tabs.forEach((t) => t.addEventListener('click', () => selectMode(+t.dataset.i)));
+$('modes').addEventListener('keydown', (e) => {
+    const delta = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+    if (!delta) return;
+    e.preventDefault();
+    const i = (state.mode + delta + tabs.length) % tabs.length;
+    selectMode(i);
+    tabs[i].focus();
+});
 let scrollTick;
 track.addEventListener('scroll', () => {
     clearTimeout(scrollTick);
@@ -80,7 +104,7 @@ $('libBtn').onclick = () => $('libIn').click();
 
 function takePhoto(file) {
     if (file.size > MAX_BYTES) {
-        say(`Image is ${fmtSize(file.size)} \u2014 the 10 MB limit rejects it. Try a smaller one.`, 'err');
+        say(`Image is ${fmtSize(file.size)} \u2014 the ${LIMIT_LABEL} limit rejects it. Try a smaller one.`, 'err');
         return;
     }
     state.photo = file;
@@ -103,7 +127,7 @@ function takePhoto(file) {
 function clearPhoto() {
     state.photo = null;
     $('shot').innerHTML = '<span class="font-mono text-[10px] tracking-[.12em] text-muted">No image</span>';
-    $('shotHint').textContent = 'Max 10 MB.';
+    $('shotHint').textContent = `Max ${LIMIT_LABEL}.`;
 }
 
 /* -- microphone permission -----------------------------------
@@ -308,23 +332,33 @@ function finishRec(file) {
     }
     state.audio = file;
     const a = $('play');
+    if (a.src) URL.revokeObjectURL(a.src); // previous take, if any
     a.src = URL.createObjectURL(file);
     a.hidden = false;
     if (file.size > MAX_BYTES) {
-        say(`Memo is ${fmtSize(file.size)} \u2014 over the 10 MB limit.`, 'err');
+        say(`Memo is ${fmtSize(file.size)} \u2014 over the ${LIMIT_LABEL} limit.`, 'err');
     } else {
         say(`Memo ready \u00b7 ${formatClock(state.audioMs)} \u00b7 ${fmtSize(file.size)}`, 'idle');
     }
 }
+
+function sizeScope() {
+    canvas.width = canvas.offsetWidth * devicePixelRatio;
+    canvas.height = canvas.offsetHeight * devicePixelRatio;
+}
+addEventListener('resize', sizeScope);
 
 function drawScope(analyser) {
     const buf = new Uint8Array(analyser.fftSize);
     // resolveColor, not getPropertyValue: the token is a light-dark()
     // expression that canvas strokeStyle cannot consume unresolved.
     const stroke = resolveColor('--color-danger');
+    // Assigning canvas.width resets the bitmap, so measure once (and on
+    // resize), not inside the animation loop.
+    sizeScope();
     const paint = () => {
-        const w = canvas.width = canvas.offsetWidth * devicePixelRatio;
-        const h = canvas.height = canvas.offsetHeight * devicePixelRatio;
+        const w = canvas.width;
+        const h = canvas.height;
         analyser.getByteTimeDomainData(buf);
         cx.clearRect(0, 0, w, h);
         cx.lineWidth = 1.5 * devicePixelRatio;
@@ -347,7 +381,7 @@ const stamp = () => new Date().toLocaleString(undefined, { day: '2-digit', month
 
 function compose() {
     if (state.mode === 0) {
-        const note = composeNote($('note').value);
+        const note = composeNote($('note').value, MAX_TITLE_LENGTH);
         if (note.error) return { error: note.error };
         return { body: note };
     }
@@ -374,7 +408,7 @@ async function offload() {
     const plan = compose();
     if (plan.error) { say(plan.error, 'err'); return; }
     if (plan.file && plan.file.size > MAX_BYTES) {
-        say(`Attachment is ${fmtSize(plan.file.size)} \u2014 over the 10 MB limit.`, 'err');
+        say(`Attachment is ${fmtSize(plan.file.size)} \u2014 over the ${LIMIT_LABEL} limit.`, 'err');
         return;
     }
 
@@ -454,7 +488,10 @@ function land(msg) {
     }
     if (state.mode === 2) {
         state.audio = null;
-        $('play').hidden = true;
+        const a = $('play');
+        if (a.src) URL.revokeObjectURL(a.src);
+        a.removeAttribute('src');
+        a.hidden = true;
         $('memoCap').value = '';
         $('clock').textContent = '0:00';
         $('recLbl').textContent = 'Record';

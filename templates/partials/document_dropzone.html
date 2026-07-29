@@ -26,15 +26,19 @@
             data-item-id="{{ item_id }}"
             data-upload-url="{% url 'document_upload' item_id %}"
             title="Record a voice note (max 1 min)"
-            aria-label="Record a voice note (max 1 min)">
+            aria-label="Record a voice note (max 1 min)"
+            aria-pressed="false">
         <span data-icon-record>{% sprite "lucide-mic" 16 class="shrink-0" %}</span>
         <span data-icon-stop class="hidden">{% sprite "lucide-square" 16 class="shrink-0" %}</span>
     </button>
     {% endif %}
 </div>
+{# No live region on the meter: the time ticks every 200ms and would spam #}
+{# screen readers. Recording state is announced via the button's #}
+{# aria-pressed/aria-label swap in audio-recorder.js. #}
 <div id="audio-record-meter-{{ item_id }}"
      class="hidden items-center gap-3 px-3 py-2 border border-danger/30 bg-danger-ground rounded-lg">
-    <div data-meter-bars class="flex items-end gap-0.5 h-5 flex-1"></div>
+    <div data-meter-bars aria-hidden="true" class="flex items-end gap-0.5 h-5 flex-1"></div>
     <span data-meter-time class="text-xs font-medium tabular-nums text-danger shrink-0">0:00 / 1:00</span>
 </div>
 <div id="upload-progress-{{ item_id }}" class="hidden">

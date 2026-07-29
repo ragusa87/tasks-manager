@@ -83,6 +83,35 @@ class TestSanitizeMarkdown:
         result = sanitize_markdown("![alt](https://x/y.png)")
         assert "![" not in result
 
+    # --- entity-encoded payloads must not survive as raw HTML -------------
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            "&lt;script&gt;alert(1)&lt;/script&gt;",
+            "&lt;img src=x onerror=alert(1)&gt;",
+            "&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;",
+        ],
+    )
+    def test_entity_encoded_html_neutralized(self, payload):
+        result = sanitize_markdown(payload)
+        assert "<script" not in result.lower()
+        assert "<img" not in result.lower()
+        assert "onerror" not in result.lower()
+        # And the stored value must already be stable — a later save must not
+        # mutate it again (that was silent data loss).
+        assert sanitize_markdown(result) == result
+
+    def test_result_is_always_a_fixed_point(self):
+        # Property covering the fixpoint contract on tricky inputs.
+        for value in [
+            "&lt;b onmouseover=alert(1)&gt;hi&lt;/b&gt;",
+            "a < b & c > d",
+            "text &amp; more",
+            "&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;",
+        ]:
+            result = sanitize_markdown(value)
+            assert sanitize_markdown(result) == result, value
+
     # --- idempotency ------------------------------------------------------
     @pytest.mark.parametrize(
         "value",
