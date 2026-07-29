@@ -40,7 +40,35 @@
         <label for="{{ form.description.id_for_label }}" class="block font-medium text-muted mb-1">
             Description
         </label>
+        {# Editor chrome (toolbar + host) is display markup and lives here; #}
+        {# markdown-editor.js clones it, hides the textarea and wires the #}
+        {# buttons by data-action. Without JS only the plain textarea shows. #}
         <markdown-editor>
+            <template data-editor-chrome>
+                <div class="markdown-editor border border-line rounded-md shadow-sm focus-within:ring-1 focus-within:ring-accent focus-within:border-accent overflow-hidden bg-surface">
+                    <div role="toolbar" aria-label="Text formatting"
+                         class="markdown-toolbar flex items-center gap-1 px-2 py-1 border-b border-line bg-ground">
+                        <button type="button" data-action="bold" title="Bold (Ctrl+B)" aria-label="Bold (Ctrl+B)" aria-pressed="false"
+                                class="markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors">{% sprite "lucide-bold" 16 %}</button>
+                        <button type="button" data-action="italic" title="Italic (Ctrl+I)" aria-label="Italic (Ctrl+I)" aria-pressed="false"
+                                class="markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors">{% sprite "lucide-italic" 16 %}</button>
+                        <button type="button" data-action="strikethrough" title="Strikethrough" aria-label="Strikethrough" aria-pressed="false"
+                                class="markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors">{% sprite "lucide-strikethrough" 16 %}</button>
+                        <button type="button" data-action="link" title="Link" aria-label="Link" aria-pressed="false"
+                                class="markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors">{% sprite "lucide-link" 16 %}</button>
+                        <span aria-hidden="true" class="w-px h-5 bg-line mx-1"></span>
+                        <button type="button" data-action="bulletList" title="Bullet list" aria-label="Bullet list" aria-pressed="false"
+                                class="markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors">{% sprite "lucide-list" 16 %}</button>
+                        <button type="button" data-action="orderedList" title="Numbered list" aria-label="Numbered list" aria-pressed="false"
+                                class="markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors">{% sprite "lucide-list-ordered" 16 %}</button>
+                        <span data-upload-indicator class="hidden items-center gap-1.5 ml-auto text-xs text-muted">
+                            {% sprite "lucide-loader-circle" 16 class="animate-spin" %}
+                            Uploading attachment…
+                        </span>
+                    </div>
+                    <div class="markdown-host"></div>
+                </div>
+            </template>
             <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" rows="4"
                       class="input"
                       placeholder="Enter description">{{ form.description.value|default:'' }}</textarea>
@@ -493,9 +521,47 @@
                     Recurrence Pattern
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
-                    <rrule-picker name="{{ form.rrule.name }}"
-                                  field-id="{{ form.rrule.id_for_label }}"
-                                  value="{{ form.rrule.value|default:'' }}"></rrule-picker>
+                    {# Display markup lives here; rrule-picker.js clones the GUI #}
+                    {# template and only wires behavior. The raw input is the real #}
+                    {# form field: it submits its value even if JS never runs, and #}
+                    {# without JS no dead GUI controls are shown. #}
+                    <rrule-picker>
+                        <template data-gui>
+                            <div class="space-y-2">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <select data-role="freq" id="{{ form.rrule.id_for_label }}" class="input w-auto">
+                                        <option value="">One-time (no repeat)</option>
+                                        <option value="DAILY">Daily</option>
+                                        <option value="WEEKLY">Weekly</option>
+                                        <option value="MONTHLY">Monthly</option>
+                                        <option value="YEARLY">Yearly</option>
+                                    </select>
+                                    <div data-role="interval-wrap" class="hidden flex items-center gap-1.5 text-muted">
+                                        <span>every</span>
+                                        <input type="number" min="1" data-role="interval" value="1" class="input w-16">
+                                        <span data-role="unit"></span>
+                                    </div>
+                                </div>
+                                <div data-role="weekdays" class="hidden flex flex-wrap gap-1.5">
+                                    <button type="button" class="rrule-weekday" data-code="MO" data-active="false" aria-pressed="false">Mon</button>
+                                    <button type="button" class="rrule-weekday" data-code="TU" data-active="false" aria-pressed="false">Tue</button>
+                                    <button type="button" class="rrule-weekday" data-code="WE" data-active="false" aria-pressed="false">Wed</button>
+                                    <button type="button" class="rrule-weekday" data-code="TH" data-active="false" aria-pressed="false">Thu</button>
+                                    <button type="button" class="rrule-weekday" data-code="FR" data-active="false" aria-pressed="false">Fri</button>
+                                    <button type="button" class="rrule-weekday" data-code="SA" data-active="false" aria-pressed="false">Sat</button>
+                                    <button type="button" class="rrule-weekday" data-code="SU" data-active="false" aria-pressed="false">Sun</button>
+                                </div>
+                                <p data-role="preview" class="text-xs text-muted" aria-live="polite"></p>
+                                <button type="button" data-role="advanced-toggle" aria-expanded="false"
+                                        class="text-xs text-accent hover:underline">Edit raw pattern</button>
+                            </div>
+                        </template>
+                        <input type="text" name="{{ form.rrule.name }}" value="{{ form.rrule.value|default:'' }}"
+                               data-role="raw"
+                               class="input mt-1 hidden font-mono"
+                               placeholder="e.g. FREQ=MONTHLY;BYMONTHDAY=1"
+                               aria-label="Raw recurrence pattern">
+                    </rrule-picker>
                     {% if form.rrule.errors %}
                     <p class="mt-2 text-danger">{{ form.rrule.errors.0 }}</p>
                     {% endif %}

@@ -257,8 +257,15 @@ function flashUploadErrors() {
 }
 
 export function showToast(message, type, duration) {
-    var toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 whitespace-pre-line ' + (type === 'error' ? 'alert-danger bg-surface' : 'alert-success bg-surface');
+    // Markup identity lives in base.html's #toast-template; only the
+    // error/success variant class is a state decision made here.
+    var template = document.getElementById('toast-template');
+    if (!template || !template.content.firstElementChild) {
+        console.warn('Missing <template id="toast-template"> in the page:', message);
+        return;
+    }
+    var toast = template.content.firstElementChild.cloneNode(true);
+    toast.classList.add(type === 'error' ? 'alert-danger' : 'alert-success');
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(function() { toast.remove(); }, duration || 3000);

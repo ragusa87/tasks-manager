@@ -133,12 +133,6 @@ const linkTextSyncPlugin = $prose((ctx) => {
     });
 });
 
-// Toolbar icons come from the shared sprite sheet (templates/all-sprites.svg,
-// inlined on every page by {% sprite_svg %} in base.html), like the rest of
-// the UI — add new icons under sprites/ and run `just sprites`.
-const svg = (name) =>
-    `<svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#lucide-${name}"></use></svg>`;
-
 // Renders the textarea's placeholder while the document is empty (styled by
 // `p.is-empty::before` in main.css); enhancing the textarea would otherwise
 // silently drop its placeholder.
@@ -166,35 +160,18 @@ const placeholderPlugin = (text) =>
             })
     );
 
-// Toolbar actions. Active state comes from a `mark` (inline) or a `node`
-// (block) name in the schema; a `divider` entry renders a separator.
-const ACTIONS = [
-    { name: 'bold', icon: 'bold', title: 'Bold (Ctrl+B)', mark: 'strong', command: toggleStrongCommand },
-    { name: 'italic', icon: 'italic', title: 'Italic (Ctrl+I)', mark: 'emphasis', command: toggleEmphasisCommand },
-    {
-        name: 'strikethrough',
-        icon: 'strikethrough',
-        title: 'Strikethrough',
-        mark: 'strike_through',
-        command: toggleStrikethroughCommand,
-    },
-    { name: 'link', icon: 'link', title: 'Link', mark: 'link', isLink: true },
-    { divider: true },
-    {
-        name: 'bulletList',
-        icon: 'list',
-        title: 'Bullet list',
-        node: 'bullet_list',
-        command: wrapInBulletListCommand,
-    },
-    {
-        name: 'orderedList',
-        icon: 'list-ordered',
-        title: 'Numbered list',
-        node: 'ordered_list',
-        command: wrapInOrderedListCommand,
-    },
-];
+// Toolbar behavior, keyed by the buttons' data-action in the server-rendered
+// chrome (templates/partials/item_form_detail.html) — the markup, labels and
+// icons live there. Active state comes from a `mark` (inline) or a `node`
+// (block) name in the schema.
+const ACTIONS = {
+    bold: { mark: 'strong', command: toggleStrongCommand },
+    italic: { mark: 'emphasis', command: toggleEmphasisCommand },
+    strikethrough: { mark: 'strike_through', command: toggleStrikethroughCommand },
+    link: { mark: 'link', isLink: true },
+    bulletList: { node: 'bullet_list', command: wrapInBulletListCommand },
+    orderedList: { node: 'ordered_list', command: wrapInOrderedListCommand },
+};
 
 /** Whether a mark type is active in the current selection. */
 function isMarkActive(state, type) {
@@ -221,7 +198,10 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
         connectedCallback() {
             if (this._initialized) return;
             this.textarea = this.querySelector('textarea');
-            if (!this.textarea) return; // nothing to enhance
+            this._chromeTemplate = this.querySelector('template[data-editor-chrome]');
+            // Without the server-rendered chrome there is nothing to enhance;
+            // the plain textarea keeps working as-is.
+            if (!this.textarea || !this._chromeTemplate) return;
             this._initialized = true;
             this._buttons = new Map();
             this._render();
@@ -244,6 +224,13 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 this._editor.destroy();
                 this._editor = null;
             }
+            // Drop the cloned chrome and reveal the textarea again, so a
+            // re-connect re-enhances cleanly from the (kept) template.
+            if (this._wrapper) {
+                this._wrapper.remove();
+                this._wrapper = null;
+            }
+            this.textarea?.classList.remove('hidden');
             this._initialized = false;
         }
 
@@ -253,37 +240,22 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
         }
 
         _render() {
-            const wrapper = document.createElement('div');
-            wrapper.className =
-                'markdown-editor border border-line rounded-md shadow-sm focus-within:ring-1 focus-within:ring-accent focus-within:border-accent overflow-hidden bg-surface';
+            // The chrome (wrapper, toolbar buttons, upload indicator, host)
+            // is display markup and comes server-rendered from the template;
+            // this only clones it and wires behavior onto data-action. The
+            // template itself stays in place so a disconnect/re-connect
+            // cycle (HTMX moving nodes) can enhance again.
+            const wrapper = this._chromeTemplate.content.firstElementChild.cloneNode(true);
+            this._wrapper = wrapper;
 
-            const toolbar = document.createElement('div');
-            toolbar.setAttribute('role', 'toolbar');
-            toolbar.setAttribute('aria-label', 'Text formatting');
-            toolbar.className =
-                'markdown-toolbar flex items-center gap-1 px-2 py-1 border-b border-line bg-ground';
-
-            ACTIONS.forEach((action, index) => {
-                if (action.divider) {
-                    const sep = document.createElement('span');
-                    sep.setAttribute('aria-hidden', 'true');
-                    sep.className = 'w-px h-5 bg-line mx-1';
-                    toolbar.appendChild(sep);
-                    return;
-                }
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.title = action.title;
-                btn.setAttribute('aria-label', action.title);
-                btn.setAttribute('aria-pressed', 'false');
+            const toolbar = wrapper.querySelector('[role="toolbar"]');
+            wrapper.querySelectorAll('button[data-action]').forEach((btn, index) => {
+                const action = ACTIONS[btn.dataset.action];
+                if (!action) return;
                 btn.tabIndex = index === 0 ? 0 : -1; // roving tabindex
-                btn.className =
-                    'markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors';
-                btn.innerHTML = svg(action.icon);
                 btn.addEventListener('mousedown', (e) => e.preventDefault()); // keep selection
                 btn.addEventListener('click', () => this._runAction(action));
-                toolbar.appendChild(btn);
-                this._buttons.set(action.name, btn);
+                this._buttons.set(btn.dataset.action, btn);
             });
 
             // Toolbar keyboard pattern: one Tab stop, arrows move between buttons.
@@ -300,20 +272,8 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
 
             // Loader shown while a pasted attachment uploads (see
             // _interceptFilePaste); documents.js hides it via detail.done().
-            this._uploadIndicator = document.createElement('span');
-            this._uploadIndicator.className =
-                'hidden items-center gap-1.5 ml-auto text-xs text-muted';
-            this._uploadIndicator.innerHTML = `${svg('loader-circle').replace(
-                '<svg ',
-                '<svg class="animate-spin" '
-            )}Uploading attachment\u2026`;
-            toolbar.appendChild(this._uploadIndicator);
-
-            this._host = document.createElement('div');
-            this._host.className = 'markdown-host';
-
-            wrapper.appendChild(toolbar);
-            wrapper.appendChild(this._host);
+            this._uploadIndicator = wrapper.querySelector('[data-upload-indicator]');
+            this._host = wrapper.querySelector('.markdown-host');
 
             // Keep the textarea in the form but hide it; insert the editor next to it.
             this.textarea.classList.add('hidden');
@@ -519,9 +479,8 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
             this._editor.action((ctx) => {
                 const state = ctx.get(editorStateCtx);
                 const schema = ctx.get(schemaCtx);
-                ACTIONS.forEach((action) => {
-                    const btn = this._buttons.get(action.name);
-                    if (!btn) return;
+                this._buttons.forEach((btn, name) => {
+                    const action = ACTIONS[name];
                     const on = action.node
                         ? isNodeActive(state, schema.nodes[action.node])
                         : isMarkActive(state, schema.marks[action.mark]);

@@ -1,26 +1,21 @@
 // Reusable <rrule-picker> custom element for RFC-5545 RRULE strings.
 //
-// Usage (light DOM so surrounding Tailwind styles apply and the internal
-// input participates in the enclosing <form>):
-//
-//   <rrule-picker name="rrule" field-id="id_rrule" value="FREQ=WEEKLY;BYDAY=MO"></rrule-picker>
-//
-// It renders a small GUI (frequency / interval / weekday chips) plus an
-// "advanced" raw text input, and keeps a real <input name="..."> in sync so
-// the form submits the RRULE string exactly as before. Because it is a custom
-// element it auto-upgrades whenever HTMX swaps the modal in -- no manual init.
+// Progressive enhancement over server-rendered markup (see the RRULE block in
+// templates/partials/item_form_detail.html): the element ships a
+// <template data-gui> holding the GUI controls plus a real
+// <input data-role="raw" name="..."> that participates in the enclosing
+// <form>. On upgrade the GUI is cloned in front of the input and bound;
+// without JS the input alone still submits its value unchanged. Display
+// identity (classes, option/chip labels) stays in the Django template —
+// weekday-chip state styling is keyed on aria-pressed in main.css — and this
+// module only wires behavior. Because it is a custom element it auto-upgrades
+// whenever HTMX swaps the modal in; no manual init.
 //
 // Pure parse/build/label helpers live in rrule-utils.js (no dependencies, unit
 // testable); only the preview text and the DOM element need rrule.js.
 
 import { RRule } from 'rrule';
-import {
-    WEEKDAYS,
-    FREQUENCIES,
-    parseRRule,
-    buildRRule,
-    unitLabel,
-} from './rrule-utils.js';
+import { parseRRule, buildRRule, unitLabel } from './rrule-utils.js';
 
 /** Human-readable summary of an RRULE string (via rrule.js). Tries the raw
  *  string first (so fields the GUI doesn't model, e.g. BYMONTHDAY, still get
@@ -41,69 +36,25 @@ export function describeRRule(value) {
     return 'Custom recurrence rule.';
 }
 
-const INPUT_CLASSES =
-    'input';
-const CHIP_BASE =
-    'rrule-weekday px-2.5 py-1 text-xs font-medium rounded-md border cursor-pointer transition-colors';
-const CHIP_ON = 'bg-accent text-on-accent border-accent';
-const CHIP_OFF = 'bg-surface text-body border-line hover:bg-ground';
-
 // Guard so importing describeRRule in a non-DOM env (tests/SSR) is safe.
 if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined') {
     class RRulePickerElement extends HTMLElement {
         connectedCallback() {
             // Guard so a re-connect (HTMX moving nodes) doesn't wipe input.
             if (this._initialized) return;
+
+            const template = this.querySelector('template[data-gui]');
+            this._raw = this.querySelector('[data-role="raw"]');
+            if (!template || !this._raw) return; // nothing to enhance
             this._initialized = true;
 
-            this.name = this.getAttribute('name') || 'rrule';
-            this.fieldId = this.getAttribute('field-id') || '';
-            const initial = this.getAttribute('value') || '';
+            // Reveal the GUI: clone the server-rendered controls in front of
+            // the raw input (the real form field, Django-escaped value).
+            this.insertBefore(template.content.firstElementChild.cloneNode(true), this._raw);
+            template.remove();
+
+            const initial = this._raw.value;
             this.state = parseRRule(initial);
-
-            this._render(initial);
-            this._bind();
-            this._writeGui();
-            this._refreshVisibility();
-            this._preview.textContent = describeRRule(initial);
-        }
-
-        _render(initial) {
-            const freqOptions = FREQUENCIES.map(
-                (f) =>
-                    `<option value="${f.code}"${
-                        f.code === this.state.freq ? ' selected' : ''
-                    }>${f.label}</option>`
-            ).join('');
-
-            const chips = WEEKDAYS.map(
-                (w) =>
-                    `<button type="button" class="${CHIP_BASE} ${CHIP_OFF}" data-code="${w.code}" data-active="false" aria-pressed="false">${w.label}</button>`
-            ).join('');
-
-            this.innerHTML = `
-                <div class="space-y-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <select data-role="freq" id="${this.fieldId}" class="${INPUT_CLASSES} w-auto">${freqOptions}</select>
-                        <div data-role="interval-wrap" class="flex items-center gap-1.5 text-muted">
-                            <span>every</span>
-                            <input type="number" min="1" data-role="interval" value="${
-                                this.state.interval || 1
-                            }" class="${INPUT_CLASSES} w-16">
-                            <span data-role="unit"></span>
-                        </div>
-                    </div>
-                    <div data-role="weekdays" class="flex flex-wrap gap-1.5">${chips}</div>
-                    <p data-role="preview" class="text-xs text-muted" aria-live="polite"></p>
-                    <div>
-                        <button type="button" data-role="advanced-toggle" aria-expanded="false" class="text-xs text-accent hover:underline">Edit raw pattern</button>
-                        <input type="text" data-role="raw"
-                               class="${INPUT_CLASSES} mt-1 hidden font-mono"
-                               placeholder="e.g. FREQ=MONTHLY;BYMONTHDAY=1"
-                               aria-label="Raw recurrence pattern">
-                    </div>
-                </div>
-            `;
 
             this._freq = this.querySelector('[data-role="freq"]');
             this._intervalWrap = this.querySelector('[data-role="interval-wrap"]');
@@ -112,13 +63,12 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
             this._weekdays = this.querySelector('[data-role="weekdays"]');
             this._chips = Array.from(this.querySelectorAll('.rrule-weekday'));
             this._preview = this.querySelector('[data-role="preview"]');
-            this._raw = this.querySelector('[data-role="raw"]');
             this._advancedToggle = this.querySelector('[data-role="advanced-toggle"]');
-            // name/value are set via properties, never string-interpolated into
-            // innerHTML: the value round-trips user input on failed form
-            // validation, so interpolation would be a DOM-XSS sink.
-            this._raw.name = this.name;
-            this._raw.value = initial;
+
+            this._bind();
+            this._writeGui();
+            this._refreshVisibility();
+            this._preview.textContent = describeRRule(initial);
         }
 
         _bind() {
@@ -151,12 +101,10 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
         }
 
         _setChip(chip, active) {
+            // Appearance is keyed on aria-pressed by the .rrule-weekday rules
+            // in main.css; only the state flips here.
             chip.dataset.active = active ? 'true' : 'false';
             chip.setAttribute('aria-pressed', active ? 'true' : 'false');
-            const on = CHIP_ON.split(' ');
-            const off = CHIP_OFF.split(' ');
-            chip.classList.remove(...(active ? off : on));
-            chip.classList.add(...(active ? on : off));
         }
 
         /** Controls -> this.state. */
