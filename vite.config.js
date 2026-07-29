@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import {resolve} from 'path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
    plugins: [
        tailwindcss(),
    ],
@@ -40,7 +40,10 @@ export default defineConfig({
     // Configure HMR for Docker/Traefik
     allowedHosts: String(process.env.VITE_ALLOWED_HOSTS).split(",") || ['localhost']
   },
-  // Base URL for assets - configurable for different environments
-    // base:  process.env.VITE_BASE || "/static/"
-    base: '/static/',
-})
+  // Base URL for assets. Builds go to static/dist and are served from
+  // /static/dist/ — the runtime preload helper for dynamic imports builds
+  // asset URLs from this value, so it must include the dist segment or
+  // lazily-loaded chunk CSS 404s. The dev server serves from its own root,
+  // where django-vite expects /static/<source path>.
+    base: command === 'build' ? '/static/dist/' : '/static/',
+}))
