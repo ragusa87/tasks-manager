@@ -351,6 +351,12 @@ CUSTOM_AUTHENTICATION_BACKEND = str(
     os.environ.get("CUSTOM_AUTHENTICATION_BACKEND", "")
 ).strip()
 
+# Drop the session user on every request and re-read the remote-user header,
+# so switching the proxy user takes effect immediately. Development only: the
+# proxy does not set the header on /api/* routes, so with this enabled every
+# browser API call would log the user out.
+REMOTE_USER_FORCE_LOGOUT = False
+
 if CUSTOM_AUTHENTICATION_BACKEND == "authcrunch":
     AUTHENTICATION_BACKENDS = [
         "core.auth.remote_user_backend.AuthcrunchRemoteUserBackend"

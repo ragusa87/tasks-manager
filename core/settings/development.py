@@ -9,6 +9,9 @@ import os
 
 DEBUG = True
 
+# Re-read the remote-user header on every request (see base.py).
+REMOTE_USER_FORCE_LOGOUT = True
+
 ALLOWED_HOSTS = os.getenv(
     "ALLOWED_HOSTS", "localhost 127.0.0.1 tasks.docker.test"
 ).split()
