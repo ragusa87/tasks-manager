@@ -1,0 +1,13 @@
+{% comment %}
+Browser-chrome tint following the effective theme. Usage:
+{% include "partials/theme_color_meta.html" with light="#ffffff" dark="#152026" %}
+When no override cookie is set the media-paired metas follow the OS.
+{% endcomment %}
+{% if THEME == "light" %}
+    <meta name="theme-color" content="{{ light }}">
+{% elif THEME == "dark" %}
+    <meta name="theme-color" content="{{ dark }}">
+{% else %}
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="{{ light }}">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="{{ dark }}">
+{% endif %}

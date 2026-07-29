@@ -9,8 +9,8 @@
     <div class="mb-8">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">{{ title }}</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="text-2xl font-bold text-body">{{ title }}</h2>
+                <p class="mt-1 text-muted">
                     {% if item %}
                         Update the details of your item
                     {% else %}
@@ -19,7 +19,7 @@
                 </p>
             </div>
             <div class="flex items-center space-x-3">
-                <a href="{% url 'dashboard' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="{% url 'dashboard' %}" class="btn-secondary">
                     {% sprite "lucide-chevron-left" 24 class="mr-2" %}
                     Cancel
                 </a>
@@ -28,20 +28,20 @@
     </div>
 
     <!-- Form -->
-    <div class="bg-white shadow rounded-lg">
+    <div class="card">
         <form method="post" class="p-6">
             {% csrf_token %}
 
             {% include "partials/item_form_detail.html" %}
 
             <!-- Form Actions -->
-<div class="flex items-center justify-between pt-6 border-t border-gray-200">
+<div class="flex items-center justify-between pt-6 border-t border-line">
     <a href="{% url 'dashboard' %}"
-       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+       class="btn-secondary">
         Cancel
     </a>
     <button type="submit"
-            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            class="btn-primary">
         {% if item %}
         {% sprite "lucide-save" 24 class="mr-2" %}
         Update Item

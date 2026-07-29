@@ -1,0 +1,7 @@
+{% load sprite_tags %}
+<button type="button" data-theme-toggle data-theme-endpoint="{% url 'set_theme' %}"
+        class="btn-icon" aria-label="Theme: follows system">
+    <span data-theme-icon="system">{% sprite "lucide-monitor" 20 %}</span>
+    <span data-theme-icon="light" class="hidden">{% sprite "lucide-sun" 20 %}</span>
+    <span data-theme-icon="dark" class="hidden">{% sprite "lucide-moon" 20 %}</span>
+</button>

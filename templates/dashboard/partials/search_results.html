@@ -1,24 +1,24 @@
 {% load sprite_tags %}
 
 <!-- Search Results -->
-<div class="bg-white shadow overflow-hidden sm:rounded-lg" id="search-results">
+<div class="card rounded-none overflow-hidden sm:rounded-lg" id="search-results">
     <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
         <div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 flex items-center">
-                {% sprite "lucide-search" 24 class="text-gray-500 mr-2" %}
+            <h3 class="text-lg leading-6 font-medium text-body flex items-center">
+                {% sprite "lucide-search" 24 class="text-muted mr-2" %}
                 Search Results
             </h3>
             {% if paginator %}
-            <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                Found {{ paginator.count }} result{{ paginator.count|pluralize }} {% if search_query %}for "{{ search_query }}"{% endif %}.
+            <p class="mt-1 max-w-2xl text-muted">
+                Found {{ paginator.count }} result{{ paginator.count|pluralize }} {% if search_query %}for"{{ search_query }}"{% endif %}.
             </p>
             {% endif %}
         </div>
     </div>
 
-    <div class="border-t border-gray-200">
+    <div class="border-t border-line">
         {% if page_obj %}
-            <ul class="divide-y divide-gray-200">
+            <ul class="divide-y divide-line">
                 {% for item in page_obj %}
                 <li class="px-4 py-4 relative">
                     {% include 'partials/item_row.html' with item=item %}
@@ -27,11 +27,11 @@
             </ul>
         {% else %}
             <div class="text-center py-12">
-                <div class="mx-auto h-12 w-12 text-gray-400">
+                <div class="mx-auto h-12 w-12 text-faint">
                     {% sprite "lucide-search-x" 48 %}
                 </div>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No results found</h3>
-                <p class="mt-1 text-sm text-gray-500">Try adjusting your search terms or checking for typos.</p>
+                <h3 class="mt-2 font-medium text-body">No results found</h3>
+                <p class="mt-1 text-muted">Try adjusting your search terms or checking for typos.</p>
             </div>
         {% endif %}
 
@@ -39,11 +39,11 @@
     </div>
     {% if not search_query and not paginator.count %}
     <div class="text-center py-12">
-        <div class="mx-auto h-12 w-12 text-gray-400">
+        <div class="mx-auto h-12 w-12 text-faint">
             {% sprite "lucide-search" 48 %}
         </div>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">Search your items</h3>
-        <p class="mt-1 text-sm text-gray-500">Enter a search term above to find items by title.</p>
+        <h3 class="mt-2 font-medium text-body">Search your items</h3>
+        <p class="mt-1 text-muted">Enter a search term above to find items by title.</p>
     </div>
     {% endif %}
 </div>

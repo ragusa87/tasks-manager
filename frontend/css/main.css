@@ -1,16 +1,175 @@
 @import "tailwindcss";
 
-/* Design tokens of the offload quick-capture page (templates/items/offload.html).
-   Exposed as utilities (bg-offload-ink, text-offload-mist, ...) and as
-   var(--color-offload-*) for offload.css and canvas drawing. */
+/* Semantic design tokens. Each names a ROLE, not a color; light-dark()
+   holds both theme renderings, resolved by the color-scheme below (system
+   preference by default, overridable via <html data-theme>). Markup uses
+   the generated utilities (bg-surface, text-muted, border-line, ...) and
+   never literal palette colors. */
 @theme {
-  --color-offload-ink: #0e1518;    /* ground */
-  --color-offload-panel: #152026;  /* raised surface */
-  --color-offload-line: #24353d;   /* hairlines */
-  --color-offload-mist: #8fa6af;   /* secondary text */
-  --color-offload-paper: #eaf2f1;  /* primary text */
-  --color-offload-accent: #f0a32e; /* the one accent: action + success */
-  --color-offload-rec: #ff4d5a;    /* recording state only */
+  /* neutrals */
+  --color-ground: light-dark(#f9fafb, #0e1518);  /* page bg, hover rows */
+  --color-surface: light-dark(#ffffff, #152026); /* cards, nav, modals, inputs */
+  --color-line: light-dark(#e2e5ea, #24353d);    /* borders, dividers, rings */
+  --color-body: light-dark(#111827, #eaf2f1);    /* primary text */
+  --color-muted: light-dark(#4b5563, #8fa6af);   /* secondary text */
+  --color-faint: light-dark(#9ca3af, rgb(143 166 175 / 0.65)); /* icons, placeholders */
+  --color-edge: light-dark(transparent, #24353d); /* dark hairline where light relies on shadow */
+
+  /* accent */
+  --color-accent: light-dark(#2563eb, #f0a32e);
+  --color-accent-hover: light-dark(#1d4ed8, #f7b955);
+  --color-on-accent: light-dark(#ffffff, #0e1518);
+
+  /* status */
+  --color-danger: light-dark(#dc2626, #ff4d5a);
+  --color-danger-hover: light-dark(#b91c1c, #ff6b76);
+  --color-danger-ground: light-dark(#fef2f2, rgb(255 77 90 / 0.12));
+  --color-success: light-dark(#15803d, #4ade80);
+  --color-success-ground: light-dark(#f0fdf4, rgb(74 222 128 / 0.12));
+  --color-warning: light-dark(#a16207, #fbbf24);
+  --color-warning-ground: light-dark(#fefce8, rgb(251 191 36 / 0.12));
+  --color-info: light-dark(#1d4ed8, #60a5fa);
+  --color-info-ground: light-dark(#eff6ff, rgb(96 165 250 / 0.12));
+
+  /* categorical (item metadata, priorities, chart series) */
+  --color-cat-green: light-dark(#16a34a, #5ec97a);
+  --color-cat-purple: light-dark(#9333ea, #c39bf2);
+  --color-cat-orange: light-dark(#ea580c, #f59a5b);
+  --color-cat-blue: light-dark(#3b82f6, #6db3f2);
+  --color-cat-red: light-dark(#ef4444, #ff6b76);
+}
+
+/* Theme resolution: light-dark() follows the used color-scheme. Default is
+   the OS preference; <html data-theme="light|dark"> (rendered server-side
+   from the "theme" cookie) pins it. */
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  /* The de-facto body size of the whole UI (was `text-sm` repeated 258
+     times); larger text opts in with text-base/text-lg/... explicitly. */
+  body {
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+  }
+}
+
+/* Repeated UI primitives. Only nameable, thrice-repeated recipes live here;
+   one-off layout stays as inline utilities. Utilities still override these
+   (e.g. class="btn-primary w-full"). The composable bases (btn, badge,
+   alert) are @utility so the variant classes can @apply them. */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ring-offset-ground;
+}
+@utility badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+@utility alert {
+  @apply rounded-md border p-4;
+}
+
+@layer components {
+  .btn-primary {
+    @apply btn bg-accent text-on-accent hover:bg-accent-hover;
+  }
+  .btn-secondary {
+    @apply btn border border-line bg-surface text-body shadow-sm hover:bg-ground;
+  }
+  .btn-danger {
+    @apply btn bg-danger text-on-accent hover:bg-danger-hover focus:ring-danger;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-ground hover:text-body;
+  }
+  .btn-icon {
+    @apply inline-flex items-center rounded border border-line bg-surface p-1.5 text-muted shadow-sm transition-colors hover:bg-ground focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ring-offset-ground;
+  }
+
+  .input {
+    /* outline-none: the UA focus outline would stack a second color on
+       top of the accent border/ring (greenish under color-scheme: dark) */
+    @apply block w-full rounded-md border border-line bg-surface p-2 text-base text-body shadow-sm placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm;
+  }
+  .checkbox {
+    @apply h-4 w-4 rounded border-line text-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ring-offset-surface;
+  }
+
+  .card {
+    /* border-edge: invisible in light (shadow does the lifting), hairline in dark */
+    @apply rounded-lg border border-edge bg-surface shadow;
+  }
+
+  .dropdown-panel {
+    @apply rounded-md border border-edge bg-surface shadow-lg ring-1 ring-black/5;
+  }
+  .menu-item {
+    @apply block px-4 py-2 text-body hover:bg-ground;
+  }
+  .menu-item-danger {
+    @apply block px-4 py-2 text-danger hover:bg-danger-ground;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent/15 text-accent;
+  }
+
+  .alert-success {
+    @apply alert bg-success-ground border-success/30 text-success;
+  }
+  .alert-warning {
+    @apply alert bg-warning-ground border-warning/30 text-warning;
+  }
+  .alert-info {
+    @apply alert bg-info-ground border-info/30 text-info;
+  }
+  .alert-danger {
+    @apply alert bg-danger-ground border-danger/30 text-danger;
+  }
+}
+
+/* air-datepicker ships a light-only palette; remap its custom properties
+   onto the theme tokens so the calendar follows light/dark. The doubled
+   selector out-specifies the vendor's own variable block, which would
+   otherwise win by stylesheet order (it sits in a later Vite chunk). */
+.air-datepicker.air-datepicker {
+  --adp-background-color: var(--color-surface);
+  --adp-background-color-hover: var(--color-ground);
+  --adp-background-color-active: var(--color-ground);
+  --adp-color: var(--color-body);
+  --adp-color-secondary: var(--color-muted);
+  --adp-accent-color: var(--color-accent);
+  --adp-color-current-date: var(--color-accent);
+  --adp-color-other-month: var(--color-faint);
+  --adp-color-disabled: var(--color-faint);
+  --adp-border-color: var(--color-line);
+  --adp-border-color-inner: var(--color-line);
+  --adp-border-color-inline: var(--color-line);
+  --adp-nav-arrow-color: var(--color-muted);
+  --adp-nav-color-secondary: var(--color-muted);
+  --adp-day-name-color: var(--color-muted);
+  --adp-day-name-color-hover: var(--color-body);
+  --adp-cell-background-color-hover: var(--color-ground);
+  --adp-cell-background-color-selected: var(--color-accent);
+  --adp-cell-background-color-selected-hover: var(--color-accent-hover);
+  --adp-cell-background-color-in-range: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  --adp-btn-color: var(--color-accent);
+  --adp-btn-color-hover: var(--color-accent-hover);
+  --adp-btn-background-color-hover: var(--color-ground);
+  --adp-btn-background-color-active: var(--color-ground);
+  --adp-time-day-period-color: var(--color-muted);
+  --adp-time-track-color: var(--color-line);
+  --adp-time-track-color-hover: var(--color-faint);
+}
+
+.air-datepicker-overlay.air-datepicker-overlay {
+  --adp-overlay-background-color: rgb(0 0 0 / 0.5);
 }
 
 .expand-target::after {
@@ -32,35 +191,35 @@
 .stats-card-red {
   --card-ring-color: rgb(239 68 68); /* red-500 */
   --card-border-color: rgb(248 113 113); /* red-400 */
-  --card-bg-color: rgb(254 242 242); /* red-50 */
+  --card-bg-color: light-dark(rgb(254 242 242), rgb(239 68 68 / 0.12)); /* red-50 */
 }
 
 .stats-card-blue {
   --card-ring-color: rgb(59 130 246); /* blue-500 */
   --card-border-color: rgb(96 165 250); /* blue-400 */
-  --card-bg-color: rgb(239 246 255); /* blue-50 */
+  --card-bg-color: light-dark(rgb(239 246 255), rgb(59 130 246 / 0.12)); /* blue-50 */
 }
 
 .stats-card-purple {
   --card-ring-color: rgb(168 85 247); /* purple-500 */
   --card-border-color: rgb(192 132 252); /* purple-400 */
-  --card-bg-color: rgb(250 245 255); /* purple-50 */
+  --card-bg-color: light-dark(rgb(250 245 255), rgb(168 85 247 / 0.12)); /* purple-50 */
 }
 
 .stats-card-yellow {
   --card-ring-color: rgb(234 179 8); /* yellow-500 */
   --card-border-color: rgb(250 204 21); /* yellow-400 */
-  --card-bg-color: rgb(254 252 232); /* yellow-50 */
+  --card-bg-color: light-dark(rgb(254 252 232), rgb(234 179 8 / 0.12)); /* yellow-50 */
 }
 
 .stats-card-gray {
   --card-ring-color: rgb(107 114 128); /* gray-500 */
-  --card-border-color: rgb(156 163 175); /* gray-400 */
-  --card-bg-color: rgb(249 250 251); /* gray-50 */
+  --card-border-color: var(--color-faint);
+  --card-bg-color: light-dark(rgb(249 250 251), rgb(107 114 128 / 0.12)); /* gray-50 */
 }
 
 .stats-card-btn {
-  @apply block w-full text-left hover:bg-gray-50 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  @apply block w-full text-left hover:bg-ground transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ring-offset-ground;
   --tw-ring-color: var(--card-ring-color);
 }
 
@@ -70,7 +229,7 @@
 }
 
 .stats-card-inner {
-  @apply bg-white overflow-hidden shadow rounded-lg border-l-4;
+  @apply bg-surface overflow-hidden shadow rounded-lg border-l-4;
   border-color: var(--card-border-color);
 }
 
@@ -92,101 +251,101 @@
 
 /* Color variants */
 .filter-blue {
-  --filter-from-light: rgb(219 234 254); /* blue-100 */
-  --filter-to-light: rgb(191 219 254); /* blue-200 */
+  --filter-from-light: light-dark(rgb(219 234 254), rgb(59 130 246 / 0.25)); /* blue-100 */
+  --filter-to-light: light-dark(rgb(191 219 254), rgb(37 99 235 / 0.15)); /* blue-200 */
   --filter-from-dark: rgb(59 130 246); /* blue-500 */
   --filter-to-dark: rgb(37 99 235); /* blue-600 */
-  --filter-text-light: rgb(30 64 175); /* blue-800 */
+  --filter-text-light: light-dark(rgb(30 64 175), #93c5fd); /* blue-800 */
   --filter-ring-light: rgb(96 165 250); /* blue-400 */
   --filter-ring-dark: rgb(59 130 246); /* blue-500 */
 }
 
 .filter-green {
-  --filter-from-light: rgb(209 250 229); /* emerald-100 */
-  --filter-to-light: rgb(167 243 208); /* emerald-200 */
+  --filter-from-light: light-dark(rgb(209 250 229), rgb(16 185 129 / 0.25)); /* emerald-100 */
+  --filter-to-light: light-dark(rgb(167 243 208), rgb(5 150 105 / 0.15)); /* emerald-200 */
   --filter-from-dark: rgb(16 185 129); /* emerald-500 */
   --filter-to-dark: rgb(5 150 105); /* emerald-600 */
-  --filter-text-light: rgb(6 95 70); /* emerald-800 */
+  --filter-text-light: light-dark(rgb(6 95 70), #6ee7b7); /* emerald-800 */
   --filter-ring-light: rgb(52 211 153); /* emerald-400 */
   --filter-ring-dark: rgb(16 185 129); /* emerald-500 */
 }
 
 .filter-yellow {
-  --filter-from-light: rgb(254 243 199); /* amber-100 */
-  --filter-to-light: rgb(253 230 138); /* amber-200 */
+  --filter-from-light: light-dark(rgb(254 243 199), rgb(245 158 11 / 0.25)); /* amber-100 */
+  --filter-to-light: light-dark(rgb(253 230 138), rgb(217 119 6 / 0.15)); /* amber-200 */
   --filter-from-dark: rgb(245 158 11); /* amber-500 */
   --filter-to-dark: rgb(217 119 6); /* amber-600 */
-  --filter-text-light: rgb(146 64 14); /* amber-800 */
+  --filter-text-light: light-dark(rgb(146 64 14), #fcd34d); /* amber-800 */
   --filter-ring-light: rgb(251 191 36); /* amber-400 */
   --filter-ring-dark: rgb(245 158 11); /* amber-500 */
 }
 
 .filter-red {
-  --filter-from-light: rgb(254 226 226); /* red-100 */
-  --filter-to-light: rgb(254 202 202); /* red-200 */
+  --filter-from-light: light-dark(rgb(254 226 226), rgb(239 68 68 / 0.25)); /* red-100 */
+  --filter-to-light: light-dark(rgb(254 202 202), rgb(220 38 38 / 0.15)); /* red-200 */
   --filter-from-dark: rgb(239 68 68); /* red-500 */
   --filter-to-dark: rgb(220 38 38); /* red-600 */
-  --filter-text-light: rgb(153 27 27); /* red-800 */
+  --filter-text-light: light-dark(rgb(153 27 27), #fca5a5); /* red-800 */
   --filter-ring-light: rgb(248 113 113); /* red-400 */
   --filter-ring-dark: rgb(239 68 68); /* red-500 */
 }
 
 .filter-purple {
-  --filter-from-light: rgb(237 233 254); /* violet-100 */
-  --filter-to-light: rgb(221 214 254); /* violet-200 */
+  --filter-from-light: light-dark(rgb(237 233 254), rgb(139 92 246 / 0.25)); /* violet-100 */
+  --filter-to-light: light-dark(rgb(221 214 254), rgb(124 58 237 / 0.15)); /* violet-200 */
   --filter-from-dark: rgb(139 92 246); /* violet-500 */
   --filter-to-dark: rgb(124 58 237); /* violet-600 */
-  --filter-text-light: rgb(91 33 182); /* violet-800 */
+  --filter-text-light: light-dark(rgb(91 33 182), #c4b5fd); /* violet-800 */
   --filter-ring-light: rgb(167 139 250); /* violet-400 */
   --filter-ring-dark: rgb(139 92 246); /* violet-500 */
 }
 
 .filter-pink {
-  --filter-from-light: rgb(252 231 243); /* pink-100 */
-  --filter-to-light: rgb(251 207 232); /* pink-200 */
+  --filter-from-light: light-dark(rgb(252 231 243), rgb(236 72 153 / 0.25)); /* pink-100 */
+  --filter-to-light: light-dark(rgb(251 207 232), rgb(219 39 119 / 0.15)); /* pink-200 */
   --filter-from-dark: rgb(236 72 153); /* pink-500 */
   --filter-to-dark: rgb(219 39 119); /* pink-600 */
-  --filter-text-light: rgb(157 23 77); /* pink-800 */
+  --filter-text-light: light-dark(rgb(157 23 77), #f9a8d4); /* pink-800 */
   --filter-ring-light: rgb(244 114 182); /* pink-400 */
   --filter-ring-dark: rgb(236 72 153); /* pink-500 */
 }
 
 .filter-indigo {
-  --filter-from-light: rgb(224 231 255); /* indigo-100 */
-  --filter-to-light: rgb(199 210 254); /* indigo-200 */
+  --filter-from-light: light-dark(rgb(224 231 255), rgb(99 102 241 / 0.25)); /* indigo-100 */
+  --filter-to-light: light-dark(rgb(199 210 254), rgb(79 70 229 / 0.15)); /* indigo-200 */
   --filter-from-dark: rgb(99 102 241); /* indigo-500 */
   --filter-to-dark: rgb(79 70 229); /* indigo-600 */
-  --filter-text-light: rgb(55 48 163); /* indigo-800 */
+  --filter-text-light: light-dark(rgb(55 48 163), #a5b4fc); /* indigo-800 */
   --filter-ring-light: rgb(129 140 248); /* indigo-400 */
   --filter-ring-dark: rgb(99 102 241); /* indigo-500 */
 }
 
 .filter-orange {
-  --filter-from-light: rgb(255 237 213); /* orange-100 */
-  --filter-to-light: rgb(254 215 170); /* orange-200 */
+  --filter-from-light: light-dark(rgb(255 237 213), rgb(249 115 22 / 0.25)); /* orange-100 */
+  --filter-to-light: light-dark(rgb(254 215 170), rgb(234 88 12 / 0.15)); /* orange-200 */
   --filter-from-dark: rgb(249 115 22); /* orange-500 */
   --filter-to-dark: rgb(234 88 12); /* orange-600 */
-  --filter-text-light: rgb(154 52 18); /* orange-800 */
+  --filter-text-light: light-dark(rgb(154 52 18), #fdba74); /* orange-800 */
   --filter-ring-light: rgb(251 146 60); /* orange-400 */
   --filter-ring-dark: rgb(249 115 22); /* orange-500 */
 }
 
 .filter-teal {
-  --filter-from-light: rgb(204 251 241); /* teal-100 */
-  --filter-to-light: rgb(153 246 228); /* teal-200 */
+  --filter-from-light: light-dark(rgb(204 251 241), rgb(20 184 166 / 0.25)); /* teal-100 */
+  --filter-to-light: light-dark(rgb(153 246 228), rgb(13 148 136 / 0.15)); /* teal-200 */
   --filter-from-dark: rgb(20 184 166); /* teal-500 */
   --filter-to-dark: rgb(13 148 136); /* teal-600 */
-  --filter-text-light: rgb(17 94 89); /* teal-800 */
+  --filter-text-light: light-dark(rgb(17 94 89), #5eead4); /* teal-800 */
   --filter-ring-light: rgb(45 212 191); /* teal-400 */
   --filter-ring-dark: rgb(20 184 166); /* teal-500 */
 }
 
 .filter-cyan {
-  --filter-from-light: rgb(207 250 254); /* cyan-100 */
-  --filter-to-light: rgb(165 243 252); /* cyan-200 */
+  --filter-from-light: light-dark(rgb(207 250 254), rgb(6 182 212 / 0.25)); /* cyan-100 */
+  --filter-to-light: light-dark(rgb(165 243 252), rgb(8 145 178 / 0.15)); /* cyan-200 */
   --filter-from-dark: rgb(6 182 212); /* cyan-500 */
   --filter-to-dark: rgb(8 145 178); /* cyan-600 */
-  --filter-text-light: rgb(21 94 117); /* cyan-800 */
+  --filter-text-light: light-dark(rgb(21 94 117), #67e8f9); /* cyan-800 */
   --filter-ring-light: rgb(34 211 238); /* cyan-400 */
   --filter-ring-dark: rgb(6 182 212); /* cyan-500 */
 }
@@ -229,7 +388,7 @@
   outline: none;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: rgb(17 24 39); /* gray-900 */
+  color: var(--color-body);
 }
 
 .markdown-host .markdown-prose p {
@@ -241,7 +400,7 @@
 }
 
 .markdown-host .markdown-prose a {
-  color: rgb(37 99 235); /* blue-600 */
+  color: var(--color-accent);
   text-decoration: underline;
 }
 
@@ -274,5 +433,5 @@
 /* Placeholder rendered by Milkdown when the doc is empty */
 .markdown-host .markdown-prose .ProseMirror-placeholder,
 .markdown-host .markdown-prose p.is-empty::before {
-  color: rgb(156 163 175); /* gray-400 */
+  color: var(--color-faint);
 }

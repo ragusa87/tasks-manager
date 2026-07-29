@@ -1,9 +1,10 @@
 {% load static i18n sprite_tags django_vite %}
 {% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}"{% if THEME %} data-theme="{{ THEME }}"{% endif %}>
 <head>
     <meta charset="UTF-8">
+    {% include "partials/theme_color_meta.html" with light="#ffffff" dark="#152026" %}
     <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml" sizes="any">
     <link rel="icon" href="{% static 'favicon.ico' %}">
     <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
@@ -13,32 +14,33 @@
         {% vite_hmr_client %}
     {% endblock %}
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-ground min-h-screen">
     {% block body_header %}
-    <header class="bg-white shadow-sm border-b border-gray-200">
+    <header class="bg-surface shadow-sm border-b border-line">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center">
-                        <h1 class="text-xl font-semibold text-gray-900">{% block header_title %}Dashboard{% endblock %}</h1>
+                        <h1 class="text-xl font-semibold text-body">{% block header_title %}Dashboard{% endblock %}</h1>
                     </div>
+                    <div class="flex items-center gap-4">
                     {% if user.is_authenticated %}
                     <!-- Desktop Menu -->
                     <div class="hidden md:flex items-center space-x-4">
                         <!-- Dashboard Link -->
                         <a href="{% url 'dashboard' %}"
-                           class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                           class="text-muted hover:text-body font-medium">
                             Dashboard
                         </a>
 
                         <!-- Offload Link -->
                         <a href="{% url 'item_offload' %}"
-                           class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                           class="text-muted hover:text-body font-medium">
                             Offload
                         </a>
 
                         <!-- Manage Menu -->
                         <div class="relative group">
-                            <button class="flex items-center text-sm text-gray-700 hover:text-gray-900 font-medium focus:outline-none">
+                            <button class="flex items-center text-muted hover:text-body font-medium focus:outline-none">
                                 Manage
                                 <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -46,22 +48,22 @@
                             </button>
 
                             <div class="hidden group-hover:block absolute right-0 pt-2 w-48 z-50">
-                                <div class="py-1 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                <div class="py-1 dropdown-panel">
                                     <a href="{% url 'area_list' %}"
-                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                       class="menu-item">
                                         Areas
                                     </a>
                                     <a href="{% url 'context_list' %}"
-                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                       class="menu-item">
                                         Contexts
                                     </a>
                                     <a href="{% url 'tag_list' %}"
-                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                       class="menu-item">
                                         Tags
                                     </a>
                                     {% if perms.task_processor.use_email_inbox %}
                                     <a href="{% url 'email_inbox_settings' %}"
-                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                       class="menu-item">
                                         Email inbox
                                     </a>
                                     {% endif %}
@@ -69,24 +71,30 @@
                             </div>
                         </div>
 
-                        <span class="text-sm text-gray-700">
+                        <span class="text-muted">
                             Welcome, {{ user.first_name|default:user.username }}
                         </span>
                         <a href="{% url 'logout' %}"
-                           class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                           class="text-accent hover:text-accent-hover font-medium">
                             Logout
                         </a>
                     </div>
+                    {% endif %}
 
+                    <!-- Theme toggle: outside the auth guard, also on the login page -->
+                    {% include "partials/theme_toggle.html" %}
+
+                    {% if user.is_authenticated %}
                     <!-- Mobile Menu Button -->
                     <div class="md:hidden">
-                        <button id="mobile-menu-button" type="button" class="text-gray-700 hover:text-gray-900 focus:outline-none" aria-expanded="false">
+                        <button id="mobile-menu-button" type="button" class="text-muted hover:text-body focus:outline-none" aria-expanded="false">
                             <svg class="h-6 w-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
                     </div>
                     {% endif %}
+                    </div>
                 </div>
 
                 <!-- Mobile Menu -->
@@ -95,19 +103,19 @@
                     <div class="px-2 pt-2 pb-3 space-y-1">
                         <!-- Dashboard Link -->
                         <a href="{% url 'dashboard' %}"
-                           class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                           class="block px-3 py-2 text-base font-medium text-muted hover:text-body hover:bg-ground rounded-md">
                             Dashboard
                         </a>
 
                         <!-- Offload Link -->
                         <a href="{% url 'item_offload' %}"
-                           class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                           class="block px-3 py-2 text-base font-medium text-muted hover:text-body hover:bg-ground rounded-md">
                             Offload
                         </a>
 
                         <!-- Manage Dropdown -->
                         <div class="relative">
-                            <button class="mobile-dropdown-trigger w-full flex items-center justify-between px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                            <button class="mobile-dropdown-trigger w-full flex items-center justify-between px-3 py-2 text-base font-medium text-muted hover:text-body hover:bg-ground rounded-md">
                                 Manage
                                 <svg class="h-5 w-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -115,20 +123,20 @@
                             </button>
                             <div class="hidden mobile-dropdown-content pl-4 space-y-1 mt-1">
                                 <a href="{% url 'area_list' %}"
-                                   class="block px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                                   class="block px-3 py-2 text-muted hover:text-body hover:bg-ground rounded-md">
                                     Areas
                                 </a>
                                 <a href="{% url 'context_list' %}"
-                                   class="block px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                                   class="block px-3 py-2 text-muted hover:text-body hover:bg-ground rounded-md">
                                     Contexts
                                 </a>
                                 <a href="{% url 'tag_list' %}"
-                                   class="block px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                                   class="block px-3 py-2 text-muted hover:text-body hover:bg-ground rounded-md">
                                     Tags
                                 </a>
                                 {% if perms.task_processor.use_email_inbox %}
                                 <a href="{% url 'email_inbox_settings' %}"
-                                   class="block px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                                   class="block px-3 py-2 text-muted hover:text-body hover:bg-ground rounded-md">
                                     Email inbox
                                 </a>
                                 {% endif %}
@@ -136,13 +144,13 @@
                         </div>
 
                         <!-- User Info -->
-                        <div class="px-3 py-2 text-sm text-gray-700 border-t border-gray-200 mt-2 pt-2">
+                        <div class="px-3 py-2 text-muted border-t border-line mt-2 pt-2">
                             Welcome, {{ user.first_name|default:user.username }}
                         </div>
 
                         <!-- Logout -->
                         <a href="{% url 'logout' %}"
-                           class="block px-3 py-2 text-base font-medium text-blue-600 hover:text-blue-800 hover:bg-gray-50 rounded-md">
+                           class="block px-3 py-2 text-base font-medium text-accent hover:text-accent-hover hover:bg-ground rounded-md">
                             Logout
                         </a>
                     </div>

@@ -232,16 +232,16 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
         _render() {
             const wrapper = document.createElement('div');
             wrapper.className =
-                'markdown-editor border border-gray-300 rounded-md shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500 overflow-hidden bg-white';
+                'markdown-editor border border-line rounded-md shadow-sm focus-within:ring-1 focus-within:ring-accent focus-within:border-accent overflow-hidden bg-surface';
 
             const toolbar = document.createElement('div');
             toolbar.className =
-                'markdown-toolbar flex items-center gap-1 px-2 py-1 border-b border-gray-200 bg-gray-50';
+                'markdown-toolbar flex items-center gap-1 px-2 py-1 border-b border-line bg-ground';
 
             ACTIONS.forEach((action) => {
                 if (action.divider) {
                     const sep = document.createElement('span');
-                    sep.className = 'w-px h-5 bg-gray-300 mx-1';
+                    sep.className = 'w-px h-5 bg-line mx-1';
                     toolbar.appendChild(sep);
                     return;
                 }
@@ -249,7 +249,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 btn.type = 'button';
                 btn.title = action.title;
                 btn.className =
-                    'markdown-btn p-1.5 rounded text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors';
+                    'markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors';
                 btn.innerHTML = svg(action.icon);
                 btn.addEventListener('mousedown', (e) => e.preventDefault()); // keep selection
                 btn.addEventListener('click', () => this._runAction(action));
@@ -261,7 +261,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
             // _interceptFilePaste); documents.js hides it via detail.done().
             this._uploadIndicator = document.createElement('span');
             this._uploadIndicator.className =
-                'hidden items-center gap-1.5 ml-auto text-xs text-gray-500';
+                'hidden items-center gap-1.5 ml-auto text-xs text-muted';
             this._uploadIndicator.innerHTML = `${svg('loader-circle').replace(
                 '<svg ',
                 '<svg class="animate-spin" '
@@ -490,8 +490,8 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                     const on = action.node
                         ? isNodeActive(state, schema.nodes[action.node])
                         : isMarkActive(state, schema.marks[action.mark]);
-                    btn.classList.toggle('bg-blue-100', on);
-                    btn.classList.toggle('text-blue-700', on);
+                    btn.classList.toggle('bg-accent/15', on);
+                    btn.classList.toggle('text-accent', on);
                 });
             });
         }

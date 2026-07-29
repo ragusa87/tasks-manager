@@ -1,20 +1,20 @@
 {% load sprite_tags %}
 
 <!-- Search Box Section -->
-<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+<div class="card rounded-none overflow-hidden sm:rounded-lg">
     <div class="px-4 py-5 sm:px-6">
         <div class="flex items-center space-x-4">
             <div class="flex-1">
                 <label for="search-input" class="sr-only">Search items</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        {% sprite "lucide-search" 24 class="text-gray-400" %}
+                        {% sprite "lucide-search" 24 class="text-faint" %}
                     </div>
                     <input type="text"
                            id="search-input"
                            name="q"
                            value="{{ search_query|default:'' }}"
-                           class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                           class="block w-full pl-10 pr-3 py-2 border border-line rounded-md leading-5 bg-surface placeholder:text-faint focus:outline-none focus:placeholder:text-faint focus:ring-1 focus:ring-accent focus:border-accent text-base sm:text-sm"
                            placeholder="Search items..."
                            hx-get="{% url 'dashboard' %}"
                            hx-target="body"
@@ -25,14 +25,14 @@
                 </div>
             </div>
             <button id="clear-search" type="button"
-                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    class="btn-secondary"
                     >
                 {% sprite "lucide-x" 16 class="mr-1" %}
                 Clear
             </button>
         </div>
 
-        <p class="text-sm text-gray-700 italic">
+        <p class="text-muted italic">
             Pro tip: You can negate a filter by adding a minus before (Ex: <span class="font-light">-in:cancelled</span>).
         </p>
         <!-- Filter Suggestions -->

@@ -10,13 +10,13 @@
     <div class="mb-8">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">{{ transition.label }}</h2>
-                <p class="mt-1 text-sm text-gray-600">
-                    Complete the form to apply "{{ transition.label }}" to "{{ item.title }}"
+                <h2 class="text-2xl font-bold text-body">{{ transition.label }}</h2>
+                <p class="mt-1 text-muted">
+                    Complete the form to apply"{{ transition.label }}" to"{{ item.title }}"
                 </p>
             </div>
             <div class="flex items-center space-x-3">
-                <a href="{{ return_url }}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="{{ return_url }}" class="btn-secondary">
                     {% sprite "lucide-chevron-left" 24 class="mr-2" %}
                     Cancel
                 </a>
@@ -25,14 +25,14 @@
     </div>
 
     <!-- Item Info -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <div class="bg-accent/10 border border-info/30 rounded-lg p-4 mb-6">
         <div class="flex items-center">
             <div class="flex-shrink-0">
-                {% sprite "lucide-info" 24 class="text-blue-600" %}
+                {% sprite "lucide-info" 24 class="text-accent" %}
             </div>
             <div class="ml-3">
-                <h3 class="text-sm font-medium text-blue-800">Item Details</h3>
-                <div class="mt-1 text-sm text-blue-700">
+                <h3 class="font-medium text-accent">Item Details</h3>
+                <div class="mt-1 text-accent">
                     <p><strong>Title:</strong> {{ item.title }}</p>
                     {% if item.description %}
                         <p><strong>Description:</strong> {{ item.description|strip_markdown|truncatechars:100 }}</p>
@@ -44,19 +44,19 @@
     </div>
 
     <!-- Form -->
-    <div class="bg-white shadow rounded-lg">
+    <div class="card">
         <form method="post" class="p-6">
             {% csrf_token %}
 
             <!-- Non-field errors -->
             {% if form.non_field_errors %}
-                <div class="rounded-md bg-red-50 p-4 mb-6">
+                <div class="rounded-md bg-danger-ground p-4 mb-6">
                     <div class="flex">
                         <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">
+                            <h3 class="font-medium text-danger">
                                 Please correct the following errors:
                             </h3>
-                            <div class="mt-2 text-sm text-red-700">
+                            <div class="mt-2 text-danger">
                                 <ul class="list-disc pl-5 space-y-1">
                                     {% for error in form.non_field_errors %}
                                         <li>{{ error }}</li>
@@ -71,19 +71,19 @@
             <div class="space-y-6">
                 {% for field in form %}
                     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        <label for="{{ field.id_for_label }}" class="block font-medium text-muted sm:mt-px sm:pt-2">
                             {{ field.label }}
                             {% if field.field.required %}
-                                <span class="text-red-500">*</span>
+                                <span class="text-danger">*</span>
                             {% endif %}
                         </label>
                         <div class="mt-1 sm:mt-0 sm:col-span-2">
                             {{ field }}
                             {% if field.errors %}
-                                <p class="mt-2 text-sm text-red-600">{{ field.errors.0 }}</p>
+                                <p class="mt-2 text-danger">{{ field.errors.0 }}</p>
                             {% endif %}
                             {% if field.help_text %}
-                                <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+                                <p class="mt-2 text-muted">{{ field.help_text }}</p>
                             {% endif %}
                         </div>
                     </div>
@@ -91,11 +91,11 @@
             </div>
 
             <!-- Form Actions -->
-            <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-                <a href="{{ return_url }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <div class="flex items-center justify-between pt-6 border-t border-line">
+                <a href="{{ return_url }}" class="btn-secondary">
                     Cancel
                 </a>
-                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <button type="submit" class="btn-primary">
                     {% sprite "lucide-save" 24 class="mr-2" %}
                     Save
                 </button>

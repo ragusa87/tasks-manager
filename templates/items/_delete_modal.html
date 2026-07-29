@@ -1,21 +1,21 @@
 {% load sprite_tags %}
 
 <!-- Delete confirmation modal (loaded via HTMX) -->
-<div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-24 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
+<div id="modal" class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-24 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-surface">
         <div id="modal-content">
             <div class="mb-4 flex items-start">
-                <div class="flex-shrink-0 text-red-600">
+                <div class="flex-shrink-0 text-danger">
                     {% sprite "lucide-triangle-alert" 24 %}
                 </div>
                 <div class="ml-3">
-                    <h2 class="text-lg font-bold text-gray-900">Delete item?</h2>
-                    <p class="mt-1 text-sm text-gray-600">
+                    <h2 class="text-lg font-bold text-body">Delete item?</h2>
+                    <p class="mt-1 text-muted">
                         This permanently deletes <strong>“{{ item.title }}”</strong>. This cannot be undone.
                     </p>
                     {% with child_count=item.sub_items.count %}
                         {% if child_count %}
-                            <p class="mt-2 text-sm text-red-600">
+                            <p class="mt-2 text-danger">
                                 Its {{ child_count }} sub-item{{ child_count|pluralize }} will also be deleted.
                             </p>
                         {% endif %}
@@ -29,13 +29,13 @@
                   hx-target="#modal-container"
                   hx-swap="innerHTML">
                 {% csrf_token %}
-                <div class="flex items-center justify-end pt-4 mt-4 border-t border-gray-200 space-x-2">
+                <div class="flex items-center justify-end pt-4 mt-4 border-t border-line space-x-2">
                     <button type="button" id="close-modal-btn"
-                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            class="btn-secondary">
                         Cancel
                     </button>
                     <button type="submit"
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            class="btn-danger">
                         {% sprite "lucide-trash-2" 16 class="mr-2" %}
                         Delete
                     </button>

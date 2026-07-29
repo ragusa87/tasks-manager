@@ -389,7 +389,7 @@ class Item(models.Model):
     @property
     def priority_color(self):
         """Get priority color class for styling"""
-        return GTDConfig.PRIORITY_COLORS.get(self.priority, "text-gray-500")
+        return GTDConfig.PRIORITY_COLORS.get(self.priority, "text-muted")
 
     # Property to get the flow instance
     @property
