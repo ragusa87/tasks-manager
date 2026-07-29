@@ -218,6 +218,74 @@ class TestItemViews(TestCase):
         self.assertIn("/login/", response.url)
 
 
+class TestItemDetailViewTemplates(TestCase):
+    """The detail URL serves the modal partial to HTMX and a full page to
+    plain requests (deep link / refresh on the history-pushed URL)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass"
+        )
+        self.client.force_login(self.user)
+        self.item = Item.objects.create(
+            title="Deep-linked item",
+            status=GTDStatus.NEXT_ACTION,
+            priority=Priority.NORMAL,
+            user=self.user,
+        )
+        self.url = reverse("item_detail", kwargs={"item_id": self.item.pk})
+
+    def test_htmx_get_renders_modal_partial(self):
+        response = self.client.get(self.url, HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "partials/item_detail_modal.html")
+        self.assertContains(response, 'id="modal"')
+
+    def test_plain_get_renders_full_page(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "items/detail.html")
+        self.assertTemplateUsed(response, "base.html")
+        self.assertContains(response, "Deep-linked item")
+        # base.html ships an empty #modal placeholder; the page itself must
+        # not render the modal dialog variant of the form.
+        self.assertNotContains(response, "aria-modal")
+
+    def test_plain_post_saves_and_redirects(self):
+        response = self.client.post(
+            self.url,
+            {
+                "title": "Renamed item",
+                "priority": self.item.priority,
+                "parent": "",
+                "rrule": "",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.url)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.title, "Renamed item")
+
+    def test_plain_post_invalid_rerenders_full_page(self):
+        response = self.client.post(
+            self.url,
+            {"title": "", "priority": self.item.priority, "parent": "", "rrule": ""},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "items/detail.html")
+
+    def test_other_users_item_is_404(self):
+        other = User.objects.create_user(username="other", password="x")
+        other_item = Item.objects.create(
+            title="Not yours", status=GTDStatus.INBOX, user=other
+        )
+        response = self.client.get(
+            reverse("item_detail", kwargs={"item_id": other_item.pk})
+        )
+        self.assertEqual(response.status_code, 404)
+
+
 class TestItemOffloadView(TestCase):
     """Test the standalone quick-capture page"""
 

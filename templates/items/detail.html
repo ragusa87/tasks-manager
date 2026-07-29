@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}{{ item.title }}{% endblock %}
+{% block header_title %}Item detail{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0 max-w-3xl mx-auto">
+    <div class="mb-6 flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-body truncate">{{ item.title }}</h2>
+        <a href="{% url 'dashboard' %}" class="btn-secondary shrink-0 ml-3">
+            {% sprite "lucide-chevron-left" 16 class="mr-2" %}
+            Dashboard
+        </a>
+    </div>
+
+    <div class="card p-6">
+        <form method="post" action="{% url 'item_detail' item_id=item.id %}">
+            {% csrf_token %}
+            {% include "partials/item_form_detail.html" %}
+
+            <div class="flex items-center justify-end pt-3 border-t border-line space-x-2">
+                <button type="submit" class="btn-primary">
+                    {% sprite "lucide-save" 16 class="mr-2" %}
+                    Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

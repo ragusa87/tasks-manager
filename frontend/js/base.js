@@ -62,8 +62,9 @@ function focusModal(modal) {
     target.focus();
 }
 
-function closeItemModal() {
+function closeItemModal(options) {
     const modal = getModal();
+    const wasOpen = Boolean(modal);
     if (modal) {
         modal.style.display = 'none';
         modal.remove();
@@ -73,6 +74,12 @@ function closeItemModal() {
             modalReturnFocus.focus();
         }
         modalReturnFocus = null;
+    }
+    // Drop the /item/<id>/detail/ history entry pushed on open — unless the
+    // close IS the browser's back navigation (popstate), which already did.
+    const fromHistory = options && options.fromHistory;
+    if (wasOpen && !fromHistory && history.state && history.state.itemModal) {
+        history.back();
     }
 }
 
@@ -110,8 +117,11 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Open the item-detail modal via [data-detail-url] (fetch + inject).
-function openItemModal(url) {
+// Open the item-detail modal via [data-detail-url] (fetch + inject). The
+// item URL is pushed onto the history so the modal is reflected in the
+// address bar; closing it (button, Escape, overlay or the browser's back
+// button) restores the previous URL.
+function openItemModal(url, options) {
     fetch(url, { headers: { 'HX-Request': 'true' } })
         .then(response => {
             if (!response.ok) {
@@ -129,10 +139,23 @@ function openItemModal(url) {
                 htmx.process(modal);
                 document.dispatchEvent(new CustomEvent('openmodal'));
                 focusModal(modal);
+                if (!(options && options.skipHistory)) {
+                    history.pushState({ itemModal: true }, '', url);
+                }
             }
         })
         .catch((error) => console.error('Modal request failed:', error));
 }
+
+// Back closes the modal; forward onto a pushed item entry reopens it.
+window.addEventListener('popstate', function(e) {
+    const onItemEntry = e.state && e.state.itemModal;
+    if (modalIsOpen() && !onItemEntry) {
+        closeItemModal({ fromHistory: true });
+    } else if (!modalIsOpen() && onItemEntry) {
+        openItemModal(location.pathname, { skipHistory: true });
+    }
+});
 
 // Modals injected by HTMX itself (delete confirmation, transition forms swap
 // into #modal-container) go through afterSwap, not openItemModal, so hook
@@ -385,6 +408,12 @@ function initializeAutocomplete() {
                 }
 
                 updateSelectedDisplay();
+                // Single-select: mirror the initial selection into the visible
+                // input. Otherwise the field looks empty while the hidden
+                // input still submits the stored id.
+                if (!allowMultiple && selectedItems.length > 0) {
+                    input.value = selectedItems[0].text;
+                }
             } catch (e) {
                 console.error('Error loading initial values:', e);
                 selectedItems = [];
@@ -394,6 +423,13 @@ function initializeAutocomplete() {
         // Input event handler
         input.addEventListener('input', function() {
             const query = this.value.trim();
+
+            // Single-select: erasing the visible text clears the selection,
+            // so an empty-looking field really submits an empty value.
+            if (!allowMultiple && query === '' && selectedItems.length > 0) {
+                selectedItems = [];
+                updateHiddenInput();
+            }
 
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
