@@ -1,19 +1,19 @@
 {% load sprite_tags %}
-<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-8" hx-swap-oob="true" id="stats-cards">
+<div class="grid grid-cols-2 gap-3 px-4 sm:gap-5 sm:px-0 lg:grid-cols-5 mb-8" hx-swap-oob="true" id="stats-cards">
     <!-- Inbox -->
     <div class="stats-card stats-card-red">
         <button type="button"
                 class="stats-card-btn {% if 'in:inbox' in search_query %}focused{% endif %}"
                 data-filter="in:inbox">
             <div class="stats-card-inner {% if 'in:inbox' in search_query %}focused{% endif %}">
-                <div class="p-5">
+                <div class="p-3 sm:p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-danger{% else %}text-faint{% endif %}">
                                 {% sprite "lucide-archive" 24 %}
                             </div>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
+                        <div class="ml-3 sm:ml-5 w-0 flex-1">
                             <dl>
                                 <dt class="font-medium text-muted truncate">Inbox</dt>
                                 <dd class="text-lg font-medium text-body">{{ stats.count_status_inbox|default:"0" }}</dd>
@@ -31,14 +31,14 @@
                 class="stats-card-btn {% if 'in:next' in search_query %}focused{% endif %}"
                 data-filter="in:next">
             <div class="stats-card-inner {% if 'in:next' in search_query %}focused{% endif %}">
-                <div class="p-5">
+                <div class="p-3 sm:p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="h-8 w-8 text-accent">
                                 {% sprite "lucide-zap" 24 %}
                             </div>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
+                        <div class="ml-3 sm:ml-5 w-0 flex-1">
                             <dl>
                                 <dt class="font-medium text-muted truncate">Next Actions</dt>
                                 <dd class="text-lg font-medium text-body">{{ stats.count_status_next_action|default:"0" }}</dd>
@@ -56,14 +56,14 @@
                 class="stats-card-btn {% if 'in:project' in search_query %}focused{% endif %}"
                 data-filter="in:project">
             <div class="stats-card-inner {% if 'in:project' in search_query %}focused{% endif %}">
-                <div class="p-5">
+                <div class="p-3 sm:p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="h-8 w-8 text-cat-purple">
                                 {% sprite "lucide-briefcase" 24 %}
                             </div>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
+                        <div class="ml-3 sm:ml-5 w-0 flex-1">
                             <dl>
                                 <dt class="font-medium text-muted truncate">Active Projects</dt>
                                 <dd class="text-lg font-medium text-body">{{ stats.count_status_project|default:"0" }}</dd>
@@ -81,14 +81,14 @@
                 class="stats-card-btn {% if 'in:waiting' in search_query %}focused{% endif %}"
                 data-filter="in:waiting">
             <div class="stats-card-inner {% if 'in:waiting' in search_query %}focused{% endif %}">
-                <div class="p-5">
+                <div class="p-3 sm:p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="h-8 w-8 text-warning">
                                 {% sprite "lucide-hourglass" 24 %}
                             </div>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
+                        <div class="ml-3 sm:ml-5 w-0 flex-1">
                             <dl>
                                 <dt class="font-medium text-muted truncate">Waiting For</dt>
                                 <dd class="text-lg font-medium text-body">{{ stats.count_status_waiting_for|default:"0" }}</dd>
@@ -106,14 +106,14 @@
                 class="stats-card-btn {% if 'in:someday' in search_query %}focused{% endif %}"
                 data-filter="in:someday">
             <div class="stats-card-inner {% if 'in:someday' in search_query %}focused{% endif %}">
-                <div class="p-5">
+                <div class="p-3 sm:p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="h-8 w-8 text-faint">
                                 {% sprite "lucide-hourglass" 24 %}
                             </div>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
+                        <div class="ml-3 sm:ml-5 w-0 flex-1">
                             <dl>
                                 <dt class="font-medium text-muted truncate">Someday Maybe</dt>
                                 <dd class="text-lg font-medium text-body">{{ stats.count_status_someday_maybe|default:"0" }}</dd>

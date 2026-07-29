@@ -7,19 +7,19 @@
 <div class="px-4 py-6 sm:px-0">
     <!-- Header -->
     <div class="mb-8">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-body">{{ title }}</h2>
                 <p class="mt-1 text-muted">
                     Manage your areas of responsibility
                 </p>
             </div>
-            <div class="flex items-center space-x-3">
-                <a href="{% url 'dashboard' %}" class="btn-secondary">
+            <div class="flex items-center gap-3">
+                <a href="{% url 'dashboard' %}" class="btn-secondary flex-1 sm:flex-none">
                     {% sprite "lucide-chevron-left" 24 class="mr-2" %}
                     Back
                 </a>
-                <a href="{% url 'area_create' %}" class="btn-primary">
+                <a href="{% url 'area_create' %}" class="btn-primary flex-1 sm:flex-none">
                     {% sprite "lucide-plus" 24 class="mr-2" %}
                     Create Area
                 </a>
@@ -33,7 +33,7 @@
         <ul class="divide-y divide-line">
             {% for area in areas %}
             <li class="hover:bg-ground transition-colors">
-                <div class="px-6 py-4 flex items-center justify-between">
+                <div class="px-4 sm:px-6 py-4 flex items-center justify-between">
                     <div class="flex-1 min-w-0">
                         <h3 class="text-lg font-medium text-body truncate">
                             {{ area.name }} <span class="text-muted">({{ area.task_count }})</span>
@@ -47,14 +47,14 @@
                             Created {{ area.created_at|date:"F d, Y" }}
                         </p>
                     </div>
-                    <div class="flex items-center space-x-3 ml-4">
+                    <div class="flex items-center gap-2 sm:gap-3 ml-3">
                         <a href="{% url 'area_update' area.id %}" class="btn-secondary">
-                            {% sprite "lucide-pencil" 20 class="mr-1" %}
-                            Edit
+                            {% sprite "lucide-pencil" 20 %}
+                            <span class="hidden sm:inline">Edit</span>
                         </a>
                         <a href="{% url 'area_delete' area.id %}" class="btn-secondary text-danger border-danger/40 hover:bg-danger-ground focus:ring-danger">
-                            {% sprite "lucide-trash-2" 20 class="mr-1" %}
-                            Delete
+                            {% sprite "lucide-trash-2" 20 %}
+                            <span class="hidden sm:inline">Delete</span>
                         </a>
                     </div>
                 </div>
