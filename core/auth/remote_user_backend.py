@@ -2,17 +2,26 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import load_backend
 from django.contrib.auth.backends import RemoteUserBackend
-from django.contrib.auth.middleware import RemoteUserMiddleware
+from django.contrib.auth.middleware import PersistentRemoteUserMiddleware
 
 
-class AuthcrunchRemoteUserMiddleware(RemoteUserMiddleware):
+class AuthcrunchRemoteUserMiddleware(PersistentRemoteUserMiddleware):
     """
     Middleware that authenticates users based on a custom header set by proxy
     See https://docs.authcrunch.com/docs/authorize/headers#pass-jwt-token-claims-in-http-request-headers
+
+    Persistent variant: the reverse proxy does not set the header on /api/*
+    routes (they are open to bearer-key clients), so the plain
+    RemoteUserMiddleware would log the user out — flushing the session and,
+    on the re-login that follows, rotating the CSRF secret under every open
+    page — each time the browser calls the API with its session cookie.
     """
 
     header = "HTTP_X_TOKEN_USER_NAME"
-    force_logout = settings.DEBUG
+
+    @property
+    def force_logout(self):
+        return settings.REMOTE_USER_FORCE_LOGOUT
 
     def process_request(self, request):
         if request.user.is_authenticated and self.force_logout:
