@@ -29,7 +29,7 @@
       data-max-recording-seconds="{{ MAX_RECORDING_SECONDS }}">
     <form hidden aria-hidden="true">{% csrf_token %}</form>
 
-    <div class="grid h-dvh grid-rows-[auto_auto_minmax(0,1fr)_auto] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] min-[620px]:mx-auto min-[620px]:max-w-[520px] min-[620px]:border-x min-[620px]:border-line">
+    <div class="offload-shell grid h-dvh grid-rows-[auto_auto_minmax(0,1fr)_auto] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] min-[620px]:mx-auto min-[620px]:max-w-[520px] min-[620px]:border-x min-[620px]:border-line">
 
         <header class="flex items-center gap-2.5 border-b border-line px-4.5 pt-3 pb-2.5">
             <span class="font-mono text-xs font-bold tracking-[.22em]">OFFLOAD<em class="not-italic text-accent">→</em></span>
@@ -56,12 +56,18 @@
                 <textarea id="note" placeholder="What's on your mind?" autocapitalize="sentences" spellcheck="true" enterkeyhint="enter"
                           class="min-h-[120px] w-full flex-1 resize-none border-0 bg-transparent p-3 text-[19px] leading-normal outline-none placeholder:text-faint"></textarea>
                 <p id="count" class="text-right font-mono text-[10px] tracking-[.08em] text-muted">0</p>
-                <p class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-muted">First line becomes the title. The rest goes in the description.</p>
+                <p class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-muted">First line becomes the title (unless a title is set below). The rest goes in the description.</p>
             </section>
 
             <!-- 1 · PHOTO -->
             <section role="tabpanel" id="panel-photo" aria-labelledby="tab-photo" inert
                      class="flex w-full min-w-full shrink-0 snap-start flex-col gap-3.5 overflow-y-auto p-4.5">
+                <div class="flex items-center gap-2">
+                    <span id="camChip" data-state="checking"
+                          class="inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[.12em] text-muted before:size-1.5 before:rounded-full before:bg-current before:content-['']">Camera · checking</span>
+                    <button id="camRecheck" hidden
+                            class="ml-auto rounded-xs border border-line px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[.1em] text-muted">Re-check</button>
+                </div>
                 <div id="shot" class="relative flex min-h-[150px] flex-1 items-center justify-center overflow-hidden rounded-xs border border-dashed border-line">
                     <span class="font-mono text-[10px] tracking-[.12em] text-muted">No image</span>
                 </div>
@@ -69,11 +75,10 @@
                     <button id="camBtn" class="flex-1 rounded-xs border border-line bg-surface px-2.5 py-[15px] font-mono text-[11px] uppercase tracking-[.12em] text-body transition-colors active:border-accent">Camera</button>
                     <button id="libBtn" class="flex-1 rounded-xs border border-line bg-surface px-2.5 py-[15px] font-mono text-[11px] uppercase tracking-[.12em] text-body transition-colors active:border-accent">Library</button>
                 </div>
-                <input type="text" id="shotCap" placeholder="Task title (optional)" autocapitalize="sentences"
-                       class="w-full rounded-xs border border-line bg-surface px-3.5 py-[13px] text-[15px] placeholder:text-faint">
                 <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
                 <input type="file" id="libIn" accept="image/*" hidden>
                 <p id="shotHint" class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-muted">Max {{ MAX_FILE_SIZE_MB }} MB.</p>
+                <p id="camHint" class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-muted"></p>
             </section>
 
             <!-- 2 · VOICE -->
@@ -92,15 +97,18 @@
                     <span id="recDot" class="size-2 shrink-0 rounded-full bg-line transition-colors"></span>
                     <span id="recLbl">Record</span>
                 </button>
-                <audio id="play" controls hidden class="h-[38px] w-full"></audio>
-                <input type="text" id="memoCap" placeholder="Task title (optional)" autocapitalize="sentences"
-                       class="w-full rounded-xs border border-line bg-surface px-3.5 py-[13px] text-[15px] placeholder:text-faint">
+                <div id="playRow" class="flex items-center gap-2.5" hidden>
+                    <audio id="play" controls class="h-[38px] min-w-0 flex-1"></audio>
+                    <button id="memoDrop" class="shrink-0 rounded-xs border border-line px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[.1em] text-muted">Remove</button>
+                </div>
                 <p id="micHint" class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-muted"></p>
             </section>
 
         </main>
 
         <footer class="grid gap-[11px] border-t border-line px-4.5 pt-3 pb-4">
+            <input type="text" id="itemTitle" placeholder="Title (optional)" autocapitalize="sentences"
+                   class="w-full rounded-xs border border-line bg-surface px-3.5 py-[13px] text-[15px] placeholder:text-faint">
             <p id="readout" role="status" aria-live="polite"
                class="offload-readout m-0 min-h-[1.5em] break-words font-mono text-[10.5px] tracking-[.09em] text-muted">Ready</p>
             <button id="offloadBtn"

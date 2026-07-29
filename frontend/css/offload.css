@@ -61,6 +61,43 @@
   }
 }
 
+/* Landscape phones (and short windows): stacked, the footer would eat
+   most of the height and leave the capture panel a sliver. The footer
+   becomes a right-hand sidebar instead, the portrait 520px cap is
+   lifted, and the side notch insets replace the top/bottom ones. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .offload-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    max-width: none;
+    margin-inline: 0;
+    border-inline: 0;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .offload-shell > header {
+    grid-column: 1 / -1;
+    padding-block: 8px;
+  }
+  .offload-shell > nav {
+    grid-row: 2;
+    grid-column: 1;
+  }
+  .offload-shell > main {
+    grid-row: 3;
+    grid-column: 1;
+  }
+  .offload-shell > footer {
+    grid-row: 2 / 4;
+    grid-column: 2;
+    border-top: 0;
+    border-left: 1px solid var(--color-line);
+    /* title on top, readout grows, the button anchors to the bottom */
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding-top: 14px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .offload-flight[data-fly="1"],
   .offload-dot-live {
