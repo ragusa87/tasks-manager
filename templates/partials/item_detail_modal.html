@@ -1,7 +1,8 @@
 {% load sprite_tags %}
 
 <!-- Modal overlay -->
-<div id="modal" class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50" {% if not form or not form.errors %}style="display: none;"{% endif %}>
+<div id="modal" role="dialog" aria-modal="true" aria-label="Item details" tabindex="-1"
+     class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50" {% if not form or not form.errors %}style="display: none;"{% endif %}>
     <!-- Modal container -->
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-surface">
         <div id="modal-content">

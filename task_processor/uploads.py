@@ -8,6 +8,7 @@ the policy.
 
 import magic
 from django.conf import settings
+from django.db import IntegrityError, transaction
 
 from core.upload_types import describe_types
 from task_processor.models import Document
@@ -49,15 +50,23 @@ def attach_document(item, user, file, batch_hashes=None) -> Document:
     ) or item.documents.filter(content_hash=content_hash).exists():
         raise DocumentValidationError("identical file already attached")
 
-    document = Document.objects.create(
-        item=item,
-        file=file,
-        file_name=file.name,
-        file_size=file.size,
-        content_type=detected_type,
-        content_hash=content_hash,
-        user=user,
-    )
+    try:
+        # The exists() check above is advisory (nice error message); the
+        # unique (item, content_hash) constraint is what actually prevents
+        # duplicates when two identical uploads race each other.
+        with transaction.atomic():
+            document = Document.objects.create(
+                item=item,
+                file=file,
+                # Keep the tail so the extension survives the column limit.
+                file_name=file.name[-Document.FILE_NAME_MAX_LENGTH :],
+                file_size=file.size,
+                content_type=detected_type,
+                content_hash=content_hash,
+                user=user,
+            )
+    except IntegrityError:
+        raise DocumentValidationError("identical file already attached")
     if batch_hashes is not None:
         batch_hashes.add(content_hash)
     return document

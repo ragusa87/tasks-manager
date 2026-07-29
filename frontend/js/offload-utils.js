@@ -1,17 +1,18 @@
 // Pure helpers of the offload quick-capture page (offload.js). Kept free of
 // DOM and browser APIs so they run under Node's test runner.
 
-// The API's ItemIn title limit (task_processor/api/schemas.py).
+// Fallback for the API's ItemIn title limit; the page normally injects the
+// live value via <body data-max-title-length> (see offload.js).
 export const MAX_TITLE_LENGTH = 1024;
 
 // Split a note into the item payload: first line becomes the title
 // (truncated to the API limit), the remaining lines the description.
-export function composeNote(raw) {
+export function composeNote(raw, titleLimit = MAX_TITLE_LENGTH) {
     const text = (raw || '').trim();
     if (!text) return { error: 'Nothing typed yet.' };
     const [first, ...rest] = text.split('\n');
     return {
-        title: first.slice(0, MAX_TITLE_LENGTH),
+        title: first.slice(0, titleLimit),
         description: rest.join('\n').trim(),
     };
 }

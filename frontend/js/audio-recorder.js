@@ -109,6 +109,12 @@ function setRecordingUi(btn, recording) {
     btn.classList.toggle('border-danger', recording);
     btn.classList.toggle('text-danger', recording);
     btn.classList.toggle('bg-danger-ground', recording);
+    // The icon swap is color/shape only; mirror the state for AT users.
+    btn.setAttribute('aria-pressed', recording ? 'true' : 'false');
+    btn.setAttribute(
+        'aria-label',
+        recording ? 'Stop recording' : 'Record a voice note (max 1 min)'
+    );
 }
 
 function buildBars(meter) {

@@ -38,6 +38,11 @@ test('composeNote: title is truncated to the API limit', () => {
     assert.equal(title.length, MAX_TITLE_LENGTH);
 });
 
+test('composeNote: an injected title limit overrides the default', () => {
+    const { title } = composeNote('x'.repeat(20), 10);
+    assert.equal(title.length, 10);
+});
+
 test('fmtSize: whole KB below 1 MB, one decimal above', () => {
     assert.equal(fmtSize(512), '1 KB');
     assert.equal(fmtSize(220 * 1024), '220 KB');

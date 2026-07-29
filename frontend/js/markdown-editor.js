@@ -43,7 +43,13 @@ import { InputRule } from '@milkdown/kit/prose/inputrules';
 import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state';
 import { Fragment } from '@milkdown/kit/prose/model';
 import { getMarkRange } from '@milkdown/kit/prose';
-import { AUTOLINK_RE, isUrlLike, resolveLinkEdit } from './markdown-editor-utils.js';
+import { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
+import {
+    AUTOLINK_RE,
+    convertedListItemAttrs,
+    isUrlLike,
+    resolveLinkEdit,
+} from './markdown-editor-utils.js';
 import '@milkdown/kit/prose/view/style/prosemirror.css';
 
 // Turn a bare URL into a link as soon as the user types a whitespace after it,
@@ -127,21 +133,38 @@ const linkTextSyncPlugin = $prose((ctx) => {
     });
 });
 
-// lucide icons (inlined so the element is self-contained in the JS bundle).
-const ICONS = {
-    bold: '<path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/>',
-    italic: '<line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/>',
-    strikethrough:
-        '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>',
-    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
-    'loader-circle': '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
-    list: '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
-    'list-ordered':
-        '<line x1="10" x2="21" y1="6" y2="6"/><line x1="10" x2="21" y1="12" y2="12"/><line x1="10" x2="21" y1="18" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
-};
-
+// Toolbar icons come from the shared sprite sheet (templates/all-sprites.svg,
+// inlined on every page by {% sprite_svg %} in base.html), like the rest of
+// the UI — add new icons under sprites/ and run `just sprites`.
 const svg = (name) =>
-    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+    `<svg width="16" height="16" aria-hidden="true" focusable="false"><use href="#lucide-${name}"></use></svg>`;
+
+// Renders the textarea's placeholder while the document is empty (styled by
+// `p.is-empty::before` in main.css); enhancing the textarea would otherwise
+// silently drop its placeholder.
+const placeholderPlugin = (text) =>
+    $prose(
+        () =>
+            new Plugin({
+                key: new PluginKey('MARKDOWN_EDITOR_PLACEHOLDER'),
+                props: {
+                    decorations(state) {
+                        const { doc } = state;
+                        const empty =
+                            doc.childCount === 1 &&
+                            doc.firstChild.isTextblock &&
+                            doc.firstChild.content.size === 0;
+                        if (!empty) return null;
+                        return DecorationSet.create(doc, [
+                            Decoration.node(0, doc.firstChild.nodeSize, {
+                                class: 'is-empty',
+                                'data-placeholder': text,
+                            }),
+                        ]);
+                    },
+                },
+            })
+    );
 
 // Toolbar actions. Active state comes from a `mark` (inline) or a `node`
 // (block) name in the schema; a `divider` entry renders a separator.
@@ -235,12 +258,15 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 'markdown-editor border border-line rounded-md shadow-sm focus-within:ring-1 focus-within:ring-accent focus-within:border-accent overflow-hidden bg-surface';
 
             const toolbar = document.createElement('div');
+            toolbar.setAttribute('role', 'toolbar');
+            toolbar.setAttribute('aria-label', 'Text formatting');
             toolbar.className =
                 'markdown-toolbar flex items-center gap-1 px-2 py-1 border-b border-line bg-ground';
 
-            ACTIONS.forEach((action) => {
+            ACTIONS.forEach((action, index) => {
                 if (action.divider) {
                     const sep = document.createElement('span');
+                    sep.setAttribute('aria-hidden', 'true');
                     sep.className = 'w-px h-5 bg-line mx-1';
                     toolbar.appendChild(sep);
                     return;
@@ -248,6 +274,9 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.title = action.title;
+                btn.setAttribute('aria-label', action.title);
+                btn.setAttribute('aria-pressed', 'false');
+                btn.tabIndex = index === 0 ? 0 : -1; // roving tabindex
                 btn.className =
                     'markdown-btn p-1.5 rounded text-muted hover:bg-line hover:text-body transition-colors';
                 btn.innerHTML = svg(action.icon);
@@ -255,6 +284,18 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 btn.addEventListener('click', () => this._runAction(action));
                 toolbar.appendChild(btn);
                 this._buttons.set(action.name, btn);
+            });
+
+            // Toolbar keyboard pattern: one Tab stop, arrows move between buttons.
+            toolbar.addEventListener('keydown', (e) => {
+                const delta = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+                if (!delta) return;
+                e.preventDefault();
+                const buttons = [...this._buttons.values()];
+                const current = buttons.indexOf(document.activeElement);
+                const next = buttons[(current + delta + buttons.length) % buttons.length];
+                buttons.forEach((b) => { b.tabIndex = b === next ? 0 : -1; });
+                next.focus();
             });
 
             // Loader shown while a pasted attachment uploads (see
@@ -281,7 +322,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
 
         async _createEditor(initialValue) {
             const onSelectionChange = () => this._syncToolbar();
-            this._editor = await Editor.make()
+            const builder = Editor.make()
                 .config((ctx) => {
                     ctx.set(rootCtx, this._host);
                     ctx.set(defaultValueCtx, initialValue);
@@ -304,8 +345,11 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 .use(gfm)
                 .use(listener)
                 .use(autolinkInputRule)
-                .use(linkTextSyncPlugin)
-                .create();
+                .use(linkTextSyncPlugin);
+            if (this.textarea.placeholder) {
+                builder.use(placeholderPlugin(this.textarea.placeholder));
+            }
+            this._editor = await builder.create();
             this._syncToolbar();
         }
 
@@ -437,24 +481,15 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                     const node = $from.node(depth);
                     if (node.type !== bullet && node.type !== ordered) continue;
                     if (node.type === target) return false; // toggle off below
-                    // Switch list type by rebuilding the list and its items with
-                    // the target type's attrs. Never copy attrs verbatim:
-                    // Milkdown's markdown parser stamps `spread` as a *string*
-                    // ("true"/"false") while the schema validates a boolean, so
-                    // recreating nodes from copied attrs throws -- which is what
-                    // silently broke ordered->bullet. Coerce and set explicitly.
+                    // Switch list type by rebuilding the list and its items
+                    // with the target type's attrs (see convertedListItemAttrs
+                    // for why attrs are never copied verbatim).
                     const isOrdered = target === ordered;
                     const items = [];
                     node.content.forEach((item, _offset, index) => {
                         items.push(
                             item.type.create(
-                                {
-                                    spread:
-                                        item.attrs.spread === true ||
-                                        item.attrs.spread === 'true',
-                                    listType: isOrdered ? 'ordered' : 'bullet',
-                                    label: isOrdered ? `${index + 1}.` : '\u2022',
-                                },
+                                convertedListItemAttrs(item.attrs, isOrdered, index),
                                 item.content,
                                 item.marks
                             )
@@ -492,6 +527,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                         : isMarkActive(state, schema.marks[action.mark]);
                     btn.classList.toggle('bg-accent/15', on);
                     btn.classList.toggle('text-accent', on);
+                    btn.setAttribute('aria-pressed', String(on));
                 });
             });
         }
