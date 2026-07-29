@@ -20,11 +20,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from core.views import SetThemeView
 from task_processor.api import api as ninja_api
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", ninja_api.urls),
+    path("theme/", SetThemeView.as_view(), name="set_theme"),
     path("", include("task_processor.urls")),
 ]
 

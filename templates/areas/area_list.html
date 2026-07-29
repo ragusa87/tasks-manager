@@ -9,17 +9,17 @@
     <div class="mb-8">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">{{ title }}</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="text-2xl font-bold text-body">{{ title }}</h2>
+                <p class="mt-1 text-muted">
                     Manage your areas of responsibility
                 </p>
             </div>
             <div class="flex items-center space-x-3">
-                <a href="{% url 'dashboard' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="{% url 'dashboard' %}" class="btn-secondary">
                     {% sprite "lucide-chevron-left" 24 class="mr-2" %}
                     Back
                 </a>
-                <a href="{% url 'area_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="{% url 'area_create' %}" class="btn-primary">
                     {% sprite "lucide-plus" 24 class="mr-2" %}
                     Create Area
                 </a>
@@ -28,31 +28,31 @@
     </div>
 
     <!-- Areas List -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="card overflow-hidden">
         {% if areas %}
-        <ul class="divide-y divide-gray-200">
+        <ul class="divide-y divide-line">
             {% for area in areas %}
-            <li class="hover:bg-gray-50 transition-colors">
+            <li class="hover:bg-ground transition-colors">
                 <div class="px-6 py-4 flex items-center justify-between">
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-lg font-medium text-gray-900 truncate">
-                            {{ area.name }} <span class="text-gray-500">({{ area.task_count }})</span>
+                        <h3 class="text-lg font-medium text-body truncate">
+                            {{ area.name }} <span class="text-muted">({{ area.task_count }})</span>
                         </h3>
                         {% if area.description %}
-                        <p class="mt-1 text-sm text-gray-600">
+                        <p class="mt-1 text-muted">
                             {{ area.description }}
                         </p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-gray-500">
+                        <p class="mt-1 text-xs text-muted">
                             Created {{ area.created_at|date:"F d, Y" }}
                         </p>
                     </div>
                     <div class="flex items-center space-x-3 ml-4">
-                        <a href="{% url 'area_update' area.id %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <a href="{% url 'area_update' area.id %}" class="btn-secondary">
                             {% sprite "lucide-pencil" 20 class="mr-1" %}
                             Edit
                         </a>
-                        <a href="{% url 'area_delete' area.id %}" class="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <a href="{% url 'area_delete' area.id %}" class="btn-secondary text-danger border-danger/40 hover:bg-danger-ground focus:ring-danger">
                             {% sprite "lucide-trash-2" 20 class="mr-1" %}
                             Delete
                         </a>
@@ -63,13 +63,13 @@
         </ul>
         {% else %}
         <div class="px-6 py-12 text-center">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="mx-auto h-12 w-12 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No areas yet</h3>
-            <p class="mt-1 text-sm text-gray-500">Get started by creating a new area of responsibility.</p>
+            <h3 class="mt-2 font-medium text-body">No areas yet</h3>
+            <p class="mt-1 text-muted">Get started by creating a new area of responsibility.</p>
             <div class="mt-6">
-                <a href="{% url 'area_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="{% url 'area_create' %}" class="btn-primary">
                     {% sprite "lucide-plus" 24 class="mr-2" %}
                     Create Area
                 </a>

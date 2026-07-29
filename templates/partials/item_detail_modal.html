@@ -1,9 +1,9 @@
 {% load sprite_tags %}
 
 <!-- Modal overlay -->
-<div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" {% if not form or not form.errors %}style="display: none;"{% endif %}>
+<div id="modal" class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50" {% if not form or not form.errors %}style="display: none;"{% endif %}>
     <!-- Modal container -->
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-white">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-surface">
         <div id="modal-content">
             <form method="post" action="{% url 'item_detail' item_id=item.id %}" hx-post="{% url 'item_detail' item_id=item.id %}" hx-target="#modal" hx-swap="outerHTML">
                 {% csrf_token %}
@@ -12,18 +12,18 @@
                 <!-- Modal footer -->
                 <div class="flex items-center justify-end pt-3 border-t space-x-2">
                     <button id="close-modal-btn"
-                            class="inline-flex items-center px-4 py-2 border border-gray-300 border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            class="btn-secondary">
                         Close
                     </button>
                     {% if not form %}
                     <a href="{% url 'item_update' item_id=item.id %}"
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                       class="btn-secondary">
                         {% sprite "lucide-pencil" 16 class="mr-2" %}
                         Edit
                     </a>
                     {% else %}
                         <button type="submit"
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md focus:outline-none text-white bg-blue-600 hover:bg-blue-700  focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                           class="btn-primary">
                             {% sprite "lucide-save" 16 class="mr-2" %}
                             Save
                         </button>

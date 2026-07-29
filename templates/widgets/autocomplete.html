@@ -4,10 +4,10 @@
      data-allow-create="{{ allow_create|yesno:'true,false' }}"
      data-initial-values="">
     <input type="text"
-           class="autocomplete-input px-3 py-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+           class="autocomplete-input input mt-1"
            placeholder="{{ placeholder }}"
            autocomplete="off"
            value="">
     <input type="hidden" name="{{ name }}" class="autocomplete-hidden" value="{{ value|default:'' }}">
-    <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+    <div class="autocomplete-dropdown dropdown-panel absolute z-10 w-full hidden max-h-48 overflow-y-auto"></div>
 </div>

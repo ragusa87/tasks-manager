@@ -46,19 +46,19 @@ function initDropzones() {
         zone.addEventListener('dragover', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            zone.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-600');
+            zone.classList.add('border-accent', 'bg-accent/10', 'text-accent');
         });
 
         zone.addEventListener('dragleave', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            zone.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-600');
+            zone.classList.remove('border-accent', 'bg-accent/10', 'text-accent');
         });
 
         zone.addEventListener('drop', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            zone.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-600');
+            zone.classList.remove('border-accent', 'bg-accent/10', 'text-accent');
             var files = e.dataTransfer.files;
             if (!files || files.length === 0) return;
             uploadFiles(itemId, uploadUrl, files);
@@ -200,7 +200,7 @@ function flashUploadErrors() {
 
 export function showToast(message, type, duration) {
     var toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 whitespace-pre-line ' + (type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white');
+    toast.className = 'fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 whitespace-pre-line ' + (type === 'error' ? 'alert-danger bg-surface' : 'alert-success bg-surface');
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(function() { toast.remove(); }, duration || 3000);

@@ -1,15 +1,15 @@
 {% load sprite_tags %}
 <!-- Recent Activity -->
-<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+<div class="card rounded-none overflow-hidden sm:rounded-lg">
     <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
         <div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Activity</h3>
-            <p class="mt-1 max-w-2xl text-sm text-gray-500">Latest updates to your system</p>
+            <h3 class="text-lg leading-6 font-medium text-body">Recent Activity</h3>
+            <p class="mt-1 max-w-2xl text-muted">Latest updates to your system</p>
         </div>
     </div>
-    <div class="border-t border-gray-200">
+    <div class="border-t border-line">
         {% if recent_items %}
-        <ul class="divide-y divide-gray-200">
+        <ul class="divide-y divide-line">
             {% for item in recent_items %}
             <li class="px-4 py-4 relative">
                 {% include 'partials/item_row.html' with item=item %}
@@ -17,19 +17,19 @@
             {% endfor %}
         </ul>
         {% if recent_items|length >= 10 %}
-        <div class="px-4 py-3 border-t bg-gray-50">
-            <p class="text-sm text-gray-600 text-center">
+        <div class="px-4 py-3 border-t bg-ground">
+            <p class="text-muted text-center">
                 Showing last 10 items
             </p>
         </div>
         {% endif %}
         {% else %}
         <div class="text-center py-12">
-            <div class="mx-auto h-12 w-12 text-gray-400">
+            <div class="mx-auto h-12 w-12 text-faint">
                 {% sprite "lucide-clipboard-check" 24 %}
             </div>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No items yet</h3>
-            <p class="mt-1 text-sm text-gray-500">Get started by adding your first task to the inbox.</p>
+            <h3 class="mt-2 font-medium text-body">No items yet</h3>
+            <p class="mt-1 text-muted">Get started by adding your first task to the inbox.</p>
         </div>
         {% endif %}
     </div>

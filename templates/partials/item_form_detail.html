@@ -2,13 +2,13 @@
 {% load form_tags %}
 <!-- Non-field errors -->
 {% if form.non_field_errors %}
-<div class="rounded-md bg-red-50 p-4 mb-6">
+<div class="alert-danger mb-6">
     <div class="flex">
         <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">
+            <h3 class="font-medium">
                 Please correct the following errors:
             </h3>
-            <div class="mt-2 text-sm text-red-700">
+            <div class="mt-2">
                 <ul class="list-disc pl-5 space-y-1">
                     {% for error in form.non_field_errors %}
                     <li>{{ error }}</li>
@@ -23,45 +23,45 @@
 <div class="space-y-4">
     <!-- Title Field -->
     <div>
-        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-            Title <span class="text-red-500">*</span>
+        <label for="{{ form.title.id_for_label }}" class="block font-medium text-muted mb-1">
+            Title <span class="text-danger">*</span>
         </label>
         <input type="text" name="{{ form.title.name }}" value="{{ form.title.value|default:'' }}"
                id="{{ form.title.id_for_label }}"
-               class="p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+               class="input"
                placeholder="Enter item title" {% if form.title.field.required %}required{% endif %}>
         {% if form.title.errors %}
-        <p class="mt-2 text-sm text-red-600">{{ form.title.errors.0 }}</p>
+        <p class="mt-2 text-danger">{{ form.title.errors.0 }}</p>
         {% endif %}
     </div>
 
     <!-- Description Field -->
     <div>
-        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+        <label for="{{ form.description.id_for_label }}" class="block font-medium text-muted mb-1">
             Description
         </label>
         <markdown-editor>
             <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" rows="4"
-                      class="p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                      class="input"
                       placeholder="Enter description">{{ form.description.value|default:'' }}</textarea>
         </markdown-editor>
         {% if form.description.errors %}
-        <p class="mt-2 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+        <p class="mt-2 text-danger">{{ form.description.errors.0 }}</p>
         {% endif %}
-        <p class="mt-1 text-sm text-gray-500">Provide additional details about this item</p>
+        <p class="mt-1 text-muted">Provide additional details about this item</p>
     </div>
 
 </div>
 
 <!-- Accordion: Classification -->
 {% if form.contexts or form.area or form.tags or form.parent %}
-<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.contexts.errors or form.area.errors or form.tags.errors or form.parent.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+<div class="accordion-item border-t border-line pt-2" data-has-errors="{% if form.contexts.errors or form.area.errors or form.tags.errors or form.parent.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-ground rounded transition-colors">
+        <h3 class="font-medium text-body flex items-center">
             {% sprite "lucide-folder" 16 class="mr-2" %}
             Classification
         </h3>
-        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-muted transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
@@ -70,27 +70,27 @@
             <!-- Contexts Field -->
             {% if form.contexts %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                <label class="block font-medium text-muted sm:mt-px sm:pt-2">
                     Contexts
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
                     <div class="autocomplete-container relative" data-field-type="contexts" data-allow-multiple="true"
                          data-allow-create="true"
                          data-initial-values="{{ contexts_initial_values|escapejs }}">
-                        <div class="min-h-[42px] w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus-within:ring-blue-500 focus-within:border-blue-500 bg-white">
+                        <div class="min-h-[42px] w-full px-3 py-2 border border-line rounded-md shadow-sm focus-within:ring-accent focus-within:border-accent bg-surface">
                             <div class="selected-items flex flex-wrap gap-1"></div>
                             <input type="text"
-                                   class="autocomplete-input border-0 outline-0 focus:ring-0 p-0 w-full text-sm placeholder-gray-400"
+                                   class="autocomplete-input border-0 outline-0 focus:ring-0 p-0 w-full placeholder:text-faint"
                                    placeholder="Search or create contexts...">
                         </div>
                         <input type="hidden" name="{{ form.contexts.name }}" class="autocomplete-hidden"
                                value="{% if form.contexts.value %}{% for context_id in form.contexts.value %}{% if not forloop.first %},{% endif %}{{ context_id }}{% endfor %}{% endif %}">
-                        <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                        <div class="autocomplete-dropdown dropdown-panel absolute z-10 w-full hidden max-h-48 overflow-y-auto"></div>
                     </div>
                     {% if form.contexts.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.contexts.errors.0 }}</p>
+                    <p class="mt-2 text-danger">{{ form.contexts.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-1 text-xs text-gray-500">Where or how will you work on this? Type to search or create new
+                    <p class="mt-1 text-xs text-muted">Where or how will you work on this? Type to search or create new
                         contexts.</p>
                 </div>
             </div>
@@ -99,7 +99,7 @@
             <!-- Area Field -->
             {% if form.area %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                <label class="block font-medium text-muted sm:mt-px sm:pt-2">
                     Area
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
@@ -107,17 +107,17 @@
                          data-allow-create="true"
                          data-initial-values="{{ area_initial_values|escapejs }}">
                         <input type="text"
-                               class="autocomplete-input px-3 py-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                               class="autocomplete-input input mt-1"
                                placeholder="Search areas..."
                                value="{% if form.area.value and form.area.value != '' %}{% for choice in form.area.field.queryset %}{% if choice.pk == form.area.value %}{{ choice }}{% endif %}{% endfor %}{% endif %}">
                         <input type="hidden" name="{{ form.area.name }}" class="autocomplete-hidden"
                                value="{{ form.area.value|default:'' }}">
-                        <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                        <div class="autocomplete-dropdown dropdown-panel absolute z-10 w-full hidden max-h-48 overflow-y-auto"></div>
                     </div>
                     {% if form.area.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.area.errors.0 }}</p>
+                    <p class="mt-2 text-danger">{{ form.area.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-1 text-xs text-gray-500">Which area of responsibility?</p>
+                    <p class="mt-1 text-xs text-muted">Which area of responsibility?</p>
                 </div>
             </div>
             {% endif %}
@@ -125,27 +125,27 @@
             <!-- Tags Field -->
             {% if form.tags %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                <label class="block font-medium text-muted sm:mt-px sm:pt-2">
                     Tags
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
                     <div class="autocomplete-container relative" data-field-type="tags" data-allow-multiple="true"
                          data-allow-create="true"
                          data-initial-values="{{ tags_initial_values|escapejs }}">
-                        <div class="min-h-[42px] w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus-within:ring-blue-500 focus-within:border-blue-500 bg-white">
+                        <div class="min-h-[42px] w-full px-3 py-2 border border-line rounded-md shadow-sm focus-within:ring-accent focus-within:border-accent bg-surface">
                             <div class="selected-items flex flex-wrap gap-1"></div>
                             <input type="text"
-                                   class="autocomplete-input border-0 outline-0 focus:ring-0 p-0 w-full text-sm placeholder-gray-400"
+                                   class="autocomplete-input border-0 outline-0 focus:ring-0 p-0 w-full placeholder:text-faint"
                                    placeholder="Search or create tags...">
                         </div>
                         <input type="hidden" name="{{ form.tags.name }}" class="autocomplete-hidden"
                                value="{% if form.tags.value %}{% for tag_id in form.tags.value %}{% if not forloop.first %},{% endif %}{{ tag_id }}{% endfor %}{% endif %}">
-                        <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                        <div class="autocomplete-dropdown dropdown-panel absolute z-10 w-full hidden max-h-48 overflow-y-auto"></div>
                     </div>
                     {% if form.tags.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.tags.errors.0 }}</p>
+                    <p class="mt-2 text-danger">{{ form.tags.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-1 text-xs text-gray-500">Add tags to categorize this item. Type to search or create new
+                    <p class="mt-1 text-xs text-muted">Add tags to categorize this item. Type to search or create new
                         tags.</p>
                 </div>
             </div>
@@ -154,7 +154,7 @@
             <!-- Parent Project Field -->
             {% if form.parent %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                <label class="block font-medium text-muted sm:mt-px sm:pt-2">
                     Parent Project
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
@@ -162,17 +162,17 @@
                          data-allow-create="false"
                          data-initial-values="{{ parent_initial_values|escapejs }}">
                         <input type="text"
-                               class="autocomplete-input px-3 py-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                               class="autocomplete-input input mt-1"
                                placeholder="Search projects..."
                                value="{% if form.parent.value and form.parent.value != '' %}{% for choice in form.parent.field.queryset %}{% if choice.pk == form.parent.value %}{{ choice }}{% endif %}{% endfor %}{% endif %}">
                         <input type="hidden" name="{{ form.parent.name }}" class="autocomplete-hidden"
                                value="{{ form.parent.value|default:'' }}">
-                        <div class="autocomplete-dropdown absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                        <div class="autocomplete-dropdown dropdown-panel absolute z-10 w-full hidden max-h-48 overflow-y-auto"></div>
                     </div>
                     {% if form.parent.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.parent.errors.0 }}</p>
+                    <p class="mt-2 text-danger">{{ form.parent.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-1 text-xs text-gray-500">Is this part of a larger project or another reference ?</p>
+                    <p class="mt-1 text-xs text-muted">Is this part of a larger project or another reference ?</p>
                 </div>
             </div>
             {% endif %}
@@ -183,13 +183,13 @@
 
 <!-- Accordion: Priority & Organization -->
 {% if form.priority %}
-<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.priority.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+<div class="accordion-item border-t border-line pt-2" data-has-errors="{% if form.priority.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-ground rounded transition-colors">
+        <h3 class="font-medium text-body flex items-center">
             {% sprite "lucide-target" 16 class="mr-2" %}
             Priority
         </h3>
-        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-muted transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
@@ -197,44 +197,44 @@
         <div class="pt-2 space-y-3">
             {% if form.priority %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                <label class="block font-medium text-muted sm:mt-px sm:pt-2">
                     Priority
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
                     <div class="grid grid-cols-2 gap-3 custom-radio-group">
                         <label class="flex items-center cursor-pointer custom-radio-option">
                             <input type="radio" name="{{ form.priority.name }}" value="1" {% if form.priority.value == 1 or form.priority.value == "1" %}checked{% endif %} class="sr-only">
-                            <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                            <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                                 {% sprite "lucide-arrow-down" 18 %}
-                                <span class="text-sm">Low</span>
+                                <span class="">Low</span>
                             </div>
                         </label>
                         <label class="flex items-center cursor-pointer custom-radio-option">
                             <input type="radio" name="{{ form.priority.name }}" value="2" {% if form.priority.value == 2 or form.priority.value == "2" or not form.priority.value %}checked{% endif %} class="sr-only">
-                            <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                            <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                                 {% sprite "lucide-minus" 18 %}
-                                <span class="text-sm">Normal</span>
+                                <span class="">Normal</span>
                             </div>
                         </label>
                         <label class="flex items-center cursor-pointer custom-radio-option">
                             <input type="radio" name="{{ form.priority.name }}" value="3" {% if form.priority.value == 3 or form.priority.value == "3" %}checked{% endif %} class="sr-only">
-                            <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                            <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                                 {% sprite "lucide-arrow-up" 18 %}
-                                <span class="text-sm">High</span>
+                                <span class="">High</span>
                             </div>
                         </label>
                         <label class="flex items-center cursor-pointer custom-radio-option">
                             <input type="radio" name="{{ form.priority.name }}" value="4" {% if form.priority.value == 4 or form.priority.value == "4" %}checked{% endif %} class="sr-only">
-                            <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                            <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                                 {% sprite "lucide-triangle-alert" 18 %}
-                                <span class="text-sm">Urgent</span>
+                                <span class="">Urgent</span>
                             </div>
                         </label>
                     </div>
                     {% if form.priority.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
+                    <p class="mt-2 text-danger">{{ form.priority.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-1 text-xs text-gray-500">Set the priority level for this item</p>
+                    <p class="mt-1 text-xs text-muted">Set the priority level for this item</p>
                 </div>
             </div>
             {% endif %}
@@ -244,13 +244,13 @@
 {% endif %}
 <!-- Accordion: Scheduling & Time -->
 {% if form.due_date or form.start_date or form.estimated_duration or form.energy %}
-<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.due_date.errors or form.start_date.errors or form.estimated_duration.errors or form.energy.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+<div class="accordion-item border-t border-line pt-2" data-has-errors="{% if form.due_date.errors or form.start_date.errors or form.estimated_duration.errors or form.energy.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-ground rounded transition-colors">
+        <h3 class="font-medium text-body flex items-center">
             {% sprite "lucide-calendar-clock" 16 class="mr-2" %}
             Scheduling & Time
         </h3>
-        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-muted transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
@@ -259,17 +259,17 @@
     <!-- Due Date Field -->
     {% if form.due_date %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-        <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+        <label for="{{ form.due_date.id_for_label }}" class="block font-medium text-muted sm:mt-px sm:pt-2">
             Due Date
         </label>
         <div class="mt-1 sm:mt-0 sm:col-span-2">
             {% with field=form.due_date %}
-                {{ field|attr:"class:mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" }}
+                {{ field|attr:"class:input mt-1" }}
             {% endwith %}
             {% if form.due_date.errors %}
-            <p class="mt-2 text-sm text-red-600">{{ form.due_date.errors.0 }}</p>
+            <p class="mt-2 text-danger">{{ form.due_date.errors.0 }}</p>
             {% endif %}
-            <p class="mt-1 text-xs text-gray-500">When does this need to be completed?</p>
+            <p class="mt-1 text-xs text-muted">When does this need to be completed?</p>
         </div>
     </div>
     {% endif %}
@@ -278,17 +278,17 @@
     {% if form.start_date %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
         <label for="{{ form.start_date.id_for_label }}"
-               class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+               class="block font-medium text-muted sm:mt-px sm:pt-2">
             Start Date
         </label>
         <div class="mt-1 sm:mt-0 sm:col-span-2">
             {% with field=form.start_date %}
-                {{ field|attr:"class:mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" }}
+                {{ field|attr:"class:input mt-1" }}
             {% endwith %}
             {% if form.start_date.errors %}
-            <p class="mt-2 text-sm text-red-600">{{ form.start_date.errors.0 }}</p>
+            <p class="mt-2 text-danger">{{ form.start_date.errors.0 }}</p>
             {% endif %}
-            <p class="mt-1 text-xs text-gray-500">When can you start working on this?</p>
+            <p class="mt-1 text-xs text-muted">When can you start working on this?</p>
         </div>
     </div>
     {% endif %}
@@ -296,7 +296,7 @@
     <!-- Estimated Duration Field -->
     {% if form.estimated_duration %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-        <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+        <label class="block font-medium text-muted sm:mt-px sm:pt-2">
             Estimated Duration
         </label>
         <div class="mt-1 sm:mt-0 sm:col-span-2">
@@ -304,44 +304,44 @@
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.estimated_duration.name }}" value="" {% if not form.estimated_duration.value or form.estimated_duration.value == "" %}checked{% endif %}
                     class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                         {% sprite "lucide-message-circle-question-mark" 18 %}
-                        <span class="text-sm">Not specified</span>
+                        <span class="">Not specified</span>
                     </div>
                 </label>
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.estimated_duration.name }}" value="quick" {% if form.estimated_duration.value == "quick" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                         {% sprite "lucide-zap" 18 %}
-                        <span class="text-sm">Quick (≤2 min)</span>
+                        <span class="">Quick (≤2 min)</span>
                     </div>
                 </label>
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.estimated_duration.name }}" value="short" {% if form.estimated_duration.value == "short" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                         {% sprite "lucide-clock" 18 %}
-                        <span class="text-sm">Short (15-30 min)</span>
+                        <span class="">Short (15-30 min)</span>
                     </div>
                 </label>
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.estimated_duration.name }}" value="medium" {% if form.estimated_duration.value == "medium" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                         {% sprite "lucide-clock-4" 18 %}
-                        <span class="text-sm">Medium (1-2 hours)</span>
+                        <span class="">Medium (1-2 hours)</span>
                     </div>
                 </label>
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.estimated_duration.name }}" value="long" {% if form.estimated_duration.value == "long" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual w-full">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual w-full">
                         {% sprite "lucide-clock-8" 18 %}
-                        <span class="text-sm">Long (3+ hours)</span>
+                        <span class="">Long (3+ hours)</span>
                     </div>
                 </label>
             </div>
             {% if form.estimated_duration.errors %}
-            <p class="mt-2 text-sm text-red-600">{{ form.estimated_duration.errors.0 }}</p>
+            <p class="mt-2 text-danger">{{ form.estimated_duration.errors.0 }}</p>
             {% endif %}
-            <p class="mt-1 text-xs text-gray-500">Choose duration category based on GTD methodology</p>
+            <p class="mt-1 text-xs text-muted">Choose duration category based on GTD methodology</p>
         </div>
     </div>
     {% endif %}
@@ -349,44 +349,44 @@
     <!-- Energy -->
     {% if form.energy %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-        <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+        <label class="block font-medium text-muted sm:mt-px sm:pt-2">
             Energy Level
         </label>
         <div class="mt-1 sm:mt-0 sm:col-span-2">
             <div class="flex flex-wrap gap-2 custom-radio-group">
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.energy.name }}" value="" {% if not form.energy.value or form.energy.value == "" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual">
                         {% sprite "lucide-battery" 20 %}
-                        <span class="text-sm">None</span>
+                        <span class="">None</span>
                     </div>
                 </label>
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.energy.name }}" value="low" {% if form.energy.value == "low" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual">
                         {% sprite "lucide-battery-low" 20 %}
-                        <span class="text-sm">Low</span>
+                        <span class="">Low</span>
                     </div>
                 </label>
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.energy.name }}" value="medium" {% if form.energy.value == "medium" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual">
                         {% sprite "lucide-battery" 20 %}
-                        <span class="text-sm">Medium</span>
+                        <span class="">Medium</span>
                     </div>
                 </label>
                 <label class="flex items-center cursor-pointer custom-radio-option">
                     <input type="radio" name="{{ form.energy.name }}" value="high" {% if form.energy.value == "high" %}checked{% endif %} class="sr-only">
-                    <div class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors custom-radio-visual">
+                    <div class="flex items-center space-x-2 px-3 py-2 border border-line rounded-md hover:bg-ground transition-colors custom-radio-visual">
                         {% sprite "lucide-battery-full" 20 %}
-                        <span class="text-sm">High</span>
+                        <span class="">High</span>
                     </div>
                 </label>
             </div>
             {% if form.energy.errors %}
-            <p class="mt-2 text-sm text-red-600">{{ form.energy.errors.0 }}</p>
+            <p class="mt-2 text-danger">{{ form.energy.errors.0 }}</p>
             {% endif %}
-            <p class="mt-1 text-xs text-gray-500">How much energy do you need?</p>
+            <p class="mt-1 text-xs text-muted">How much energy do you need?</p>
         </div>
     </div>
     {% endif %}
@@ -394,19 +394,19 @@
     {% if form.waiting_for_person %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
         <label for="{{ form.waiting_for_person.id_for_label }}"
-               class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+               class="block font-medium text-muted sm:mt-px sm:pt-2">
             Waiting for:
         </label>
         <div class="mt-1 sm:mt-0 sm:col-span-2">
             <input type="text" name="{{ form.waiting_for_person.name }}"
                    value="{{ form.waiting_for_person.value|default:'' }}"
                    id="{{ form.waiting_for_person.id_for_label }}"
-                   class="p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                   class="input mt-1"
                    placeholder="Bob and Alice">
             {% if form.waiting_for_person.errors %}
-            <p class="mt-2 text-sm text-red-600">{{ form.waiting_for_person.errors.0 }}</p>
+            <p class="mt-2 text-danger">{{ form.waiting_for_person.errors.0 }}</p>
             {% endif %}
-            <p class="mt-1 text-xs text-gray-500">Waiting for who/what ?</p>
+            <p class="mt-1 text-xs text-muted">Waiting for who/what ?</p>
         </div>
     </div>
     {% endif %}
@@ -415,17 +415,17 @@
     {% if form.follow_up_date %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
         <label for="{{ form.follow_up_date.id_for_label }}"
-               class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+               class="block font-medium text-muted sm:mt-px sm:pt-2">
             Follow-up Date
         </label>
         <div class="mt-1 sm:mt-0 sm:col-span-2">
             {% with field=form.follow_up_date %}
-                {{ field|attr:"class:mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" }}
+                {{ field|attr:"class:input mt-1" }}
             {% endwith %}
             {% if form.follow_up_date.errors %}
-            <p class="mt-2 text-sm text-red-600">{{ form.follow_up_date.errors.0 }}</p>
+            <p class="mt-2 text-danger">{{ form.follow_up_date.errors.0 }}</p>
             {% endif %}
-            <p class="mt-1 text-xs text-gray-500">When to follow up on this waiting item</p>
+            <p class="mt-1 text-xs text-muted">When to follow up on this waiting item</p>
         </div>
     </div>
     {% endif %}
@@ -434,18 +434,18 @@
     {% if form.review_frequency_days %}
     <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
         <label for="{{ form.review_frequency_days.id_for_label }}"
-               class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+               class="block font-medium text-muted sm:mt-px sm:pt-2">
             Review Frequency (Days)
         </label>
         <div class="mt-1 sm:mt-0 sm:col-span-2">
             <input type="number" name="{{ form.review_frequency_days.name }}"
                    value="{{ form.review_frequency_days.value|default:'' }}"
                    id="{{ form.review_frequency_days.id_for_label }}" min="1" max="365"
-                   class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                   class="input mt-1">
             {% if form.review_frequency_days.errors %}
-            <p class="mt-2 text-sm text-red-600">{{ form.review_frequency_days.errors.0 }}</p>
+            <p class="mt-2 text-danger">{{ form.review_frequency_days.errors.0 }}</p>
             {% endif %}
-            <p class="mt-1 text-xs text-gray-500">How often to review this someday/maybe item (in days)</p>
+            <p class="mt-1 text-xs text-muted">How often to review this someday/maybe item (in days)</p>
         </div>
     </div>
     {% endif %}
@@ -456,13 +456,13 @@
 
 <!-- Accordion: Reminders -->
 {% if form.remind_at or form.rrule %}
-<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="{% if form.remind_at.errors or form.rrule.errors %}true{% else %}false{% endif %}">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+<div class="accordion-item border-t border-line pt-2" data-has-errors="{% if form.remind_at.errors or form.rrule.errors %}true{% else %}false{% endif %}">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-ground rounded transition-colors">
+        <h3 class="font-medium text-body flex items-center">
             {% sprite "lucide-bell" 16 class="mr-2" %}
             Reminders
         </h3>
-        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-muted transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
@@ -471,17 +471,17 @@
             <!-- Remind At Field -->
             {% if form.remind_at %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                <label for="{{ form.remind_at.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                <label for="{{ form.remind_at.id_for_label }}" class="block font-medium text-muted sm:mt-px sm:pt-2">
                     Next Reminder
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
                     {% with field=form.remind_at %}
-                        {{ field|attr:"class:mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" }}
+                        {{ field|attr:"class:input mt-1" }}
                     {% endwith %}
                     {% if form.remind_at.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.remind_at.errors.0 }}</p>
+                    <p class="mt-2 text-danger">{{ form.remind_at.errors.0 }}</p>
                     {% endif %}
-                    <p class="mt-1 text-xs text-gray-500">When to send the first reminder notification</p>
+                    <p class="mt-1 text-xs text-muted">When to send the first reminder notification</p>
                 </div>
             </div>
             {% endif %}
@@ -489,7 +489,7 @@
             <!-- RRULE Field -->
             {% if form.rrule %}
             <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
-                <label for="{{ form.rrule.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                <label for="{{ form.rrule.id_for_label }}" class="block font-medium text-muted sm:mt-px sm:pt-2">
                     Recurrence Pattern
                 </label>
                 <div class="mt-1 sm:mt-0 sm:col-span-2">
@@ -497,10 +497,10 @@
                                   field-id="{{ form.rrule.id_for_label }}"
                                   value="{{ form.rrule.value|default:'' }}"></rrule-picker>
                     {% if form.rrule.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.rrule.errors.0 }}</p>
+                    <p class="mt-2 text-danger">{{ form.rrule.errors.0 }}</p>
                     {% endif %}
                     {% if form.rrule.help_text %}
-                    <p class="mt-1 text-xs text-gray-500">{{ form.rrule.help_text }}</p>
+                    <p class="mt-1 text-xs text-muted">{{ form.rrule.help_text }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -511,13 +511,13 @@
 {% endif %}
 
 <!-- Accordion: Documents -->
-<div class="accordion-item border-t border-gray-200 pt-2" data-has-errors="false">
-    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-gray-50 rounded transition-colors">
-        <h3 class="text-sm font-medium text-gray-900 flex items-center gap-2">
+<div class="accordion-item border-t border-line pt-2" data-has-errors="false">
+    <button type="button" class="accordion-header w-full flex items-center justify-between text-left py-1 hover:bg-ground rounded transition-colors">
+        <h3 class="font-medium text-body flex items-center gap-2">
             {% sprite "lucide-file" 16 %}
             Documents
         </h3>
-        <svg class="accordion-icon w-4 h-4 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="accordion-icon w-4 h-4 text-muted transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
@@ -531,9 +531,9 @@
 
             {% include "partials/document_dropzone.html" with item_id=item.id %}
             {% else %}
-            <div class="flex items-center gap-2 py-3 px-3 bg-gray-50 rounded-md border border-dashed border-gray-200">
-                {% sprite "lucide-info" 16 class="text-gray-400 shrink-0" %}
-                <p class="text-sm text-gray-500">Save the item first to attach documents.</p>
+            <div class="flex items-center gap-2 py-3 px-3 bg-ground rounded-md border border-dashed border-line">
+                {% sprite "lucide-info" 16 class="text-faint shrink-0" %}
+                <p class="text-muted">Save the item first to attach documents.</p>
             </div>
             {% endif %}
         </div>

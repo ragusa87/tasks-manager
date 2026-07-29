@@ -8,13 +8,13 @@
         <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-3">
                 <div class="flex-shrink-0">
-                    <div class="h-6 w-6 text-gray-400" title="{{ item.get_status_display }}">
+                    <div class="h-6 w-6 text-faint" title="{{ item.get_status_display }}">
                         {% sprite item.flow.sprite|default:"archive" 24 %}
                     </div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="relative">
-                        <h3 class="text-sm font-medium text-gray-900 truncate">
+                        <h3 class="font-medium text-body truncate">
                             {{ item.title }}
                             {% if item.is_waiting_for %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 font-extrabold">
@@ -23,31 +23,31 @@
                             {% endif %}
                         </h3>
                         {% if item.description %}
-                        <p class="text-sm text-gray-500 truncate">
+                        <p class="text-muted truncate">
                             {{ item.description|strip_markdown }}
                         </p>
                         {% endif %}
                         <button class="expand-target" data-detail-url="{% url 'item_detail' item_id=item.id %}"></button>
                     </div>
                     <div class="mt-1 flex items-center flex-wrap gap-x-4 gap-y-1 text-xs">
-                        <span class="text-gray-500">Created {{ item.created_at|date:"M j, Y" }}</span>
+                        <span class="text-muted">Created {{ item.created_at|date:"M j, Y" }}</span>
 
                         {% if item.remind_at %}
-                        <span class="inline-flex items-center text-gray-600">
+                        <span class="inline-flex items-center text-muted">
                             {% sprite "lucide-bell" 12 class="mr-1" %}
                             <span>Reminder {{ item.remind_at|date:"M j, Y H:i" }}</span>
                         </span>
                         {% endif %}
 
                         {% if item.start_date %}
-                        <span class="inline-flex items-center text-green-600">
+                        <span class="inline-flex items-center text-cat-green">
                             {% sprite "lucide-calendar-clock" 12 class="mr-1" %}
                             <span>Start {{ item.start_date|date:"M j, Y" }}</span>
                         </span>
                         {% endif %}
 
                         {% if item.due_date %}
-                        <span class="inline-flex items-center text-orange-600">
+                        <span class="inline-flex items-center text-cat-orange">
                             {% sprite "lucide-calendar" 12 class="mr-1" %}
                             <span>Due {{ item.due_date|date:"M j, Y" }}</span>
                         </span>
@@ -61,14 +61,14 @@
                         {% endif %}
 
                         {% if item.area %}
-                        <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter='area:"{{ item.area.name }}"'>
+                        <span class="inline-flex items-center text-cat-green {{item_secondary_classes}}" data-filter='area:"{{ item.area.name }}"'>
                             {% sprite "lucide-target" 12 class="mr-1" %}
                             {{ item.area.name }}
                         </span>
                         {% endif %}
 
                         {% if item.contexts.exists %}
-                        <span class="inline-flex items-center text-purple-600">
+                        <span class="inline-flex items-center text-cat-purple">
                             {% sprite "lucide-hash" 12 class="mr-1" %}
                             {% for context in item.contexts.all %}
                                 <span data-filter="context:{{context.name}}" class="{{item_secondary_classes}}">{{ context.name }}</span>
@@ -79,19 +79,19 @@
 
                         {% if item.parent %}
                             {% if item.parent.is_reference %}
-                                <span class="inline-flex items-center text-blue-600 {{item_secondary_classes}}" data-filter="project:{{ item.parent.pk }}">
+                                <span class="inline-flex items-center text-cat-blue {{item_secondary_classes}}" data-filter="project:{{ item.parent.pk }}">
                                     {% sprite "lucide-book-marked" 12 class="mr-1" %}
                                     {{ item.parent.title }}
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter="project:{{ item.parent.pk }}">
+                                <span class="inline-flex items-center text-cat-green {{item_secondary_classes}}" data-filter="project:{{ item.parent.pk }}">
                                     {% sprite "lucide-folder" 12 class="mr-1" %}
                                     {{ item.parent.title }}
                                 </span>
                             {% endif %}
                         {% endif %}
                         {% if item.is_project %}
-                                <span class="inline-flex items-center text-green-600 {{item_secondary_classes}}" data-filter="project:{{ item.pk }}">
+                                <span class="inline-flex items-center text-cat-green {{item_secondary_classes}}" data-filter="project:{{ item.pk }}">
                                     {% sprite "lucide-folder" 12 class="mr-1" %}
                                     {{ item.title }}
                                 </span>
@@ -107,7 +107,7 @@
                         {% endfor %}
 
                         {% if item.documents.exists %}
-                        <span class="inline-flex items-center text-gray-500">
+                        <span class="inline-flex items-center text-muted">
                             {% sprite "lucide-paperclip" 12 class="mr-1" %}
                             <span>{{ item.documents.count }}</span>
                         </span>
@@ -119,7 +119,7 @@
         </div>
         <div class="flex-shrink-0">
             <!-- Edit Button -->
-<!--            <a href="{% url 'item_update' item_id=item.id %}" class="inline-flex items-center px-1.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" title="Edit item">-->
+<!--            <a href="{% url 'item_update' item_id=item.id %}" class="btn-icon" title="Edit item">-->
 <!--                {% sprite "lucide-pencil" 24 %}-->
 <!--            </a>-->
             <!-- Process Actions - Desktop only -->

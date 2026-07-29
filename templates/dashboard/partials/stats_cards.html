@@ -9,14 +9,14 @@
                 <div class="p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-red-400{% else %}text-gray-400{% endif %}">
+                            <div class="h-8 w-8 {% if stats.count_status_inbox > 0 %}text-danger{% else %}text-faint{% endif %}">
                                 {% sprite "lucide-archive" 24 %}
                             </div>
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Inbox</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_inbox|default:"0" }}</dd>
+                                <dt class="font-medium text-muted truncate">Inbox</dt>
+                                <dd class="text-lg font-medium text-body">{{ stats.count_status_inbox|default:"0" }}</dd>
                             </dl>
                         </div>
                     </div>
@@ -34,14 +34,14 @@
                 <div class="p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="h-8 w-8 text-blue-400">
+                            <div class="h-8 w-8 text-accent">
                                 {% sprite "lucide-zap" 24 %}
                             </div>
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Next Actions</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_next_action|default:"0" }}</dd>
+                                <dt class="font-medium text-muted truncate">Next Actions</dt>
+                                <dd class="text-lg font-medium text-body">{{ stats.count_status_next_action|default:"0" }}</dd>
                             </dl>
                         </div>
                     </div>
@@ -59,14 +59,14 @@
                 <div class="p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="h-8 w-8 text-purple-400">
+                            <div class="h-8 w-8 text-cat-purple">
                                 {% sprite "lucide-briefcase" 24 %}
                             </div>
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_project|default:"0" }}</dd>
+                                <dt class="font-medium text-muted truncate">Active Projects</dt>
+                                <dd class="text-lg font-medium text-body">{{ stats.count_status_project|default:"0" }}</dd>
                             </dl>
                         </div>
                     </div>
@@ -84,14 +84,14 @@
                 <div class="p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="h-8 w-8 text-yellow-400">
+                            <div class="h-8 w-8 text-warning">
                                 {% sprite "lucide-hourglass" 24 %}
                             </div>
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Waiting For</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_waiting_for|default:"0" }}</dd>
+                                <dt class="font-medium text-muted truncate">Waiting For</dt>
+                                <dd class="text-lg font-medium text-body">{{ stats.count_status_waiting_for|default:"0" }}</dd>
                             </dl>
                         </div>
                     </div>
@@ -109,14 +109,14 @@
                 <div class="p-5">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="h-8 w-8 text-gray-400">
+                            <div class="h-8 w-8 text-faint">
                                 {% sprite "lucide-hourglass" 24 %}
                             </div>
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Someday Maybe</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ stats.count_status_someday_maybe|default:"0" }}</dd>
+                                <dt class="font-medium text-muted truncate">Someday Maybe</dt>
+                                <dd class="text-lg font-medium text-body">{{ stats.count_status_someday_maybe|default:"0" }}</dd>
                             </dl>
                         </div>
                     </div>
