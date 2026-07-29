@@ -28,6 +28,8 @@ x-django-service: &django-service
     - AUTH_PROXY_COOKIE_NAME=${AUTH_PROXY_COOKIE_NAME:-AUTH_TOKEN}
     - EMAIL_INBOX_DSN=${EMAIL_INBOX_DSN:-smtp://0.0.0.0:2525?max_size=10485760}
     - USER_EMAIL_INBOX_DOMAIN=${USER_EMAIL_INBOX_DOMAIN:-tasks.docker.test}
+    - STORAGE_URL=${STORAGE_URL:-file://media}
+    - DOCUMENT_PRESIGNED_URL_EXPIRY=${DOCUMENT_PRESIGNED_URL_EXPIRY:-300}
   volumes: &django-volumes
     - media_data:/app/media
     - uv_cache:/root/.cache/uv
