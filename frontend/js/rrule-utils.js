@@ -1,4 +1,4 @@
-// Pure RRULE (RFC-5545) helpers — no DOM, no third-party imports, so they are
+// Pure RRULE (RFC-5545) helpers -- no DOM, no third-party imports, so they are
 // trivially unit-testable and reusable. The <rrule-picker> element and the
 // human-readable preview (which needs rrule.js) live in rrule-picker.js.
 

@@ -185,7 +185,7 @@ function getCsrfToken() {
 
 // Server-side upload errors (type not allowed, duplicate content, too large)
 // arrive as a [data-upload-errors] block inside the swapped document-list
-// partial. Lift them into an auto-dismissing toast so they don't linger —
+// partial. Lift them into an auto-dismissing toast so they don't linger --
 // and don't pile up across successive failed uploads.
 function flashUploadErrors() {
     var messages = [];

@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 
 from django.conf import settings
@@ -5,7 +6,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.utils import timezone
 
-from task_processor.models import ApiKey
+from task_processor.models import ApiKey, Item
 
 
 class TestApiKeyModel(TestCase):
@@ -115,3 +116,84 @@ class TestApiAuthentication(TestCase):
             "/api/items", headers={"Authorization": f"Bearer {self.raw_key}"}
         )
         self.assertEqual(response.status_code, 200)
+
+
+class TestSessionAuthentication(TestCase):
+    """The API also accepts the Django session (cookie + CSRF), so pages
+    served by the app can call it without a bearer key."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass"
+        )
+
+    def test_session_get_returns_200(self):
+        self.client.force_login(self.user)
+        response = self.client.get("/api/items")
+        self.assertEqual(response.status_code, 200)
+
+    def test_session_post_creates_item_for_session_user(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/items",
+            data=json.dumps({"title": "Offloaded"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+        item = Item.objects.get(pk=response.json()["id"])
+        self.assertEqual(item.user, self.user)
+
+    def test_session_post_without_csrf_token_returns_403(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        response = client.post(
+            "/api/items",
+            data=json.dumps({"title": "Offloaded"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Item.objects.count(), 0)
+
+    def test_session_post_with_csrf_token_returns_201(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        # Fetch a page rendering {% csrf_token %} to obtain the cookie,
+        # exactly like the offload page's JS does.
+        client.get("/item/offload/")
+        response = client.post(
+            "/api/items",
+            data=json.dumps({"title": "Offloaded"}),
+            content_type="application/json",
+            headers={"X-CSRFToken": client.cookies["csrftoken"].value},
+        )
+        self.assertEqual(response.status_code, 201)
+
+    def test_bearer_post_needs_no_csrf_token(self):
+        # Pins the auth ordering: the bearer key must short-circuit before
+        # django_auth gets a chance to raise its CSRF failure.
+        _, raw_key = ApiKey.generate(self.user, "test key")
+        client = Client(enforce_csrf_checks=True)
+        response = client.post(
+            "/api/items",
+            data=json.dumps({"title": "Offloaded"}),
+            content_type="application/json",
+            headers={"Authorization": f"Bearer {raw_key}"},
+        )
+        self.assertEqual(response.status_code, 201)
+
+    def test_anonymous_get_still_returns_401(self):
+        response = self.client.get("/api/items")
+        self.assertEqual(response.status_code, 401)
+
+    def test_anonymous_strict_post_returns_403(self):
+        # Inherent to having django_auth in the chain: its CSRF check runs
+        # before the authentication verdict, so unauthenticated POSTs
+        # without a token get 403 instead of 401.
+        client = Client(enforce_csrf_checks=True)
+        response = client.post(
+            "/api/items",
+            data=json.dumps({"title": "Offloaded"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)

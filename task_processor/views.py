@@ -614,6 +614,17 @@ class ItemDetailView(ForceHtmxRequestMixin, UpdateView):
 
 
 @method_decorator(login_required, name="dispatch")
+class ItemOffloadView(TemplateView):
+    """Standalone mobile quick-capture page (note / photo / voice).
+
+    The page's JS talks to the API with the session cookie + CSRF token;
+    the template only has to render {% csrf_token %}.
+    """
+
+    template_name = "items/offload.html"
+
+
+@method_decorator(login_required, name="dispatch")
 class ItemCreateView(ReturnRefererMixin, CreateView):
     """
     View for creating new GTD items.

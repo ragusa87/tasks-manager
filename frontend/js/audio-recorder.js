@@ -3,21 +3,15 @@
 // level meter mirrors the mic input, and on stop attaches the recording
 // through the same upload pipeline as a dropzone drop.
 //
-// Capture is raw PCM encoded client-side to 16 kHz mono WAV rather than
-// MediaRecorder: MediaRecorder only offers webm/mp4 containers, which
-// content sniffers (including the server's magic-byte check) report as
-// video/*, whereas WAV is detected as audio everywhere and stays portable.
+// The capture itself (PCM -> 16 kHz mono WAV) lives in audio-capture.js,
+// shared with the offload page.
 import { uploadFiles, showToast } from './documents.js';
 import {
     MAX_RECORDING_MS,
-    WAV_SAMPLE_RATE,
-    mergeChunks,
-    downsample,
-    encodeWavPcm16,
-    recordingFilename,
     formatClock,
     barLevels,
 } from './audio-recorder-utils.js';
+import { startCaptureSession } from './audio-capture.js';
 
 const BAR_COUNT = 24;
 
@@ -56,25 +50,6 @@ function startRecording(btn, stream) {
     var itemId = btn.dataset.itemId;
     var uploadUrl = btn.dataset.uploadUrl;
 
-    var audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    var source = audioContext.createMediaStreamSource(stream);
-
-    var analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-    var freqData = new Uint8Array(analyser.frequencyBinCount);
-
-    // ScriptProcessorNode is deprecated but universally supported and needs
-    // no separate worklet file; its output buffer stays silent (all zeros),
-    // the destination connection only exists so onaudioprocess fires.
-    var processor = audioContext.createScriptProcessor(4096, 1, 1);
-    var chunks = [];
-    processor.onaudioprocess = function(e) {
-        chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
-    };
-    source.connect(processor);
-    processor.connect(audioContext.destination);
-
     var meter = document.getElementById('audio-record-meter-' + itemId);
     var bars = buildBars(meter);
     var timeEl = meter ? meter.querySelector('[data-meter-time]') : null;
@@ -84,47 +59,11 @@ function startRecording(btn, stream) {
     }
     setRecordingUi(btn, true);
 
-    var startedAt = Date.now();
     var rafId = null;
-
-    function draw() {
-        // The modal can be closed mid-recording; treat that as an abort.
-        if (!btn.isConnected) {
-            session.stop();
-            return;
-        }
-        analyser.getByteFrequencyData(freqData);
-        var levels = barLevels(freqData, bars.length);
-        for (var i = 0; i < bars.length; i++) {
-            bars[i].style.height = Math.max(8, Math.round(levels[i] * 100)) + '%';
-        }
-        if (timeEl) {
-            timeEl.textContent = formatClock(Date.now() - startedAt) + ' / ' + formatClock(MAX_RECORDING_MS);
-        }
-        rafId = requestAnimationFrame(draw);
-    }
-    rafId = requestAnimationFrame(draw);
-
-    var maxTimer = setTimeout(function() {
-        session.stop();
-    }, MAX_RECORDING_MS);
-
-    var stopped = false;
-    var session = {
-        btn: btn,
-        stop: function() {
-            if (stopped) return;
-            stopped = true;
-
-            clearTimeout(maxTimer);
+    var session = startCaptureSession(stream, {
+        fftSize: 256,
+        onStop: function(file) {
             cancelAnimationFrame(rafId);
-            processor.disconnect();
-            source.disconnect();
-            stream.getTracks().forEach(function(track) {
-                track.stop();
-            });
-            var sampleRate = audioContext.sampleRate;
-            audioContext.close();
             setRecordingUi(btn, false);
             if (meter) {
                 meter.classList.add('hidden');
@@ -132,13 +71,32 @@ function startRecording(btn, stream) {
             }
             activeSession = null;
 
-            if (!btn.isConnected || chunks.length === 0) return;
-            var samples = downsample(mergeChunks(chunks), sampleRate, WAV_SAMPLE_RATE);
-            var wav = encodeWavPcm16(samples, WAV_SAMPLE_RATE);
-            var file = new File([wav], recordingFilename(new Date()), { type: 'audio/wav' });
+            // The modal can be closed mid-recording; treat that as an abort.
+            if (!btn.isConnected || !file) return;
             uploadFiles(itemId, uploadUrl, [file]);
         },
-    };
+    });
+    session.btn = btn;
+
+    var freqData = new Uint8Array(session.analyser.frequencyBinCount);
+
+    function draw() {
+        // The modal can be closed mid-recording; treat that as an abort.
+        if (!btn.isConnected) {
+            session.stop();
+            return;
+        }
+        session.analyser.getByteFrequencyData(freqData);
+        var levels = barLevels(freqData, bars.length);
+        for (var i = 0; i < bars.length; i++) {
+            bars[i].style.height = Math.max(8, Math.round(levels[i] * 100)) + '%';
+        }
+        if (timeEl) {
+            timeEl.textContent = formatClock(Date.now() - session.startedAt) + ' / ' + formatClock(MAX_RECORDING_MS);
+        }
+        rafId = requestAnimationFrame(draw);
+    }
+    rafId = requestAnimationFrame(draw);
 
     activeSession = session;
 }

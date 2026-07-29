@@ -1,5 +1,5 @@
 // Pure helpers for <markdown-editor> link handling (no dependencies, unit
-// testable — see markdown-editor-utils.test.js).
+// testable -- see markdown-editor-utils.test.js).
 //
 // Link policy: standard `[label](url)` links are supported, but a link whose
 // visible text IS a URL must always point where it says. Concretely:
