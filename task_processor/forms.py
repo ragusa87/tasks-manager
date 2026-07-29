@@ -172,7 +172,7 @@ class WaitingForForm(TransitionForm):
         label="Who are you waiting for?",
         widget=forms.TextInput(
             attrs={
-                "class": "p-2 mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                "class": "input mt-1",
                 "placeholder": "Enter person or organization name",
             }
         ),
@@ -488,13 +488,13 @@ class AreaForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(
                 attrs={
-                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "class": "input",
                     "placeholder": "Enter area name",
                 }
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "class": "input",
                     "rows": 4,
                     "placeholder": "",
                 }
@@ -537,13 +537,13 @@ class ContextForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(
                 attrs={
-                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "class": "input",
                     "placeholder": "Enter context name (e.g., @home, @office)",
                 }
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "class": "input",
                     "rows": 4,
                     "placeholder": "Optional: Describe where or in what situation you can do tasks",
                 }
@@ -586,7 +586,7 @@ class EmailInboxForm(forms.ModelForm):
         widgets = {
             "enabled": forms.CheckboxInput(
                 attrs={
-                    "class": "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded",
+                    "class": "checkbox",
                 }
             ),
         }
@@ -605,7 +605,7 @@ class AllowedSenderForm(forms.ModelForm):
         widgets = {
             "email": forms.EmailInput(
                 attrs={
-                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "class": "input",
                     "placeholder": "sender@example.com",
                 }
             ),
@@ -638,7 +638,7 @@ class TagForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(
                 attrs={
-                    "class": "p-2 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+                    "class": "input",
                     "placeholder": "Enter tag name",
                 }
             ),

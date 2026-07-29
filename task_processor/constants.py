@@ -98,10 +98,10 @@ class GTDConfig:
         Priority.URGENT: "🔴",
     }
     PRIORITY_COLORS = {
-        Priority.LOW: "text-blue-500",
-        Priority.NORMAL: "text-gray-500",
-        Priority.HIGH: "text-orange-500",
-        Priority.URGENT: "text-red-500",
+        Priority.LOW: "text-cat-blue",
+        Priority.NORMAL: "text-muted",
+        Priority.HIGH: "text-cat-orange",
+        Priority.URGENT: "text-cat-red",
     }
     # Priority icons (Lucide sprites)
     PRIORITY_ICONS = {

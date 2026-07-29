@@ -1,66 +1,28 @@
-import os
-
-from django.core.exceptions import PermissionDenied
-from django.http import FileResponse, HttpResponseServerError
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
 from django.views import View
-from factory.django import get_model
 
-from core.filesystem_backends.helper import get_file_system_engine
-from core.token import validate_download_token
+from core.context_processors import THEME_COOKIE_NAME
+
+THEME_COOKIE_MAX_AGE = 365 * 24 * 3600
 
 
-class DocumentDownloadView(View):
-    """
-    View to serve documents by document ID.
-    Retrieves the file using get_file_system_engine() and deletes it after download.
-    """
+class SetThemeView(View):
+    """Persist the theme override cookie ("light"/"dark"; "system" clears it
+    so color-scheme follows the OS again). No login required: the toggle is
+    also shown on the login page."""
 
-    def get(self, request, document_id):
-        # Validate token parameter
-        provided_token = request.GET.get("token")
-        if not provided_token:
-            raise PermissionDenied("Token parameter is required")
-
-        if not validate_download_token(document_id, provided_token):
-            raise PermissionDenied("Invalid token")
-
-        # Get the document from the database
-        Document = get_model("task_processor", "Document")
-        document = get_object_or_404(Document, id=document_id)
-
-        try:
-            # Get file system engine
-            engine = get_file_system_engine()
-
-            # Fetch the file to temporary storage
-            temp_file_path, original_filename = engine.fetch_file_to_temp(
-                document.file_path
+    def post(self, request):
+        value = request.POST.get("theme", "")
+        if value not in ("light", "dark", "system"):
+            return HttpResponse(status=400)
+        response = HttpResponse(status=204)
+        if value == "system":
+            response.delete_cookie(THEME_COOKIE_NAME, samesite="Lax")
+        else:
+            response.set_cookie(
+                THEME_COOKIE_NAME,
+                value,
+                max_age=THEME_COOKIE_MAX_AGE,
+                samesite="Lax",
             )
-
-            # Create file response
-            response = FileResponse(
-                open(temp_file_path, "rb"),
-                as_attachment=True,
-                filename=document.original_filename or original_filename,
-            )
-
-            # Set content type if available
-            if document.mime_type:
-                response["Content-Type"] = document.mime_type
-
-            # Add a callback to delete the file after response is sent
-            def cleanup_file():
-                try:
-                    if os.path.exists(temp_file_path):
-                        os.remove(temp_file_path)
-                except OSError:
-                    pass  # Ignore errors during cleanup
-
-            # Schedule cleanup when response closes
-            response.close_callback = cleanup_file
-
-            return response
-
-        except Exception as e:
-            raise HttpResponseServerError(f"Document could not be retrieved: {str(e)}")
+        return response

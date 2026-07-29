@@ -106,9 +106,9 @@ function setRecordingUi(btn, recording) {
     var stopIcon = btn.querySelector('[data-icon-stop]');
     if (micIcon) micIcon.classList.toggle('hidden', recording);
     if (stopIcon) stopIcon.classList.toggle('hidden', !recording);
-    btn.classList.toggle('border-red-400', recording);
-    btn.classList.toggle('text-red-600', recording);
-    btn.classList.toggle('bg-red-50', recording);
+    btn.classList.toggle('border-danger', recording);
+    btn.classList.toggle('text-danger', recording);
+    btn.classList.toggle('bg-danger-ground', recording);
 }
 
 function buildBars(meter) {
@@ -118,7 +118,7 @@ function buildBars(meter) {
     var bars = [];
     for (var i = 0; i < BAR_COUNT; i++) {
         var bar = document.createElement('div');
-        bar.className = 'flex-1 bg-red-400 rounded-sm transition-[height] duration-75';
+        bar.className = 'flex-1 bg-danger rounded-sm transition-[height] duration-75';
         bar.style.height = '8%';
         container.appendChild(bar);
         bars.push(bar);

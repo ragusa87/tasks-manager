@@ -7,6 +7,7 @@ import '../css/offload.css';
 import { MAX_RECORDING_MS, formatClock } from './audio-recorder-utils.js';
 import { startCaptureSession } from './audio-capture.js';
 import { MAX_TITLE_LENGTH, composeNote, fmtSize } from './offload-utils.js';
+import { initThemeToggle, resolveColor } from './theme.js';
 
 const EP = {
     items: '/api/items',
@@ -25,9 +26,9 @@ const state = { mode: 0, photo: null, audio: null, audioMs: 0, busy: false };
 
 /* -- readout: this thing never lies and never says "something went wrong" -- */
 const READOUT_KINDS = {
-    idle: 'text-offload-mist',
-    ok: 'text-offload-accent',
-    err: 'text-offload-rec',
+    idle: 'text-muted',
+    ok: 'text-accent',
+    err: 'text-danger',
 };
 
 function say(text, kind) {
@@ -65,7 +66,7 @@ $('note').addEventListener('input', (e) => {
     const n = e.target.value.trim().split('\n')[0].length;
     const c = $('count');
     c.textContent = `${n} / ${MAX_TITLE_LENGTH}`;
-    c.classList.toggle('text-offload-rec', n > MAX_TITLE_LENGTH);
+    c.classList.toggle('text-danger', n > MAX_TITLE_LENGTH);
 });
 
 /* -- photo ---------------------------------------------------- */
@@ -91,7 +92,7 @@ function takePhoto(file) {
     img.alt = 'Selected image';
     img.onload = () => URL.revokeObjectURL(img.src);
     const drop = document.createElement('button');
-    drop.className = 'absolute top-2 right-2 rounded-xs border border-offload-line bg-offload-ink px-2 py-1.5 font-mono text-[10px] tracking-[.1em] text-offload-mist';
+    drop.className = 'absolute top-2 right-2 rounded-xs border border-line bg-ground px-2 py-1.5 font-mono text-[10px] tracking-[.1em] text-muted';
     drop.textContent = 'REMOVE';
     drop.onclick = clearPhoto;
     stage.append(img, drop);
@@ -101,7 +102,7 @@ function takePhoto(file) {
 
 function clearPhoto() {
     state.photo = null;
-    $('shot').innerHTML = '<span class="font-mono text-[10px] tracking-[.12em] text-offload-mist">No image</span>';
+    $('shot').innerHTML = '<span class="font-mono text-[10px] tracking-[.12em] text-muted">No image</span>';
     $('shotHint').textContent = 'Max 10 MB.';
 }
 
@@ -149,8 +150,8 @@ const MIC_UI = {
     nodevice: { chip: 'Mic \u00b7 no input', label: 'Record', live: false, hint: 'No audio input device is connected.' },
 };
 
-const CHIP_GOOD = ['text-offload-accent', 'border-offload-accent/40'];
-const CHIP_BAD = ['text-offload-rec', 'border-offload-rec/40'];
+const CHIP_GOOD = ['text-accent', 'border-accent/40'];
+const CHIP_BAD = ['text-danger', 'border-danger/40'];
 
 function setMic(micState) {
     MIC.state = micState;
@@ -259,11 +260,11 @@ $('recBtn').onclick = () => {
 };
 
 function setRecLive(live) {
-    $('recBtn').classList.toggle('border-offload-rec', live);
-    $('clock').classList.toggle('text-offload-rec', live);
+    $('recBtn').classList.toggle('border-danger', live);
+    $('clock').classList.toggle('text-danger', live);
     const dot = $('recDot');
-    dot.classList.toggle('bg-offload-rec', live);
-    dot.classList.toggle('bg-offload-line', !live);
+    dot.classList.toggle('bg-danger', live);
+    dot.classList.toggle('bg-line', !live);
     dot.classList.toggle('offload-dot-live', live);
 }
 
@@ -318,8 +319,9 @@ function finishRec(file) {
 
 function drawScope(analyser) {
     const buf = new Uint8Array(analyser.fftSize);
-    const stroke = getComputedStyle(document.documentElement)
-        .getPropertyValue('--color-offload-rec');
+    // resolveColor, not getPropertyValue: the token is a light-dark()
+    // expression that canvas strokeStyle cannot consume unresolved.
+    const stroke = resolveColor('--color-danger');
     const paint = () => {
         const w = canvas.width = canvas.offsetWidth * devicePixelRatio;
         const h = canvas.height = canvas.offsetHeight * devicePixelRatio;
@@ -475,4 +477,5 @@ addEventListener('keydown', (e) => {
 /* -- boot ----------------------------------------------------- */
 paintMode(0);
 probeMic();
+initThemeToggle();
 say('Ready');

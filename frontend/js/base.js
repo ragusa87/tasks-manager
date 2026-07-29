@@ -6,6 +6,7 @@ import localeFr from 'air-datepicker/locale/fr';
 import htmx from 'htmx.org';
 import { initDocumentUpload } from './documents.js';
 import { initAudioRecorders } from './audio-recorder.js';
+import { initThemeToggle } from './theme.js';
 import './rrule-picker.js';
 import './markdown-editor.js';
 window.htmx = htmx
@@ -195,11 +196,11 @@ function initializeCustomRadioGroups() {
 
                 if (input && visual) {
                     if (input.checked) {
-                        visual.classList.add('bg-blue-50', 'border-blue-500');
-                        visual.classList.remove('border-gray-300');
+                        visual.classList.add('bg-accent/10', 'border-accent');
+                        visual.classList.remove('border-line');
                     } else {
-                        visual.classList.remove('bg-blue-50', 'border-blue-500');
-                        visual.classList.add('border-gray-300');
+                        visual.classList.remove('bg-accent/10', 'border-accent');
+                        visual.classList.add('border-line');
                     }
                 }
             });
@@ -248,8 +249,8 @@ document.addEventListener('click', function(e) {
                 if (parentOption) {
                     const visual = parentOption.querySelector('.custom-radio-visual');
                     if (visual) {
-                        visual.classList.remove('bg-blue-50', 'border-blue-500');
-                        visual.classList.add('border-gray-300');
+                        visual.classList.remove('bg-accent/10', 'border-accent');
+                        visual.classList.add('border-line');
                     }
                 }
             });
@@ -258,8 +259,8 @@ document.addEventListener('click', function(e) {
             input.checked = true;
             const visual = radioOption.querySelector('.custom-radio-visual');
             if (visual) {
-                visual.classList.add('bg-blue-50', 'border-blue-500');
-                visual.classList.remove('border-gray-300');
+                visual.classList.add('bg-accent/10', 'border-accent');
+                visual.classList.remove('border-line');
             }
 
             // Trigger change event for any listening code
@@ -383,7 +384,7 @@ function initializeAutocomplete() {
             if (results.length === 0 && allowCreate && query) {
                 // Show create option
                 const createItem = document.createElement('div');
-                createItem.className = 'px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-100 text-blue-600';
+                createItem.className = 'px-3 py-2 cursor-pointer hover:bg-accent/10 border-b border-line text-accent';
                 createItem.innerHTML = `
                     <div class="flex items-center space-x-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,7 +404,7 @@ function initializeAutocomplete() {
                 }
 
                 const resultItem = document.createElement('div');
-                resultItem.className = 'px-3 py-2 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0';
+                resultItem.className = 'px-3 py-2 cursor-pointer hover:bg-ground border-b border-line last:border-b-0';
                 resultItem.textContent = item.text;
                 resultItem.addEventListener('click', () => selectItem(item));
                 dropdown.appendChild(resultItem);
@@ -449,10 +450,10 @@ function initializeAutocomplete() {
             if (allowMultiple) {
                 selectedItems.forEach(item => {
                     const badge = document.createElement('span');
-                    badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800';
+                    badge.className = 'badge-accent';
                     badge.innerHTML = `
                         ${item.text}
-                        <button type="button" class="ml-1 text-blue-600 hover:text-blue-800">
+                        <button type="button" class="ml-1 text-accent hover:text-accent-hover">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                             </svg>
@@ -537,8 +538,9 @@ function initializeAccordions() {
         });
     });
 
-    // Check if there are non-field errors
-    const hasNonFieldErrors = document.querySelector('.rounded-md.bg-red-50') !== null;
+    // Check if there are non-field errors (the alert-danger box rendered by
+    // partials/item_form_detail.html)
+    const hasNonFieldErrors = document.querySelector('.alert-danger') !== null;
 
     // Auto-open accordions with errors or on modal open
     document.querySelectorAll('.accordion-item').forEach(function(item) {
@@ -630,6 +632,7 @@ const init = () => {
     initializeMobileMenu();
     initDocumentUpload();
     initAudioRecorders();
+    initThemeToggle();
 }
 document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('htmx:afterSwap', init);

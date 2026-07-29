@@ -22,7 +22,6 @@ USER ${USER_ID}:${GROUP_ID}
 COPY package-lock.json .
 COPY package.json .
 COPY vite.config.js .
-COPY tailwind.config.js .
 
 RUN mkdir -p frontend static/dist
 COPY frontend frontend/

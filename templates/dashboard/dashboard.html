@@ -9,19 +9,19 @@
     <div class="mb-8">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Hello {{ request.user.first_name|default:"!" }}!</h2>
-                <p class="mt-1 text-sm text-gray-600">Here's your overview for today</p>
+                <h2 class="text-2xl font-bold text-body">Hello {{ request.user.first_name|default:"!" }}!</h2>
+                <p class="mt-1 text-muted">Here's your overview for today</p>
                 <div class="mt-2 flex items-center space-x-4">
-                    <span class="text-xs text-gray-500">Last updated: <span id="last-updated">{{ now|date:"H:i" }}</span></span>
+                    <span class="text-xs text-muted">Last updated: <span id="last-updated">{{ now|date:"H:i" }}</span></span>
                 </div>
             </div>
             <div class="flex items-center justify-between">
-                <a href="{% url 'dashboard_stats' %}" class="mr-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="{% url 'dashboard_stats' %}" class="mr-4 btn-primary">
                     {% sprite "lucide-target" 24 class="mr-2" %}
                     Statistics
                 </a>
 
-                <a href="{% url 'item_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <a href="{% url 'item_create' %}" class="btn-primary">
                     {% sprite "lucide-circle-plus" 24 class="mr-2" %}
                     Create Item
                 </a>

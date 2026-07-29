@@ -2,6 +2,16 @@ from django.conf import settings
 
 from core.upload_types import accept_attribute, describe_types, recording_enabled
 
+THEME_COOKIE_NAME = "theme"
+
+
+def theme(request):
+    """Theme override from the cookie: "light", "dark", or "" (follow the
+    OS via color-scheme). Rendered as <html data-theme=...> so the choice
+    applies on first paint, with no JS and no flash."""
+    value = request.COOKIES.get(THEME_COOKIE_NAME, "")
+    return {"THEME": value if value in ("light", "dark") else ""}
+
 
 def site_settings(request):
     return {

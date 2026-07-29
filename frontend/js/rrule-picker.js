@@ -42,11 +42,11 @@ export function describeRRule(value) {
 }
 
 const INPUT_CLASSES =
-    'focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md';
+    'input';
 const CHIP_BASE =
     'rrule-weekday px-2.5 py-1 text-xs font-medium rounded-md border cursor-pointer transition-colors';
-const CHIP_ON = 'bg-blue-600 text-white border-blue-600';
-const CHIP_OFF = 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
+const CHIP_ON = 'bg-accent text-on-accent border-accent';
+const CHIP_OFF = 'bg-surface text-body border-line hover:bg-ground';
 
 // Guard so importing describeRRule in a non-DOM env (tests/SSR) is safe.
 if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined') {
@@ -85,7 +85,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                 <div class="space-y-2">
                     <div class="flex flex-wrap items-center gap-2">
                         <select data-role="freq" id="${this.fieldId}" class="${INPUT_CLASSES} w-auto">${freqOptions}</select>
-                        <div data-role="interval-wrap" class="flex items-center gap-1.5 text-sm text-gray-600">
+                        <div data-role="interval-wrap" class="flex items-center gap-1.5 text-muted">
                             <span>every</span>
                             <input type="number" min="1" data-role="interval" value="${
                                 this.state.interval || 1
@@ -94,9 +94,9 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                         </div>
                     </div>
                     <div data-role="weekdays" class="flex flex-wrap gap-1.5">${chips}</div>
-                    <p data-role="preview" class="text-xs text-gray-500"></p>
+                    <p data-role="preview" class="text-xs text-muted"></p>
                     <div>
-                        <button type="button" data-role="advanced-toggle" class="text-xs text-blue-600 hover:underline">Edit raw pattern</button>
+                        <button type="button" data-role="advanced-toggle" class="text-xs text-accent hover:underline">Edit raw pattern</button>
                         <input type="text" name="${this.name}" value="${initial}" data-role="raw"
                                class="${INPUT_CLASSES} mt-1 hidden font-mono"
                                placeholder="e.g. FREQ=MONTHLY;BYMONTHDAY=1">
