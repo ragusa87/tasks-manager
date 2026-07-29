@@ -170,7 +170,15 @@ document.addEventListener('click', function(e) {
     const itemElement = e.target.closest('[data-detail-url]');
     if (!itemElement) return;
     e.preventDefault();
-    openItemModal(itemElement.getAttribute('data-detail-url'));
+    const url = itemElement.getAttribute('data-detail-url');
+    // Below the sm breakpoint the modal is cramped: navigate to the same URL
+    // instead — the non-HTMX branch of ItemDetailView renders it as a full
+    // edit page (items/detail.html).
+    if (window.matchMedia('(max-width: 639px)').matches) {
+        window.location.assign(url);
+        return;
+    }
+    openItemModal(url);
 });
 
 // Refresh the item list after a modal action. Two triggers:
