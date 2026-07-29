@@ -1,3 +1,5 @@
+import { getCsrfToken } from './csrf.js';
+
 export function initDocumentUpload() {
     initFileInputs();
     initDropzones();
@@ -149,13 +151,10 @@ function handleDeleteClick(e) {
     var documentList = button.closest('.document-list');
     if (!documentList) return;
 
-    var csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
-    var csrfToken = csrfInput ? csrfInput.value : '';
-
     fetch(deleteUrl, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': csrfToken,
+            'X-CSRFToken': getCsrfToken(),
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
@@ -234,11 +233,6 @@ export function uploadFiles(itemId, uploadUrl, files, onDone) {
     .finally(function() {
         if (onDone) onDone();
     });
-}
-
-function getCsrfToken() {
-    var csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
-    return csrfInput ? csrfInput.value : '';
 }
 
 // Server-side upload errors (type not allowed, duplicate content, too large)

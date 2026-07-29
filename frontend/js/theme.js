@@ -6,6 +6,7 @@
 // instant repaint, persists the choice through POST /theme/, and tells
 // canvas/chart code to re-read its colors via a "themechange" event.
 import { nextTheme, themeLabel } from './theme-utils.js';
+import { getCsrfToken } from './csrf.js';
 
 export function currentTheme() {
     return document.documentElement.dataset.theme || 'system';
@@ -29,8 +30,8 @@ function applyTheme(theme) {
 function persistTheme(theme, endpoint) {
     var body = new FormData();
     body.append('theme', theme);
-    var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (csrf) body.append('csrfmiddlewaretoken', csrf.value);
+    var csrf = getCsrfToken();
+    if (csrf) body.append('csrfmiddlewaretoken', csrf);
     fetch(endpoint, { method: 'POST', body: body }).catch(function() {
         // The optimistic flip already happened; losing persistence only
         // means the next page load falls back to the previous choice.
