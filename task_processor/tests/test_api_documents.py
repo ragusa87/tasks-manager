@@ -209,3 +209,14 @@ class TestUploadDocumentEndpoint(TestCase):
             f"/api/items/{self.item.id}/documents", {}, headers=self.headers
         )
         self.assertEqual(response.status_code, 422)
+
+    def test_session_auth_upload_returns_201(self):
+        # The offload page uploads with the session cookie, no bearer key.
+        self.client.force_login(self.user)
+        file = io.BytesIO(make_png())
+        file.name = "pixel.png"
+        response = self.client.post(
+            f"/api/items/{self.item.id}/documents", {"file": file}
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Document.objects.get().user, self.user)

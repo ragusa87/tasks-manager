@@ -11,11 +11,11 @@
 // It progressively enhances the child <textarea>: the textarea stays the real
 // form control (so it still works with JS disabled and submits exactly as
 // before), but is visually hidden and kept in sync with the editor's Markdown
-// on every edit. The custom toolbar offers a deliberately small set — bold,
-// italic, strikethrough, links and bullet/ordered lists — matching what the
-// server sanitizer keeps. Other blocks (headings, tables, code, …) are stripped
+// on every edit. The custom toolbar offers a deliberately small set -- bold,
+// italic, strikethrough, links and bullet/ordered lists -- matching what the
+// server sanitizer keeps. Other blocks (headings, tables, code, ...) are stripped
 // server-side on save. Being a custom element, it auto-upgrades whenever HTMX
-// swaps the modal in — no manual init needed.
+// swaps the modal in -- no manual init needed.
 
 import {
     Editor,
@@ -67,10 +67,10 @@ const autolinkInputRule = $inputRule(
         })
 );
 
-// Keep a link's href in sync with its visible text — but only when that text
+// Keep a link's href in sync with its visible text -- but only when that text
 // IS a URL. Typing inside "https://example.com" re-derives the href from the
 // text on the next transaction, so what you see is always what you click.
-// Label-style links ([docs](https://…)) are standard markdown and left alone:
+// Label-style links ([docs](https://...)) are standard markdown and left alone:
 // editing the label never touches the href. Runs only on doc changes, so
 // links loaded from storage are untouched until edited, and it converges in
 // one pass (the derived href equals the text, which is already URL-like).
@@ -216,7 +216,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
         disconnectedCallback() {
             this._form?.removeEventListener('submit', this._onSubmit, true);
             this._form = null;
-            // Modal is swapped out by HTMX — release the ProseMirror view.
+            // Modal is swapped out by HTMX -- release the ProseMirror view.
             if (this._editor) {
                 this._editor.destroy();
                 this._editor = null;
@@ -265,7 +265,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
             this._uploadIndicator.innerHTML = `${svg('loader-circle').replace(
                 '<svg ',
                 '<svg class="animate-spin" '
-            )}Uploading attachment…`;
+            )}Uploading attachment\u2026`;
             toolbar.appendChild(this._uploadIndicator);
 
             this._host = document.createElement('div');
@@ -328,7 +328,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
         }
 
         /** Pasted files don't belong in the markdown (the sanitizer would drop
-         *  them anyway) — offer them to the page as attachments instead. Emits
+         *  them anyway) -- offer them to the page as attachments instead. Emits
          *  a cancelable event; if a listener claims it (documents.js routes the
          *  files through the dropzone upload), the paste is swallowed and a
          *  loader shows until the listener calls detail.done(). With no
@@ -441,7 +441,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                     // the target type's attrs. Never copy attrs verbatim:
                     // Milkdown's markdown parser stamps `spread` as a *string*
                     // ("true"/"false") while the schema validates a boolean, so
-                    // recreating nodes from copied attrs throws — which is what
+                    // recreating nodes from copied attrs throws -- which is what
                     // silently broke ordered->bullet. Coerce and set explicitly.
                     const isOrdered = target === ordered;
                     const items = [];
@@ -453,7 +453,7 @@ if (typeof HTMLElement !== 'undefined' && typeof customElements !== 'undefined')
                                         item.attrs.spread === true ||
                                         item.attrs.spread === 'true',
                                     listType: isOrdered ? 'ordered' : 'bullet',
-                                    label: isOrdered ? `${index + 1}.` : '•',
+                                    label: isOrdered ? `${index + 1}.` : '\u2022',
                                 },
                                 item.content,
                                 item.marks
