@@ -290,28 +290,24 @@ class ItemForm(forms.ModelForm):
         self.user = user
         super().__init__(*args, **kwargs)
 
-        # parent relationship is only valid for projects/references
-        current_status = (
-            self.instance.status if self.instance and self.instance.status else None
-        )
-        if current_status not in GTDConfig.STATUS_WITH_PARENT_ALLOWED:
-            current_status = (
-                GTDConfig.STATUS_WITH_PARENT_ALLOWED[0]
-                if len(GTDConfig.STATUS_WITH_PARENT_ALLOWED) > 0
-                else None
-            )
-
         # set user-specific querysets
         if user:
-            parent_selector = models.Q(status=current_status, parent__pk=None)
+            # Valid parents mirror the /autocomplete/search/parent/ endpoint
+            # that feeds the dropdown: the user's own top-level projects and
+            # references — the form must accept whatever the dropdown offers.
+            parent_selector = models.Q(
+                status__in=GTDConfig.STATUS_WITH_PARENT_ALLOWED, parent__pk=None
+            )
             if self.instance and self.instance.parent_id:
                 # The stored parent may have left the selectable set (e.g. a
                 # completed project). Keep it as a valid choice so the item
                 # stays saveable without forcing the user to drop it.
                 parent_selector |= models.Q(pk=self.instance.parent_id)
-            self.fields["parent"].queryset = Item.objects.filter(
-                parent_selector, user=user
-            )
+            parent_queryset = Item.objects.filter(parent_selector, user=user)
+            if self.instance and self.instance.pk:
+                # An item must never offer itself as its own parent.
+                parent_queryset = parent_queryset.exclude(pk=self.instance.pk)
+            self.fields["parent"].queryset = parent_queryset
             self.fields["contexts"].queryset = Context.objects.filter(user=user)
             self.fields["area"].queryset = Area.objects.filter(user=user)
             self.fields["tags"].queryset = Tag.objects.filter(user=user)

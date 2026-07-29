@@ -91,6 +91,63 @@ class ItemFormCompletedParentTests(TestCase):
             sibling.full_clean()
 
 
+class ItemFormParentChoicesTests(TestCase):
+    """The parent choices must accept everything the autocomplete dropdown
+    offers: the user's top-level projects AND references (the endpoint
+    filters on STATUS_WITH_PARENT_ALLOWED). Regression: the form restricted
+    the queryset to a single status, so picking a reference from the
+    dropdown always failed 'Select a valid choice'."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="u", password="x")
+        self.action = Item.objects.create(
+            title="An action", status=GTDStatus.NEXT_ACTION, user=self.user
+        )
+        self.project = Item.objects.create(
+            title="A project", status=GTDStatus.PROJECT, user=self.user
+        )
+        self.reference = Item.objects.create(
+            title="A reference", status=GTDStatus.REFERENCE, user=self.user
+        )
+
+    def _form(self, instance, data=None):
+        return ItemForm(
+            data=data, instance=instance, item_flow=instance.flow, user=self.user
+        )
+
+    def test_choices_include_projects_and_references(self):
+        ids = set(
+            self._form(self.action)
+            .fields["parent"]
+            .queryset.values_list("pk", flat=True)
+        )
+        self.assertIn(self.project.pk, ids)
+        self.assertIn(self.reference.pk, ids)
+
+    def test_item_cannot_be_its_own_parent_choice(self):
+        ids = set(
+            self._form(self.reference)
+            .fields["parent"]
+            .queryset.values_list("pk", flat=True)
+        )
+        self.assertNotIn(self.reference.pk, ids)
+        self.assertIn(self.project.pk, ids)
+
+    def test_action_can_be_filed_under_a_reference(self):
+        form = self._form(
+            self.action,
+            data={
+                "title": self.action.title,
+                "priority": self.action.priority,
+                "parent": str(self.reference.pk),
+                "rrule": "",
+            },
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        item = form.save()
+        self.assertEqual(item.parent_id, self.reference.pk)
+
+
 class ItemDetailViewCompletedParentTests(TestCase):
     """End-to-end regression for the reported bug: an item whose parent
     project was completed could not be saved from the detail modal at all —
