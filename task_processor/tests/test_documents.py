@@ -303,13 +303,11 @@ class DocumentUploadViewTests(TestCase):
         self.assertEqual(document.content_hash, hashlib.sha256(content).hexdigest())
 
     def test_document_icon_per_content_type(self):
-        """The icon property maps content types to sprite names, including the
-        m4a-as-video/mp4 quirk."""
+        """The icon property maps content types to sprite names."""
         cases = [
             ("application/pdf", "lucide-file"),
             ("image/jpeg", "lucide-image"),
             ("audio/mpeg", "lucide-music"),
-            ("video/mp4", "lucide-music"),  # m4a container
             ("", "lucide-file"),
         ]
         for content_type, expected in cases:

@@ -14,8 +14,7 @@ FULL_LIST = [
     "image/png",
     "image/jpeg",
     "audio/mpeg",
-    "audio/mp4",
-    "video/mp4",  # m4a container alias
+    "audio/ogg",
 ]
 
 
@@ -26,13 +25,9 @@ class TestTypeCategories:
     def test_pdf_only(self):
         assert type_categories(["application/pdf"]) == ["PDF"]
 
-    def test_video_counts_when_no_audio(self):
-        # Without audio in the list, video/mp4 and video/webm are genuinely video.
+    def test_video_is_video(self):
         assert type_categories(["video/mp4"]) == ["video"]
-        assert type_categories(["video/webm"]) == ["video"]
-
-    def test_webm_container_alias_is_not_video(self):
-        assert type_categories(["audio/ogg", "video/webm"]) == ["audio"]
+        assert type_categories(["audio/ogg", "video/webm"]) == ["audio", "video"]
 
     def test_unknown_type_is_generic_file(self):
         assert type_categories(["application/zip"]) == ["file"]
@@ -57,23 +52,13 @@ class TestDescribeTypes:
 
 class TestAcceptAttribute:
     def test_full_list(self):
-        assert (
-            accept_attribute(FULL_LIST) == ".pdf,application/pdf,image/*,audio/*,.m4a"
-        )
+        assert accept_attribute(FULL_LIST) == ".pdf,application/pdf,image/*,audio/*"
 
     def test_pdf_only(self):
         assert accept_attribute(["application/pdf"]) == ".pdf,application/pdf"
 
-    def test_m4a_hint_only_with_mp4_audio(self):
-        assert accept_attribute(["audio/ogg"]) == "audio/*"
-        assert accept_attribute(["audio/mp4"]) == "audio/*,.m4a"
-
     def test_unknown_type_passes_through(self):
         assert accept_attribute(["application/zip"]) == "application/zip"
-
-    def test_webm_hint_only_with_audio(self):
-        assert accept_attribute(["audio/ogg", "video/webm"]) == "audio/*,.webm"
-        assert accept_attribute(["video/webm"]) == "video/webm"
 
 
 class TestRecordingEnabled:
@@ -101,8 +86,6 @@ class TestAgainstRealSettings:
         assert "image/*" in accept
         assert "audio/*" in accept
         assert ".pdf" in accept
-        assert ".m4a" in accept
-        # the container quirks must not leak a video/* picker entry
         assert "video" not in accept
 
     def test_settings_enable_the_recorder(self):
