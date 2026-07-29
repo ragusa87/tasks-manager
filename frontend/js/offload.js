@@ -16,6 +16,7 @@ import {
 } from './offload-utils.js';
 import { initThemeToggle } from './theme.js';
 import { startLevelMeter } from './audio-meter.js';
+import { getCsrfToken as csrfToken } from './csrf.js';
 
 const EP = {
     items: '/api/items',
@@ -30,11 +31,6 @@ const MAX_RECORDING_MS =
 const LIMIT_LABEL = fmtSize(MAX_BYTES);
 
 const $ = (id) => document.getElementById(id);
-
-function csrfToken() {
-    const input = document.querySelector('[name=csrfmiddlewaretoken]');
-    return input ? input.value : '';
-}
 
 const state = { mode: 0, photo: null, audio: null, audioMs: 0, busy: false };
 

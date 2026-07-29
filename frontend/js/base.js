@@ -7,6 +7,7 @@ import htmx from 'htmx.org';
 import { initDocumentUpload } from './documents.js';
 import { initAudioRecorders } from './audio-recorder.js';
 import { initThemeToggle } from './theme.js';
+import { getCsrfToken } from './csrf.js';
 window.htmx = htmx
 
 // Heavy custom elements (Milkdown/ProseMirror, rrule.js) are only needed
@@ -34,9 +35,9 @@ htmx.config.responseHandling = [
 
 
 document.body.addEventListener('htmx:configRequest', function(evt) {
-    var csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (csrfInput) {
-        evt.detail.headers['X-CSRFToken'] = csrfInput.value;
+    var csrfToken = getCsrfToken();
+    if (csrfToken) {
+        evt.detail.headers['X-CSRFToken'] = csrfToken;
     }
 });
 
