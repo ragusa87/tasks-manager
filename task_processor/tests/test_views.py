@@ -218,6 +218,44 @@ class TestItemViews(TestCase):
         self.assertIn("/login/", response.url)
 
 
+class TestItemOffloadView(TestCase):
+    """Test the standalone quick-capture page"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass"
+        )
+
+    def test_requires_authentication(self):
+        response = self.client.get(reverse("item_offload"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)
+
+    def test_renders_for_logged_in_user(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("item_offload"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "items/offload.html")
+
+    def test_page_provides_csrf_token_for_the_api_calls(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("item_offload"))
+        self.assertContains(response, "csrfmiddlewaretoken")
+
+    def test_app_nav_links_to_the_offload_page(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+        self.assertContains(response, reverse("item_offload"))
+
+    def test_page_is_installable_on_mobile(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("item_offload"))
+        self.assertContains(response, "offload.webmanifest")
+        self.assertContains(response, "apple-mobile-web-app-capable")
+        self.assertContains(response, "apple-touch-icon")
+
+
 class TestLogoutView(TestCase):
     """Test the logout view clears every session layer"""
 

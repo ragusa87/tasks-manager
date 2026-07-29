@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Design tokens of the offload quick-capture page (templates/items/offload.html).
+   Exposed as utilities (bg-offload-ink, text-offload-mist, ...) and as
+   var(--color-offload-*) for offload.css and canvas drawing. */
+@theme {
+  --color-offload-ink: #0e1518;    /* ground */
+  --color-offload-panel: #152026;  /* raised surface */
+  --color-offload-line: #24353d;   /* hairlines */
+  --color-offload-mist: #8fa6af;   /* secondary text */
+  --color-offload-paper: #eaf2f1;  /* primary text */
+  --color-offload-accent: #f0a32e; /* the one accent: action + success */
+  --color-offload-rec: #ff4d5a;    /* recording state only */
+}
+
 .expand-target::after {
   content: "";
   position: absolute;

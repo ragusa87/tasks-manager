@@ -1,0 +1,111 @@
+{% load static django_vite %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Offload</title>
+
+    <!-- Favicons -->
+    <link rel="icon" href="{% static 'offload-icon.svg' %}" type="image/svg+xml" sizes="any">
+    <link rel="icon" href="{% static 'favicon.ico' %}" sizes="48x48">
+
+    <!-- Apple iOS home-screen app -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'apple-touch-icon.png' %}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Offload">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- PWA -->
+    <link rel="manifest" href="{% static 'offload.webmanifest' %}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0e1518">
+
+    {% vite_hmr_client %}
+</head>
+<body class="offload-app h-dvh overflow-hidden bg-offload-ink font-sans text-offload-paper antialiased">
+    <form hidden aria-hidden="true">{% csrf_token %}</form>
+
+    <div class="grid h-dvh grid-rows-[auto_auto_minmax(0,1fr)_auto] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] min-[620px]:mx-auto min-[620px]:max-w-[520px] min-[620px]:border-x min-[620px]:border-offload-line">
+
+        <header class="flex items-center gap-2.5 border-b border-offload-line px-4.5 pt-3 pb-2.5">
+            <span class="font-mono text-xs font-bold tracking-[.22em]">OFFLOAD<em class="not-italic text-offload-accent">→</em></span>
+            <a href="{% url 'dashboard' %}"
+               class="ml-auto font-mono text-[10px] uppercase tracking-[.1em] text-offload-mist transition-colors hover:text-offload-paper">Dashboard</a>
+        </header>
+
+        <nav id="modes" role="tablist" class="relative grid grid-cols-3 border-b border-offload-line">
+            <button role="tab" data-i="0" aria-selected="true"
+                    class="py-[13px] px-1 font-mono text-[11px] uppercase tracking-[.14em] text-offload-mist transition-colors aria-selected:text-offload-paper">Note</button>
+            <button role="tab" data-i="1" aria-selected="false"
+                    class="py-[13px] px-1 font-mono text-[11px] uppercase tracking-[.14em] text-offload-mist transition-colors aria-selected:text-offload-paper">Photo</button>
+            <button role="tab" data-i="2" aria-selected="false"
+                    class="py-[13px] px-1 font-mono text-[11px] uppercase tracking-[.14em] text-offload-mist transition-colors aria-selected:text-offload-paper">Voice</button>
+            <span id="rule" class="absolute -bottom-px left-0 h-0.5 w-1/3 bg-offload-accent transition-transform duration-[260ms] ease-[cubic-bezier(.4,0,.2,1)]"></span>
+        </nav>
+
+        <main id="track" class="offload-track flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden">
+
+            <!-- 0 · NOTE -->
+            <section role="tabpanel" aria-label="Note"
+                     class="flex w-full min-w-full shrink-0 snap-start flex-col gap-3.5 overflow-y-auto p-4.5">
+                <textarea id="note" placeholder="What's on your mind?" autocapitalize="sentences" spellcheck="true" enterkeyhint="enter"
+                          class="min-h-[120px] w-full flex-1 resize-none border-0 bg-transparent p-3 text-[19px] leading-normal outline-none placeholder:text-offload-mist/65"></textarea>
+                <p id="count" class="text-right font-mono text-[10px] tracking-[.08em] text-offload-mist">0</p>
+                <p class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-offload-mist">First line becomes the title. The rest goes in the description.</p>
+            </section>
+
+            <!-- 1 · PHOTO -->
+            <section role="tabpanel" aria-label="Photo"
+                     class="flex w-full min-w-full shrink-0 snap-start flex-col gap-3.5 overflow-y-auto p-4.5">
+                <div id="shot" class="relative flex min-h-[150px] flex-1 items-center justify-center overflow-hidden rounded-xs border border-dashed border-offload-line">
+                    <span class="font-mono text-[10px] tracking-[.12em] text-offload-mist">No image</span>
+                </div>
+                <div class="flex gap-2.5">
+                    <button id="camBtn" class="flex-1 rounded-xs border border-offload-line bg-offload-panel px-2.5 py-[15px] font-mono text-[11px] uppercase tracking-[.12em] text-offload-paper transition-colors active:border-offload-accent">Camera</button>
+                    <button id="libBtn" class="flex-1 rounded-xs border border-offload-line bg-offload-panel px-2.5 py-[15px] font-mono text-[11px] uppercase tracking-[.12em] text-offload-paper transition-colors active:border-offload-accent">Library</button>
+                </div>
+                <input type="text" id="shotCap" placeholder="Task title (optional)" autocapitalize="sentences"
+                       class="w-full rounded-xs border border-offload-line bg-offload-panel px-3.5 py-[13px] text-[15px] placeholder:text-offload-mist/60">
+                <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+                <input type="file" id="libIn" accept="image/*" hidden>
+                <p id="shotHint" class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-offload-mist">Max 10 MB.</p>
+            </section>
+
+            <!-- 2 · VOICE -->
+            <section role="tabpanel" aria-label="Voice"
+                     class="flex w-full min-w-full shrink-0 snap-start flex-col gap-3.5 overflow-y-auto p-4.5">
+                <div class="flex items-center gap-2">
+                    <span id="micChip" data-state="checking"
+                          class="inline-flex items-center gap-1.5 rounded-full border border-offload-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[.12em] text-offload-mist before:size-1.5 before:rounded-full before:bg-current before:content-['']">Mic · checking</span>
+                    <button id="micRecheck" hidden
+                            class="ml-auto rounded-xs border border-offload-line px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[.1em] text-offload-mist">Re-check</button>
+                </div>
+                <canvas id="scope" aria-hidden="true" class="block h-[74px] w-full rounded-xs bg-offload-panel"></canvas>
+                <p id="clock" class="py-1 text-center font-mono text-3xl tracking-[.06em] tabular-nums">0:00</p>
+                <button id="recBtn"
+                        class="flex w-full items-center justify-center gap-2.5 rounded-xs border border-offload-line bg-offload-panel p-[17px] font-mono text-[11px] uppercase tracking-[.14em] disabled:cursor-default disabled:opacity-40">
+                    <span id="recDot" class="size-2 shrink-0 rounded-full bg-offload-line transition-colors"></span>
+                    <span id="recLbl">Record</span>
+                </button>
+                <audio id="play" controls hidden class="h-[38px] w-full"></audio>
+                <input type="text" id="memoCap" placeholder="Task title (optional)" autocapitalize="sentences"
+                       class="w-full rounded-xs border border-offload-line bg-offload-panel px-3.5 py-[13px] text-[15px] placeholder:text-offload-mist/60">
+                <p id="micHint" class="font-mono text-[10px] leading-relaxed tracking-[.08em] text-offload-mist"></p>
+            </section>
+
+        </main>
+
+        <footer class="grid gap-[11px] border-t border-offload-line px-4.5 pt-3 pb-4">
+            <p id="readout" role="status" aria-live="polite"
+               class="offload-readout m-0 min-h-[1.5em] break-words font-mono text-[10.5px] tracking-[.09em] text-offload-mist">Ready</p>
+            <button id="offloadBtn"
+                    class="w-full rounded-xs bg-offload-accent p-[19px] font-mono text-[13px] font-bold uppercase tracking-[.26em] text-offload-ink transition active:scale-[.985] disabled:cursor-default disabled:opacity-35">Offload</button>
+        </footer>
+    </div>
+
+    <div id="flight" class="offload-flight" aria-hidden="true"></div>
+
+    {% vite_asset 'frontend/js/offload.js' %}
+</body>
+</html>

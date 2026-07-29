@@ -8,7 +8,7 @@
 // It renders a small GUI (frequency / interval / weekday chips) plus an
 // "advanced" raw text input, and keeps a real <input name="..."> in sync so
 // the form submits the RRULE string exactly as before. Because it is a custom
-// element it auto-upgrades whenever HTMX swaps the modal in — no manual init.
+// element it auto-upgrades whenever HTMX swaps the modal in -- no manual init.
 //
 // Pure parse/build/label helpers live in rrule-utils.js (no dependencies, unit
 // testable); only the preview text and the DOM element need rrule.js.
@@ -26,7 +26,7 @@ import {
  *  string first (so fields the GUI doesn't model, e.g. BYMONTHDAY, still get
  *  described), then falls back to the canonical GUI form. */
 export function describeRRule(value) {
-    if (!value) return 'One-time only — will not repeat.';
+    if (!value) return 'One-time only \u2014 will not repeat.';
 
     const stripped = String(value).trim().replace(/^RRULE:/i, '');
     const candidates = [stripped, buildRRule(parseRRule(value))];

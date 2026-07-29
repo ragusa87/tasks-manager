@@ -21,6 +21,7 @@ export default defineConfig({
         'base': resolve('./frontend/js/base.js'),
         'dashboard': resolve('./frontend/js/dashboard.js'),
         'charts': resolve('./frontend/js/charts.js'),
+        'offload': resolve('./frontend/js/offload.js'),
       }
     }
   },

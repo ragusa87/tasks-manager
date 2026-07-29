@@ -82,7 +82,7 @@ export function encodeWavPcm16(samples, sampleRate) {
     return buffer;
 }
 
-// "0:07", "1:00" — used for the elapsed / max readout while recording.
+// "0:07", "1:00" -- used for the elapsed / max readout while recording.
 export function formatClock(ms) {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
     const minutes = Math.floor(totalSeconds / 60);
