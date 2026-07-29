@@ -1,6 +1,8 @@
 // Pure helpers for the voice-note recorder. No DOM or browser APIs here so
 // they run under Node's test runner (`just npm run test:js`).
 
+// Fallback recording cap; the pages normally inject the live value from
+// settings.MAX_RECORDING_SECONDS via a data-max-recording-seconds attribute.
 export const MAX_RECORDING_MS = 60000;
 
 // Recordings are encoded client-side as 16-bit PCM WAV: unlike the webm/mp4

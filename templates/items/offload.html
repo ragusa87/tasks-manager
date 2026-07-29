@@ -25,7 +25,8 @@
     {% vite_hmr_client %}
 </head>
 <body class="offload-app h-dvh overflow-hidden bg-ground font-sans text-body antialiased"
-      data-max-bytes="{{ MAX_FILE_SIZE }}" data-max-title-length="{{ MAX_TITLE_LENGTH }}">
+      data-max-bytes="{{ MAX_FILE_SIZE }}" data-max-title-length="{{ MAX_TITLE_LENGTH }}"
+      data-max-recording-seconds="{{ MAX_RECORDING_SECONDS }}">
     <form hidden aria-hidden="true">{% csrf_token %}</form>
 
     <div class="grid h-dvh grid-rows-[auto_auto_minmax(0,1fr)_auto] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] min-[620px]:mx-auto min-[620px]:max-w-[520px] min-[620px]:border-x min-[620px]:border-line">
@@ -84,7 +85,7 @@
                     <button id="micRecheck" hidden
                             class="ml-auto rounded-xs border border-line px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[.1em] text-muted">Re-check</button>
                 </div>
-                <canvas id="scope" aria-hidden="true" class="block h-[74px] w-full rounded-xs bg-surface"></canvas>
+                <div id="scope" aria-hidden="true" class="flex h-[74px] w-full items-end gap-0.5 rounded-xs bg-surface p-1.5"></div>
                 <p id="clock" class="py-1 text-center font-mono text-3xl tracking-[.06em] tabular-nums">0:00</p>
                 <button id="recBtn"
                         class="flex w-full items-center justify-center gap-2.5 rounded-xs border border-line bg-surface p-[17px] font-mono text-[11px] uppercase tracking-[.14em] disabled:cursor-default disabled:opacity-40">
