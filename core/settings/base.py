@@ -223,14 +223,10 @@ ALLOWED_TYPES = [
     "image/jpeg",
     "image/gif",
     "image/webp",
-    # Audio, so voice notes can be captured as tasks. python-magic reports
-    # m4a containers as video/mp4, hence its presence here. audio/x-wav is
-    # what the in-browser voice recorder produces (see recording_enabled in
+    # Audio, so voice notes can be captured as tasks. audio/x-wav is what
+    # the in-browser voice recorder produces (see recording_enabled in
     # core/upload_types.py).
     "audio/mpeg",
-    "audio/mp4",
-    "audio/x-m4a",
-    "video/mp4",
     "audio/ogg",
     "audio/wav",
     "audio/x-wav",

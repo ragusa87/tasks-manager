@@ -75,14 +75,10 @@ class Document(models.Model):
 
     @property
     def icon(self):
-        """Sprite name for the stored content type (image / audio / generic).
-
-        video/mp4 counts as audio: python-magic reports m4a containers as
-        video/mp4 (see ALLOWED_TYPES in settings).
-        """
+        """Sprite name for the stored content type (image / audio / generic)."""
         if self.content_type.startswith("image/"):
             return "lucide-image"
-        if self.content_type.startswith("audio/") or self.content_type == "video/mp4":
+        if self.content_type.startswith("audio/"):
             return "lucide-music"
         return "lucide-file"
 

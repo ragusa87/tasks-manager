@@ -5,7 +5,7 @@ be attached; these helpers derive the UI strings from it so labels and file
 pickers never drift from the actual validation:
 
 - :func:`describe_types` -> "PDF, image or audio" (dropzone label, error text)
-- :func:`accept_attribute` -> ".pdf,application/pdf,image/*,audio/*,.m4a"
+- :func:`accept_attribute` -> ".pdf,application/pdf,image/*,audio/*"
   (the <input type="file" accept> attribute)
 - :func:`recording_enabled` -> whether the voice-note recorder can upload
   (it always encodes WAV; see frontend/js/audio-recorder.js)
@@ -14,21 +14,6 @@ Pure functions, no Django dependency.
 """
 
 from __future__ import annotations
-
-# python-magic identifies audio recordings by their container, not their
-# codec: m4a is reported as video/mp4 and audio-only webm as video/webm.
-# When audio is allowed these entries are container quirks, not a video
-# category of their own, and only warrant a file-picker extension hint.
-_AUDIO_CONTAINER_ALIASES = {
-    "video/mp4": ".m4a",
-    "video/webm": ".webm",
-}
-
-
-def _is_audio_container_alias(mime: str, allowed_types: list[str]) -> bool:
-    return mime in _AUDIO_CONTAINER_ALIASES and any(
-        t.startswith("audio/") for t in allowed_types
-    )
 
 
 def type_categories(allowed_types: list[str]) -> list[str]:
@@ -46,8 +31,6 @@ def type_categories(allowed_types: list[str]) -> list[str]:
             add("image")
         elif mime.startswith("audio/"):
             add("audio")
-        elif _is_audio_container_alias(mime, allowed_types):
-            pass
         elif mime.startswith("video/"):
             add("video")
         elif mime.startswith("text/"):
@@ -83,10 +66,6 @@ def accept_attribute(allowed_types: list[str]) -> str:
             add("image/*")
         elif mime.startswith("audio/"):
             add("audio/*")
-            if mime in ("audio/mp4", "audio/x-m4a"):
-                add(".m4a")
-        elif _is_audio_container_alias(mime, allowed_types):
-            add(_AUDIO_CONTAINER_ALIASES[mime])
         else:
             add(mime)
     return ",".join(parts)
