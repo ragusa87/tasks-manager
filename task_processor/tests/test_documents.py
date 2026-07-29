@@ -665,3 +665,62 @@ class DocumentCascadeDeleteTests(TestCase):
 
         self.assertFalse(storage.exists(file1))
         self.assertFalse(storage.exists(file2))
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    }
+)
+class DocumentAudioPreviewTests(TestCase):
+    """Audio rows in the document list render an in-browser preview
+    (play button + lazy <audio> element); other types don't."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass"
+        )
+        self.client.force_login(self.user)
+        self.item = Item.objects.create(
+            title="Test item",
+            status=GTDStatus.INBOX,
+            priority=Priority.NORMAL,
+            user=self.user,
+        )
+
+    def _upload(self, name, payload):
+        file = io.BytesIO(payload)
+        file.name = name
+        return self.client.post(
+            reverse("document_upload", args=[self.item.id]),
+            {"files": file},
+        )
+
+    def test_is_audio_property(self):
+        document = Document(content_type="audio/x-wav")
+        self.assertTrue(document.is_audio)
+        self.assertFalse(Document(content_type="application/pdf").is_audio)
+        self.assertFalse(Document(content_type="image/png").is_audio)
+
+    def test_audio_row_renders_preview(self):
+        response = self._upload("note.wav", make_wav())
+        self.assertEqual(response.status_code, 200)
+        document = Document.objects.get()
+        self.assertContains(response, "audio-preview-btn")
+        self.assertContains(
+            response,
+            f'data-audio-url="{reverse("document_download", args=[document.id])}"',
+        )
+        # Player is present but lazy: hidden, preload="none" and no src yet.
+        self.assertContains(response, 'preload="none"')
+        self.assertNotContains(response, "<audio controls src=")
+
+    def test_non_audio_row_has_no_preview(self):
+        response = self._upload("doc.pdf", make_pdf())
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "audio-preview-btn")
+        self.assertNotContains(response, "<audio")

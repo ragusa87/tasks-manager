@@ -2,6 +2,7 @@ export function initDocumentUpload() {
     initFileInputs();
     initDropzones();
     initDeleteButtons();
+    initAudioPreviews();
     initAttachmentPaste();
 }
 
@@ -78,6 +79,63 @@ function initDeleteButtons() {
         button.setAttribute('data-initialized', 'true');
         button.addEventListener('click', handleDeleteClick);
     });
+}
+
+// In-browser preview of audio attachments: the play button expands the row's
+// native <audio controls> element and starts playback; clicking again
+// collapses and pauses it. The src is only set on first play (the element is
+// preload="none") so listing documents never fetches audio.
+var openAudioPreview = null; // one playing preview at a time
+
+function initAudioPreviews() {
+    document.querySelectorAll('.audio-preview-btn:not([data-initialized])').forEach(function(button) {
+        button.setAttribute('data-initialized', 'true');
+        button.addEventListener('click', handleAudioPreviewClick);
+    });
+}
+
+function handleAudioPreviewClick(e) {
+    var button = e.currentTarget;
+    var row = button.closest('[data-document-id]');
+    var audio = row ? row.querySelector('.audio-preview') : null;
+    if (!audio) return;
+
+    if (openAudioPreview && openAudioPreview.audio !== audio) {
+        setAudioPreviewOpen(openAudioPreview.button, openAudioPreview.audio, false);
+    }
+
+    var open = audio.hidden;
+    setAudioPreviewOpen(button, audio, open);
+    openAudioPreview = open ? { button: button, audio: audio } : null;
+}
+
+function setAudioPreviewOpen(button, audio, open) {
+    if (open && !audio.src) {
+        audio.src = button.dataset.audioUrl;
+        // Reset the icon when playback finishes so the button reads
+        // "play again" (the player itself stays visible).
+        audio.addEventListener('ended', function() {
+            setPreviewButtonState(button, false);
+        });
+        audio.addEventListener('play', function() {
+            setPreviewButtonState(button, true);
+        });
+    }
+    audio.hidden = !open;
+    if (open) {
+        audio.play().catch(function() { /* surfaced by the player UI */ });
+    } else {
+        audio.pause();
+    }
+    setPreviewButtonState(button, open);
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function setPreviewButtonState(button, playing) {
+    var playIcon = button.querySelector('[data-icon-play]');
+    var stopIcon = button.querySelector('[data-icon-stop]');
+    if (playIcon) playIcon.classList.toggle('hidden', playing);
+    if (stopIcon) stopIcon.classList.toggle('hidden', !playing);
 }
 
 function handleDeleteClick(e) {

@@ -13,25 +13,44 @@
 <div class="document-list space-y-1.5" id="document-list-{{ item_id }}" data-item-id="{{ item_id }}"
      data-upload-url="{% url 'document_upload' item_id %}">
     {% for document in documents %}
-    <div class="group flex items-center justify-between px-3 py-2.5 bg-surface rounded-md border border-line hover:border-accent/60 hover:bg-accent/10 transition-colors"
+    <div class="group px-3 py-2.5 bg-surface rounded-md border border-line hover:border-accent/60 hover:bg-accent/10 transition-colors"
          id="document-{{ document.id }}" data-document-id="{{ document.id }}">
-        <div class="flex items-center gap-2.5 min-w-0">
-            {% sprite document.icon 18 class="shrink-0" %}
-            <div class="min-w-0">
-                <a href="{% url 'document_download' document.id %}"
-                   class="block font-medium text-body hover:text-accent truncate"
-                   title="{{ document.file_name }}"
-                   target="_blank">{{ document.file_name }}</a>
-                <p class="text-xs text-faint">{{ document.file_size_display }}</p>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5 min-w-0">
+                {% sprite document.icon 18 class="shrink-0" %}
+                <div class="min-w-0">
+                    <a href="{% url 'document_download' document.id %}"
+                       class="block font-medium text-body hover:text-accent truncate"
+                       title="{{ document.file_name }}"
+                       target="_blank">{{ document.file_name }}</a>
+                    <p class="text-xs text-faint">{{ document.file_size_display }}</p>
+                </div>
+            </div>
+            <div class="flex items-center shrink-0">
+                {% if document.is_audio %}
+                <button type="button"
+                        class="ml-2 shrink-0 p-1 rounded text-faint hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer audio-preview-btn"
+                        title="Play audio"
+                        aria-label="Play {{ document.file_name }}"
+                        aria-expanded="false"
+                        data-audio-url="{% url 'document_download' document.id %}">
+                    <span data-icon-play>{% sprite "lucide-play" 15 %}</span>
+                    <span data-icon-stop class="hidden">{% sprite "lucide-square" 15 %}</span>
+                </button>
+                {% endif %}
+                <button type="button"
+                        class="ml-2 shrink-0 p-1 rounded text-faint hover:text-danger hover:bg-danger-ground transition-colors cursor-pointer delete-doc-btn opacity-0 group-hover:opacity-100"
+                        title="Delete document"
+                        data-item-id="{{ item_id }}"
+                        data-delete-url="{% url 'document_delete' document.id %}">
+                    {% sprite "lucide-trash-2" 15 %}
+                </button>
             </div>
         </div>
-        <button type="button"
-                class="ml-2 shrink-0 p-1 rounded text-faint hover:text-danger hover:bg-danger-ground transition-colors cursor-pointer delete-doc-btn opacity-0 group-hover:opacity-100"
-                title="Delete document"
-                data-item-id="{{ item_id }}"
-                data-delete-url="{% url 'document_delete' document.id %}">
-            {% sprite "lucide-trash-2" 15 %}
-        </button>
+        {% if document.is_audio %}
+        {# In-browser preview; src is set lazily by documents.js on first play #}
+        <audio controls preload="none" hidden class="audio-preview w-full h-[38px] mt-2"></audio>
+        {% endif %}
     </div>
     {% empty %}
     <div class="flex flex-col items-center justify-center py-6 text-center" id="no-documents-{{ item_id }}">
