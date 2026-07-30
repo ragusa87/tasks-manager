@@ -29,8 +29,11 @@ function syncUi() {
 
     document.getElementById('batch-select-all-input').value = selectAll ? '1' : '';
     document.getElementById('batch-excluded-input').value = Array.from(excluded).join(',');
-    document.getElementById('batch-count').textContent =
-        selectAll ? `All ${count} selected` : `${count} selected`;
+    const countText = selectAll ? `All ${count} selected` : `${count} selected`;
+    document.getElementById('batch-count').textContent = countText;
+    // Floating count pill (small screens; see batch_bar.html)
+    const floatCount = document.getElementById('batch-count-float');
+    if (floatCount) floatCount.textContent = countText;
 
     document.querySelectorAll('.batch-action-btn').forEach((btn) => {
         btn.disabled = count === 0;
@@ -144,6 +147,10 @@ document.addEventListener('click', (e) => {
     if (e.target.closest('#batch-toggle')) {
         const enabled = document.body.classList.toggle('batch-mode');
         if (!enabled) resetSelection();
+        return;
+    }
+    if (e.target.closest('#batch-count-float')) {
+        bar()?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
     }
     if (e.target.closest('#batch-select-all')) {

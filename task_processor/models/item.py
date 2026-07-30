@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
@@ -39,6 +40,29 @@ def requires_form(form_class):
 def priority(position: int = 0):
     def decorator(func):
         func._position = position
+        return func
+
+    return decorator
+
+
+def batchable(filter_q=None, enabled=True):
+    """
+    Decorator customizing a transition's behavior in batch actions (the
+    "Move" action offers every form-less transition by default, see
+    task_processor/batch.py).
+
+    Args:
+        filter_q: Zero-arg callable returning the SQL (Q) equivalent of the
+            transition's python ``conditions``, so batch previews can count
+            applicable items in the database instead of loading every row.
+            Deferred (a lambda, not a bare Q) to allow time-dependent
+            conditions. Without it, a conditioned transition gets an
+            optimistic count; execution still skips via ``can_proceed()``.
+        enabled: Set to False to exclude a form-less transition from batch.
+    """
+
+    def decorator(func):
+        func._batchable = {"filter_q": filter_q, "enabled": enabled}
         return func
 
     return decorator
@@ -621,6 +645,7 @@ class ItemFlow:
         self.item.completed_at = timezone.now()
 
     @priority(-100)
+    @batchable(filter_q=lambda: ~Q(status=GTDStatus.CANCELLED))
     @state_field.transition(
         source=fsm.State.ANY,
         target=GTDStatus.CANCELLED,
@@ -638,6 +663,7 @@ class ItemFlow:
         """Process inbox item as actionable task"""
         pass
 
+    @batchable(filter_q=lambda: Q(is_completed=True))
     @state_field.transition(
         source=GTDStatus.COMPLETED,
         target=GTDStatus.NEXT_ACTION,

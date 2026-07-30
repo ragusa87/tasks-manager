@@ -51,3 +51,11 @@ full-page form (small screens / no JS gets nothing, batch UI needs JS).
         </button>
     {% endfor %}
 </div>
+
+<!-- Floating selection count for small screens: the bar scrolls away with
+     the list, this pill keeps the count visible; tapping it scrolls back to
+     the bar (behavior in batch.js). -->
+<button type="button" id="batch-count-float"
+        class="batch-ui sm:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-surface border border-line shadow-lg text-sm font-medium text-body">
+    0 selected
+</button>

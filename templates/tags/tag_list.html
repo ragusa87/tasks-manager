@@ -57,7 +57,7 @@
                             Created {{ tag.created_at|date:"F d, Y" }}
                         </p>
                     </div>
-                    <div class="flex items-center gap-2 sm:gap-3 ml-3">
+                    <div class="flex items-center gap-2 sm:gap-3 ml-3 batch-off-ui">
                         <a href="{% url 'tag_update' tag.id %}" class="btn-secondary">
                             {% sprite "lucide-pencil" 20 %}
                             <span class="hidden sm:inline">Edit</span>

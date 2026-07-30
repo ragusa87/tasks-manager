@@ -12,17 +12,27 @@ A selection is stateless and travels in the POST payload:
   minus ``excluded_ids`` (rows unticked after a select-all, Gmail-style).
 """
 
+from functools import lru_cache
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
+from task_processor.constants import GTDStatus
 from task_processor.models import Item
-from task_processor.models.base_models import Area, Tag
+from task_processor.models.base_models import Area, Context, Tag
+from task_processor.models.item import ItemFlow
 
 
 def batch_action(
-    label, sprite=None, form_class=None, position=0, applicable=None, description=None
+    label,
+    sprite=None,
+    form_class=None,
+    position=0,
+    applicable=None,
+    description=None,
+    impact=None,
 ):
     """
     Decorator marking a BatchActions method as a batch action.
@@ -41,6 +51,11 @@ def batch_action(
             (and as the action button's tooltip) explaining what the action
             does — in particular its applicability rule, so users understand
             why some selected objects are skipped.
+        impact: Optional ``callable(actions, queryset) -> str | None``
+            returning a sentence about the action's downstream effect on
+            *other* objects (e.g. how many items a tag conversion will move),
+            computed on the applicable selection and shown in the confirm
+            modal preview.
     """
 
     def decorator(func):
@@ -52,6 +67,7 @@ def batch_action(
             "position": position,
             "applicable": applicable,
             "description": description,
+            "impact": impact,
         }
         return func
 
@@ -197,6 +213,13 @@ class BatchActions:
             return queryset
         return applicable(self, queryset)
 
+    def describe_impact(self, action: BatchAction, queryset):
+        """Sentence about the action's effect on other objects, or None."""
+        impact = action.get("impact")
+        if impact is None:
+            return None
+        return impact(self, queryset)
+
     def run(self, action: BatchAction, queryset, **form_data):
         """
         Execute an action on the (already applicability-filtered) queryset.
@@ -212,6 +235,65 @@ class BatchActions:
         with transaction.atomic():
             extra = getattr(self, action.name)(frozen, **form_data)
         return len(ids), extra
+
+
+@lru_cache(maxsize=1)
+def formless_transition_groups():
+    """
+    The ItemFlow transitions offered by the batch "Move" action, grouped by
+    label — methods sharing a label are alternatives (inbox→next and
+    someday→next are both "Next Action"); per item, the one its state allows
+    runs. Excludes @requires_form transitions and @batchable(enabled=False).
+
+    Returns an ordered dict keyed by the group's first method name (stable
+    across locales, unlike the translated label):
+    ``{key: {"label", "methods", "target", "q"}}`` where ``q`` is the SQL
+    equivalent of "some method of this group can proceed": status ∈ source
+    states (no constraint for State.ANY), AND'ed per method with its
+    @batchable ``filter_q``. Query filters, not per-item ``can_proceed()``:
+    select-all previews must count in the database, not load every row.
+
+    Cached per process (the flow is static); tests patching the flow must
+    call ``formless_transition_groups.cache_clear()``.
+    """
+    flow = ItemFlow(Item())
+    statuses = set(GTDStatus.values)
+    methods = {}
+    for entry in flow.get_all_transitions():
+        if entry.form_class:
+            continue
+        meta = flow._get_annotated_property(entry.name, "_batchable") or {}
+        if meta.get("enabled") is False:
+            continue
+        method = methods.setdefault(
+            entry.name,
+            {
+                "sources": [],
+                "label": str(entry.label),
+                "target": entry.get("target"),
+                "filter_q": meta.get("filter_q"),
+            },
+        )
+        method["sources"].append(entry.get("source"))
+    by_label = {}
+    for name, info in methods.items():
+        sources = [s for s in info["sources"] if s in statuses]
+        # A source outside the status values is fsm.State.ANY: no constraint.
+        q = Q(status__in=sources) if len(sources) == len(info["sources"]) else Q()
+        if info["filter_q"]:
+            q &= info["filter_q"]()
+        group = by_label.get(info["label"])
+        if group is None:
+            by_label[info["label"]] = {
+                "label": info["label"],
+                "methods": [name],
+                "target": info["target"],
+                "q": q,
+            }
+        else:
+            group["methods"].append(name)
+            group["q"] = group["q"] | q
+    return {group["methods"][0]: group for group in by_label.values()}
 
 
 @register_batch_actions
@@ -273,6 +355,188 @@ class ItemBatchActions(BatchActions):
     def remove_area(self, queryset):
         queryset.update(area=None)
 
+    @batch_action(
+        label=_("Move"),
+        sprite="lucide-replace-all",
+        form_class="task_processor.forms.BatchTransitionForm",
+        description=_(
+            "Applies a status transition to every selected item whose "
+            "current state allows it."
+        ),
+        position=2,
+    )
+    def move(self, queryset, transition):
+        """Apply the chosen form-less transition group to the selection.
+
+        SQL pre-filter loads only the rows the group's states allow; the
+        per-item can_proceed() guard stays authoritative (it also covers
+        python conditions lacking a @batchable filter_q). Execution goes
+        through item.flow so FSM on_success saves and post_save signals
+        (reminder/rrule clearing) behave exactly like single transitions.
+        """
+        group = formless_transition_groups()[transition]
+        total = queryset.count()
+        applied = 0
+        for item in queryset.filter(group["q"]):
+            flow = item.flow
+            method = next(
+                (
+                    getattr(flow, name)
+                    for name in group["methods"]
+                    if getattr(flow, name).can_proceed()
+                ),
+                None,
+            )
+            if method:
+                method()
+                applied += 1
+        skipped = total - applied
+        message = f"{applied} item(s) → {group['label']}"
+        if skipped:
+            message += f", {skipped} skipped (state does not allow it)"
+        return message
+
+
+# --- Conversion helpers -----------------------------------------------------
+# Tag and Context are both plain M2M labels on Item, so their conversions
+# share the same mechanics; ``field_name`` is the Item M2M field ("tags" /
+# "contexts") and ``noun`` the translated label kind for messages.
+
+
+def _items_carrying(actions, field_name, queryset):
+    return Item.objects.filter(
+        user=actions.user, **{f"{field_name}__in": queryset}
+    ).distinct()
+
+
+def _m2m_to_area_impact(field_name, noun):
+    """Impact preview for M2M→area conversions (tag→area, context→area).
+
+    Computed before the destination is chosen, so items that already have an
+    area are reported as "skipped unless it matches the destination".
+    """
+
+    def impact(actions, queryset):
+        items = _items_carrying(actions, field_name, queryset)
+        total = items.count()
+        if not total:
+            return _("No items carry the selected %(noun)s.") % {"noun": noun}
+        blocked = items.exclude(area__isnull=True).count()
+        if blocked:
+            return _(
+                "%(total)d item(s) carry the selected %(noun)s: %(movable)d "
+                "will be moved, %(blocked)d already have an area and will be "
+                "skipped unless it matches the destination."
+            ) % {
+                "total": total,
+                "noun": noun,
+                "movable": total - blocked,
+                "blocked": blocked,
+            }
+        return _("%(total)d item(s) carry the selected %(noun)s and will be moved.") % {
+            "total": total,
+            "noun": noun,
+        }
+
+    return impact
+
+
+def _m2m_to_m2m_impact(field_name, noun, dest_noun):
+    """Impact preview for M2M→M2M conversions (always exact, no conflicts)."""
+
+    def impact(actions, queryset):
+        count = _items_carrying(actions, field_name, queryset).count()
+        if not count:
+            return _("No items carry the selected %(noun)s.") % {"noun": noun}
+        return _(
+            "%(count)d item(s) will get the %(dest_noun)s and lose the %(noun)s."
+        ) % {"count": count, "noun": noun, "dest_noun": dest_noun}
+
+    return impact
+
+
+def _convert_to_tag_impact(actions, queryset):
+    """Item count for the area→tag confirm preview (always exact)."""
+    count = Item.objects.filter(user=actions.user, area__in=queryset).count()
+    if not count:
+        return _("No items are assigned to the selected area(s).")
+    return _("%(count)d item(s) will be tagged and their area cleared.") % {
+        "count": count
+    }
+
+
+def _convert_m2m_sources_to_area(
+    actions, queryset, field_name, noun, area=None, delete_source=False
+):
+    """
+    Move each source label's items to an area and detach the label from them.
+
+    Destination: the picked ``area`` (merge) or, per source, an area of the
+    same name (created if missing). Items already in a *different* area are
+    skipped and keep the label — no silent overwrite, so converting
+    overlapping labels is order-independent. ``delete_source`` removes a
+    source only once no items remain attached.
+    """
+    moved = skipped = 0
+    kept = []
+    for source in queryset:
+        destination = area
+        if destination is None:
+            destination, _created = Area.objects.get_or_create(
+                user=actions.user,
+                name=source.name[: Area._meta.get_field("name").max_length],
+                defaults={"description": f'Converted from {noun} "{source.name}"'},
+            )
+        movable_ids = list(
+            Item.objects.filter(user=actions.user, **{field_name: source})
+            .filter(Q(area__isnull=True) | Q(area=destination))
+            .values_list("pk", flat=True)
+        )
+        Item.objects.filter(pk__in=movable_ids).update(area=destination)
+        source.item_set.remove(*movable_ids)
+        moved += len(movable_ids)
+        remaining = source.item_set.count()
+        skipped += remaining
+        if remaining == 0 and delete_source:
+            source.delete()
+        elif remaining and delete_source:
+            kept.append(source.name)
+    parts = [f"{moved} item(s) moved"]
+    if skipped:
+        parts.append(f"{skipped} item(s) skipped (already in another area)")
+    if kept:
+        parts.append(f"{noun}(s) kept because of skipped items: " + ", ".join(kept))
+    return ", ".join(parts)
+
+
+def _convert_m2m_sources_to_m2m(
+    actions, queryset, field_name, dest_model, destination=None, delete_source=False
+):
+    """
+    Re-label each source's items with a label of another M2M kind (tag→context,
+    context→tag). Never conflicts: every item moves. Destination: the picked
+    one (merge) or, per source, a same-name label (created if missing).
+    """
+    moved = 0
+    for source in queryset:
+        dest = destination
+        if dest is None:
+            dest, _created = dest_model.objects.get_or_create(
+                user=actions.user,
+                name=source.name[: dest_model._meta.get_field("name").max_length],
+            )
+        item_ids = list(
+            Item.objects.filter(user=actions.user, **{field_name: source}).values_list(
+                "pk", flat=True
+            )
+        )
+        dest.item_set.add(*item_ids)
+        source.item_set.remove(*item_ids)
+        moved += len(item_ids)
+        if delete_source:
+            source.delete()
+    return f"{moved} item(s) moved"
+
 
 @register_batch_actions
 class TagBatchActions(BatchActions):
@@ -287,48 +551,76 @@ class TagBatchActions(BatchActions):
             "them. Items already in a different area are left untouched and "
             "keep the tag."
         ),
+        impact=_m2m_to_area_impact("tags", _("tag(s)")),
     )
     def convert_to_area(self, queryset, area=None, delete_source=False):
-        """
-        Move each tag's items to an area and detach the tag from them.
+        return _convert_m2m_sources_to_area(
+            self, queryset, "tags", "tag", area=area, delete_source=delete_source
+        )
 
-        Destination: the picked ``area`` (merge) or, per tag, an area of the
-        same name (created if missing). Items already in a *different* area
-        are skipped and keep the tag — no silent overwrite, so converting
-        overlapping tags is order-independent. ``delete_source`` removes a
-        tag only once no items remain attached (mirror of the
-        migrate_tag_to_area --delete-tag guard).
-        """
-        moved = skipped = 0
-        kept = []
-        for tag in queryset:
-            destination = area
-            if destination is None:
-                destination, _created = Area.objects.get_or_create(
-                    user=self.user,
-                    name=tag.name[: Area._meta.get_field("name").max_length],
-                    defaults={"description": f'Converted from tag "{tag.name}"'},
-                )
-            movable_ids = list(
-                Item.objects.filter(user=self.user, tags=tag)
-                .filter(Q(area__isnull=True) | Q(area=destination))
-                .values_list("pk", flat=True)
-            )
-            Item.objects.filter(pk__in=movable_ids).update(area=destination)
-            tag.item_set.remove(*movable_ids)
-            moved += len(movable_ids)
-            remaining = tag.item_set.count()
-            skipped += remaining
-            if remaining == 0 and delete_source:
-                tag.delete()
-            elif remaining and delete_source:
-                kept.append(tag.name)
-        parts = [f"{moved} item(s) moved"]
-        if skipped:
-            parts.append(f"{skipped} item(s) skipped (already in another area)")
-        if kept:
-            parts.append("tag(s) kept because of skipped items: " + ", ".join(kept))
-        return ", ".join(parts)
+    @batch_action(
+        label=_("Convert to context"),
+        sprite="lucide-refresh-cw",
+        form_class="task_processor.forms.BatchConvertToContextForm",
+        description=_(
+            "Adds a context to each tag's items and removes the tag from them."
+        ),
+        impact=_m2m_to_m2m_impact("tags", _("tag(s)"), _("context")),
+        position=-5,
+    )
+    def convert_to_context(self, queryset, context=None, delete_source=False):
+        return _convert_m2m_sources_to_m2m(
+            self,
+            queryset,
+            "tags",
+            Context,
+            destination=context,
+            delete_source=delete_source,
+        )
+
+
+@register_batch_actions
+class ContextBatchActions(BatchActions):
+    model = Context
+
+    @batch_action(
+        label=_("Convert to tag"),
+        sprite="lucide-refresh-cw",
+        form_class="task_processor.forms.BatchContextToTagForm",
+        description=_("Tags each context's items and removes the context from them."),
+        impact=_m2m_to_m2m_impact("contexts", _("context(s)"), _("tag")),
+    )
+    def convert_to_tag(self, queryset, tag=None, delete_source=False):
+        return _convert_m2m_sources_to_m2m(
+            self,
+            queryset,
+            "contexts",
+            Tag,
+            destination=tag,
+            delete_source=delete_source,
+        )
+
+    @batch_action(
+        label=_("Convert to area"),
+        sprite="lucide-refresh-cw",
+        form_class="task_processor.forms.BatchContextToAreaForm",
+        description=_(
+            "Moves each context's items into an area and removes the context "
+            "from them. Items already in a different area are left untouched "
+            "and keep the context."
+        ),
+        impact=_m2m_to_area_impact("contexts", _("context(s)")),
+        position=-5,
+    )
+    def convert_to_area(self, queryset, area=None, delete_source=False):
+        return _convert_m2m_sources_to_area(
+            self,
+            queryset,
+            "contexts",
+            "context",
+            area=area,
+            delete_source=delete_source,
+        )
 
 
 @register_batch_actions
@@ -340,6 +632,7 @@ class AreaBatchActions(BatchActions):
         sprite="lucide-refresh-cw",
         form_class="task_processor.forms.BatchConvertToTagForm",
         description=_("Tags each area's items and clears their area assignment."),
+        impact=_convert_to_tag_impact,
     )
     def convert_to_tag(self, queryset, tag=None, delete_source=False):
         """

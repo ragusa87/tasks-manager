@@ -12,6 +12,9 @@ many are skipped.
         {{ applicable_count }} of the {{ selected_count }} selected
         {% if selected_count == 1 %}{{ model_verbose_name }}{% else %}{{ model_verbose_name_plural }}{% endif %}.
     </p>
+    {% if impact %}
+        <p class="mt-1 text-muted">{{ impact }}</p>
+    {% endif %}
     {% if skipped_count %}
         <p class="mt-1 text-warning">
             {{ skipped_count }} selected

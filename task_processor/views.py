@@ -34,6 +34,7 @@ from factory.django import get_model
 
 from .batch import (
     AreaBatchActions,
+    ContextBatchActions,
     ItemBatchActions,
     TagBatchActions,
     get_batch_actions_class,
@@ -602,7 +603,11 @@ class BatchActionView(HtmxModalActionMixin, FormView):
 
         if not request.POST.get("confirm"):
             form_class = self.get_form_class()
-            form = form_class(user=request.user) if form_class else None
+            form = (
+                form_class(user=request.user, selection=self.applicable)
+                if form_class
+                else None
+            )
             return self.render_to_response(self.get_context_data(form=form))
 
         if not self.get_form_class():
@@ -615,6 +620,7 @@ class BatchActionView(HtmxModalActionMixin, FormView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
+        kwargs["selection"] = self.applicable
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -628,6 +634,7 @@ class BatchActionView(HtmxModalActionMixin, FormView):
                 "selected_count": self.selected_count,
                 "applicable_count": self.applicable_count,
                 "skipped_count": self.selected_count - self.applicable_count,
+                "impact": self.actions.describe_impact(self.action, self.applicable),
                 "selection_fields": self._selection_fields(),
                 "return_url": self.get_success_url(),
             }
@@ -1205,6 +1212,10 @@ class ContextListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "My Contexts"
+        context["batch_actions"] = ContextBatchActions(
+            self.request.user
+        ).get_available_actions()
+        context["batch_model"] = ContextBatchActions.model_name()
         return context
 
 
