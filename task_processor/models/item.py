@@ -666,7 +666,11 @@ class ItemFlow:
     @batchable(filter_q=lambda: Q(is_completed=True))
     @state_field.transition(
         source=GTDStatus.COMPLETED,
-        target=GTDStatus.NEXT_ACTION,
+        # Inbox, not next_action: GTD-wise a reopened item needs
+        # re-clarification (and it may have completed from any status —
+        # project, waiting_for... — so an actionable target would be wrong).
+        # Mirrors uncancel ("Restore to Inbox").
+        target=GTDStatus.INBOX,
         conditions=[lambda self: self.item.is_completed],
         label=_("Reopen"),
     )
