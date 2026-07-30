@@ -570,7 +570,8 @@ class MoveActionTests(BatchTestBase):
 
         completed.refresh_from_db()
         inbox.refresh_from_db()
-        self.assertEqual(completed.status, GTDStatus.NEXT_ACTION)
+        # Reopen re-clarifies: back to inbox (GTD), not to an actionable state
+        self.assertEqual(completed.status, GTDStatus.INBOX)
         self.assertFalse(completed.is_completed)
         self.assertEqual(inbox.status, GTDStatus.INBOX)
 
