@@ -19,6 +19,7 @@ export default defineConfig(({ command }) => ({
       // Define entry points
       input: {
         'base': resolve('./frontend/js/base.js'),
+        'batch': resolve('./frontend/js/batch.js'),
         'dashboard': resolve('./frontend/js/dashboard.js'),
         'charts': resolve('./frontend/js/charts.js'),
         'offload': resolve('./frontend/js/offload.js'),

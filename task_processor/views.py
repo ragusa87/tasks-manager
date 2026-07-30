@@ -8,7 +8,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Count, IntegerField, Q, Value, When
-from django.http import FileResponse, HttpResponseRedirect, JsonResponse
+from django.http import (
+    FileResponse,
+    Http404,
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -26,6 +32,12 @@ from django.views.generic import (
 )
 from factory.django import get_model
 
+from .batch import (
+    AreaBatchActions,
+    ItemBatchActions,
+    TagBatchActions,
+    get_batch_actions_class,
+)
 from .constants import GTDConfig, GTDStatus
 from .forms import (
     AllowedSenderForm,
@@ -368,6 +380,10 @@ class DashboardView(ListView):
                     {"value": category.value, "label": category.label}
                     for category in FilterCategory
                 ],
+                "batch_actions": ItemBatchActions(
+                    self.request.user
+                ).get_available_actions(),
+                "batch_model": ItemBatchActions.model_name(),
                 "now": timezone.now(),
             }
         )
@@ -540,6 +556,132 @@ class ItemTransitionView(HtmxModalActionMixin, FormView):
             )
         except Exception as e:
             messages.error(self.request, f"Error applying transition: {str(e)}")
+
+
+@method_decorator(login_required, name="dispatch")
+class BatchActionView(HtmxModalActionMixin, FormView):
+    """
+    Generic executor for @batch_action methods (see batch.py), one URL for
+    every registered model/action pair.
+
+    POST-only, two steps — selection payloads (id lists or select_all + q)
+    don't belong in a URL:
+    - POST without ``confirm``: render the preview (modal for HTMX, full page
+      otherwise) with applicable/skipped counts, an unbound form and hidden
+      fields echoing the selection.
+    - POST with ``confirm=1``: validate the form (if any) and run the action
+      on the applicable subset of the re-resolved selection.
+    """
+
+    http_method_names = ["post"]
+    template_name = "batch/form.html"
+
+    def get_template_names(self):
+        if self._is_htmx():
+            return ["batch/_modal.html"]
+        return [self.template_name]
+
+    def dispatch(self, request, *args, **kwargs):
+        actions_class = get_batch_actions_class(kwargs.get("model_name"))
+        if actions_class is None:
+            raise Http404("Unknown batch model")
+        self.actions = actions_class(request.user)
+        self.action = self.actions.get_action(kwargs.get("action_slug"))
+        if self.action is None:
+            raise Http404("Unknown batch action")
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.selection = self.actions.resolve_selection(request.POST)
+        self.applicable = self.actions.filter_applicable(self.action, self.selection)
+        # Search-based selections may carry M2M joins: count distinct pks.
+        self.selected_count = self.selection.order_by().values("pk").distinct().count()
+        self.applicable_count = (
+            self.applicable.order_by().values("pk").distinct().count()
+        )
+
+        if not request.POST.get("confirm"):
+            form_class = self.get_form_class()
+            form = form_class(user=request.user) if form_class else None
+            return self.render_to_response(self.get_context_data(form=form))
+
+        if not self.get_form_class():
+            return self._execute_and_respond()
+        return super().post(request, *args, **kwargs)
+
+    def get_form_class(self):
+        return self.action.form_class
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "action": self.action,
+                "batch_model": self.actions.model_name(),
+                "model_verbose_name": self.actions.model._meta.verbose_name,
+                "model_verbose_name_plural": self.actions.model._meta.verbose_name_plural,
+                "selected_count": self.selected_count,
+                "applicable_count": self.applicable_count,
+                "skipped_count": self.selected_count - self.applicable_count,
+                "selection_fields": self._selection_fields(),
+                "return_url": self.get_success_url(),
+            }
+        )
+        return context
+
+    def _selection_fields(self):
+        """(name, value) pairs echoing the selection from preview to confirm."""
+        fields = []
+        for key in ("select_all", "q", "excluded_ids"):
+            value = self.request.POST.get(key)
+            if value:
+                fields.append((key, value))
+        for pk in self.request.POST.getlist("ids"):
+            fields.append(("ids", pk))
+        return fields
+
+    def form_valid(self, form):
+        return self._execute_and_respond(**form.cleaned_data)
+
+    def form_invalid(self, form):
+        """Re-render the form with errors (in the modal for HTMX requests)."""
+        if self._is_htmx():
+            # 400 so base.js swaps the body back into #modal-container
+            # (htmx.config.responseHandling: 4xx -> swap, no error).
+            return self.render_to_response(self.get_context_data(form=form), status=400)
+        return super().form_invalid(form)
+
+    def _execute_and_respond(self, **form_data):
+        name = self.actions.model._meta.verbose_name
+        try:
+            applied_count, extra = self.actions.run(
+                self.action, self.applicable, **form_data
+            )
+            message = f"'{self.action.label}' applied to {applied_count} {name}(s)."
+            skipped = self.selected_count - self.applicable_count
+            if skipped:
+                message += f" {skipped} not applicable, skipped."
+            if extra:
+                message += f" ({extra})"
+            messages.success(self.request, message)
+        except Exception as e:
+            messages.error(self.request, f"Error applying batch action: {str(e)}")
+
+        if self._is_htmx():
+            if self.actions.post_action_refresh == "list":
+                return self._htmx_refresh_response()
+            # Plain list pages (tags/areas) have no in-place list to refresh:
+            # reload. Messages stay queued and render after the reload, so no
+            # OOB flash body here (rendering it would consume them).
+            response = HttpResponse(status=204)
+            response["HX-Refresh"] = "true"
+            return response
+        return redirect(self.get_success_url())
 
 
 @method_decorator(login_required, name="dispatch")
@@ -965,6 +1107,10 @@ class AreaListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "My Areas"
+        context["batch_actions"] = AreaBatchActions(
+            self.request.user
+        ).get_available_actions()
+        context["batch_model"] = AreaBatchActions.model_name()
         return context
 
 
@@ -1153,6 +1299,10 @@ class TagListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "My Tags"
+        context["batch_actions"] = TagBatchActions(
+            self.request.user
+        ).get_available_actions()
+        context["batch_model"] = TagBatchActions.model_name()
         return context
 
 

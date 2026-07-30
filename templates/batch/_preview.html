@@ -1,0 +1,30 @@
+{% comment %}
+Shared preview text for the batch confirm modal and full-page form: the
+action's rule description, how many selected objects it applies to, and how
+many are skipped.
+{% endcomment %}
+{% if action.description %}
+    <p class="mt-1 text-body">{{ action.description }}</p>
+{% endif %}
+{% if applicable_count %}
+    <p class="mt-1 text-muted">
+        This will apply "{{ action.label }}" to
+        {{ applicable_count }} of the {{ selected_count }} selected
+        {% if selected_count == 1 %}{{ model_verbose_name }}{% else %}{{ model_verbose_name_plural }}{% endif %}.
+    </p>
+    {% if skipped_count %}
+        <p class="mt-1 text-warning">
+            {{ skipped_count }} selected
+            {% if skipped_count == 1 %}{{ model_verbose_name }} is{% else %}{{ model_verbose_name_plural }} are{% endif %}
+            not applicable and will be skipped.
+        </p>
+    {% endif %}
+{% else %}
+    <p class="mt-1 text-warning">
+        {% if selected_count %}
+            None of the {{ selected_count }} selected {{ model_verbose_name_plural }} are applicable to "{{ action.label }}".
+        {% else %}
+            Nothing is selected.
+        {% endif %}
+    </p>
+{% endif %}

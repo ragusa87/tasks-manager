@@ -1,0 +1,46 @@
+{% comment %}
+Shared form-field rendering for the batch modal and full-page form
+(same layout as transitions/_modal.html).
+{% endcomment %}
+{% if form %}
+    {% if form.non_field_errors %}
+        <div class="rounded-md bg-danger-ground p-4 mb-6">
+            <div class="flex">
+                <div class="ml-3">
+                    <h3 class="font-medium text-danger">
+                        Please correct the following errors:
+                    </h3>
+                    <div class="mt-2 text-danger">
+                        <ul class="list-disc pl-5 space-y-1">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="space-y-6">
+        {% for field in form %}
+            <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                <label for="{{ field.id_for_label }}" class="block font-medium text-muted sm:mt-px sm:pt-2">
+                    {{ field.label }}
+                    {% if field.field.required %}
+                        <span class="text-danger">*</span>
+                    {% endif %}
+                </label>
+                <div class="mt-1 sm:mt-0 sm:col-span-2">
+                    {{ field }}
+                    {% if field.errors %}
+                        <p class="mt-2 text-danger">{{ field.errors.0 }}</p>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <p class="mt-2 text-muted">{{ field.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

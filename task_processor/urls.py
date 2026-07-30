@@ -25,6 +25,7 @@ from .views import (
     AreaListView,
     AreaUpdateView,
     AutocompleteView,
+    BatchActionView,
     ContextCreateView,
     ContextDeleteView,
     ContextListView,
@@ -79,6 +80,11 @@ urlpatterns = [
         "documents/<int:document_id>/download/",
         DocumentDownloadView.as_view(),
         name="document_download",
+    ),
+    path(
+        "batch/<str:model_name>/<str:action_slug>/",
+        BatchActionView.as_view(),
+        name="batch_action",
     ),
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard_stats"),
     path(

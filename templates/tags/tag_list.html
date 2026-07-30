@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load sprite_tags %}
+{% load sprite_tags django_vite %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -19,6 +19,13 @@
                     {% sprite "lucide-chevron-left" 24 class="mr-2" %}
                     Back
                 </a>
+                {% if batch_actions and tags %}
+                <button type="button" id="batch-toggle" class="btn-secondary flex-1 sm:flex-none">
+                    {% sprite "lucide-clipboard-check" 16 class="mr-2" %}
+                    <span class="batch-off-ui">Batch actions</span>
+                    <span class="batch-ui">Done</span>
+                </button>
+                {% endif %}
                 <a href="{% url 'tag_create' %}" class="btn-primary flex-1 sm:flex-none">
                     {% sprite "lucide-plus" 24 class="mr-2" %}
                     Create Tag
@@ -29,11 +36,17 @@
 
     <!-- Tags List -->
     <div class="card overflow-hidden">
+        {% if batch_actions and tags %}
+            {% include "partials/batch_bar.html" with batch_model=batch_model batch_actions=batch_actions total_count=paginator.count page_count=tags|length %}
+        {% endif %}
         {% if tags %}
         <ul class="divide-y divide-line">
             {% for tag in tags %}
             <li class="hover:bg-ground transition-colors">
                 <div class="px-4 sm:px-6 py-4 flex items-center justify-between">
+                    <label class="batch-ui flex items-center p-2 mr-1 cursor-pointer">
+                        <input type="checkbox" name="ids" value="{{ tag.id }}" class="batch-checkbox h-4 w-4">
+                    </label>
                     <div class="flex-1 min-w-0">
                         <h3 class="text-lg font-medium text-body truncate">
                             <span class="inline-flex items-center px-3 py-1 rounded-full font-medium bg-accent/15 text-accent">
@@ -82,4 +95,8 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+{% block extra_body %}
+    {{ block.super }}
+    {% vite_asset 'frontend/js/batch.js' %}
 {% endblock %}
