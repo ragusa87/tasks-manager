@@ -1,4 +1,3 @@
-# gtd/batch.py
 """
 Generic batch-actions framework, mirroring the ItemFlow transition pattern:
 one method per action on a per-model helper class, decorated with metadata,
@@ -12,11 +11,10 @@ A selection is stateless and travels in the POST payload:
   minus ``excluded_ids`` (rows unticked after a select-all, Gmail-style).
 """
 
-from functools import lru_cache
-
 from django.db import transaction
 from django.db.models import Q
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
 from task_processor.constants import GTDStatus
@@ -138,7 +136,9 @@ class BatchActions:
     Base class for per-model batch actions. Subclass, set ``model``, register
     with @register_batch_actions and add @batch_action methods taking
     ``(self, queryset, **form_data)``. Methods may return an extra message
-    string appended to the success flash.
+    string appended to the success flash, or an ``(applied_count, extra)``
+    tuple when the action can skip part of the queryset itself (so the flash
+    reports what actually changed, not the selection size).
     """
 
     model = None
@@ -233,11 +233,12 @@ class BatchActions:
         ids = list(queryset.values_list("pk", flat=True).distinct())
         frozen = self.model.objects.filter(pk__in=ids)
         with transaction.atomic():
-            extra = getattr(self, action.name)(frozen, **form_data)
-        return len(ids), extra
+            result = getattr(self, action.name)(frozen, **form_data)
+        if isinstance(result, tuple):
+            return result
+        return len(ids), result
 
 
-@lru_cache(maxsize=1)
 def formless_transition_groups():
     """
     The ItemFlow transitions offered by the batch "Move" action, grouped by
@@ -253,8 +254,10 @@ def formless_transition_groups():
     @batchable ``filter_q``. Query filters, not per-item ``can_proceed()``:
     select-all previews must count in the database, not load every row.
 
-    Cached per process (the flow is static); tests patching the flow must
-    call ``formless_transition_groups.cache_clear()``.
+    Deliberately not cached (pure introspection, microseconds): a cache would
+    freeze the ``filter_q`` results — promised deferred so they may depend on
+    the current time — and the labels' translation in the first request's
+    locale.
     """
     flow = ItemFlow(Item())
     statuses = set(GTDStatus.values)
@@ -313,7 +316,7 @@ class ItemBatchActions(BatchActions):
         position=20,
     )
     def add_tag(self, queryset, tag):
-        tag.item_set.add(*queryset)
+        tag.item_set.add(*queryset.values_list("pk", flat=True))
 
     @batch_action(
         label=_("Remove tag"),
@@ -322,7 +325,7 @@ class ItemBatchActions(BatchActions):
         position=10,
     )
     def remove_tag(self, queryset, tag):
-        tag.item_set.remove(*queryset)
+        tag.item_set.remove(*queryset.values_list("pk", flat=True))
 
     @batch_action(
         label=_("Replace area"),
@@ -391,10 +394,12 @@ class ItemBatchActions(BatchActions):
                 method()
                 applied += 1
         skipped = total - applied
-        message = f"{applied} item(s) → {group['label']}"
+        extra = gettext("moved to %(label)s") % {"label": group["label"]}
         if skipped:
-            message += f", {skipped} skipped (state does not allow it)"
-        return message
+            extra += gettext(", %(skipped)d skipped (state does not allow it)") % {
+                "skipped": skipped
+            }
+        return applied, extra
 
 
 # --- Conversion helpers -----------------------------------------------------
@@ -485,7 +490,10 @@ def _convert_m2m_sources_to_area(
             destination, _created = Area.objects.get_or_create(
                 user=actions.user,
                 name=source.name[: Area._meta.get_field("name").max_length],
-                defaults={"description": f'Converted from {noun} "{source.name}"'},
+                defaults={
+                    "description": gettext('Converted from %(noun)s "%(name)s"')
+                    % {"noun": noun, "name": source.name}
+                },
             )
         movable_ids = list(
             Item.objects.filter(user=actions.user, **{field_name: source})
@@ -501,11 +509,17 @@ def _convert_m2m_sources_to_area(
             source.delete()
         elif remaining and delete_source:
             kept.append(source.name)
-    parts = [f"{moved} item(s) moved"]
+    parts = [gettext("%(moved)d item(s) moved") % {"moved": moved}]
     if skipped:
-        parts.append(f"{skipped} item(s) skipped (already in another area)")
+        parts.append(
+            gettext("%(skipped)d item(s) skipped (already in another area)")
+            % {"skipped": skipped}
+        )
     if kept:
-        parts.append(f"{noun}(s) kept because of skipped items: " + ", ".join(kept))
+        parts.append(
+            gettext("%(noun)s(s) kept because of skipped items: %(names)s")
+            % {"noun": noun, "names": ", ".join(kept)}
+        )
     return ", ".join(parts)
 
 
@@ -535,7 +549,7 @@ def _convert_m2m_sources_to_m2m(
         moved += len(item_ids)
         if delete_source:
             source.delete()
-    return f"{moved} item(s) moved"
+    return gettext("%(moved)d item(s) moved") % {"moved": moved}
 
 
 @register_batch_actions
@@ -555,7 +569,7 @@ class TagBatchActions(BatchActions):
     )
     def convert_to_area(self, queryset, area=None, delete_source=False):
         return _convert_m2m_sources_to_area(
-            self, queryset, "tags", "tag", area=area, delete_source=delete_source
+            self, queryset, "tags", _("tag"), area=area, delete_source=delete_source
         )
 
     @batch_action(
@@ -617,7 +631,7 @@ class ContextBatchActions(BatchActions):
             self,
             queryset,
             "contexts",
-            "context",
+            _("context"),
             area=area,
             delete_source=delete_source,
         )
@@ -658,4 +672,4 @@ class AreaBatchActions(BatchActions):
             moved += len(item_ids)
             if delete_source:
                 area.delete()
-        return f"{moved} item(s) moved"
+        return gettext("%(moved)d item(s) moved") % {"moved": moved}

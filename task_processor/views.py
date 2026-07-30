@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 import boto3
@@ -52,6 +53,8 @@ from .models import AllowedSender, Area, Context, Document, EmailInbox, Item, Ta
 from .models.email_inbox import EMAIL_INBOX_PERMISSION
 from .search import FilterCategory
 from .uploads import DocumentValidationError, attach_document
+
+logger = logging.getLogger(__name__)
 
 
 class ReturnRefererMixin(object):
@@ -556,6 +559,9 @@ class ItemTransitionView(HtmxModalActionMixin, FormView):
                 f"Successfully applied '{self.transition.label}' to '{self.item.title}'.",
             )
         except Exception as e:
+            logger.exception(
+                "Transition %s failed on item %s", self.transition.name, self.item.pk
+            )
             messages.error(self.request, f"Error applying transition: {str(e)}")
 
 
@@ -677,6 +683,11 @@ class BatchActionView(HtmxModalActionMixin, FormView):
                 message += f" ({extra})"
             messages.success(self.request, message)
         except Exception as e:
+            logger.exception(
+                "Batch action %s/%s failed",
+                self.actions.model_name(),
+                self.action.name,
+            )
             messages.error(self.request, f"Error applying batch action: {str(e)}")
 
         if self._is_htmx():

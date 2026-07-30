@@ -34,7 +34,7 @@
                 <li class="px-4 py-4 relative">
                     <div class="flex items-center gap-2">
                         <label class="batch-ui flex items-center p-2 cursor-pointer">
-                            <input type="checkbox" name="ids" value="{{ item.id }}" class="batch-checkbox h-4 w-4">
+                            <input type="checkbox" name="ids" value="{{ item.id }}" class="batch-checkbox h-4 w-4" aria-label="Select {{ item.title }}">
                         </label>
                         <div class="flex-1 min-w-0">
                             {% include 'partials/item_row.html' with item=item %}

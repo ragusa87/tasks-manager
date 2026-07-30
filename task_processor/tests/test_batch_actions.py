@@ -419,12 +419,10 @@ class TransitionGroupTests(BatchTestBase):
     def test_enabled_false_excludes_group(self):
         descriptor = ItemFlow.uncancel._descriptor
         descriptor._batchable = {"filter_q": None, "enabled": False}
-        formless_transition_groups.cache_clear()
         try:
             self.assertNotIn("Restore to Inbox", self.label_map())
         finally:
             del descriptor._batchable
-            formless_transition_groups.cache_clear()
 
     def test_group_q_matches_can_proceed_for_every_status(self):
         """Core property: the SQL filters agree with the FSM's can_proceed
@@ -515,23 +513,26 @@ class MoveActionTests(BatchTestBase):
         inbox = create_item_in_status(self.user, GTDStatus.INBOX)
         someday = create_item_in_status(self.user, GTDStatus.SOMEDAY_MAYBE)
 
-        _, extra = self.move([inbox, someday], "Next Action")
+        applied, extra = self.move([inbox, someday], "Next Action")
 
         inbox.refresh_from_db()
         someday.refresh_from_db()
         self.assertEqual(inbox.status, GTDStatus.NEXT_ACTION)
         self.assertEqual(someday.status, GTDStatus.NEXT_ACTION)
-        self.assertIn("2 item(s) → Next Action", extra)
+        self.assertEqual(applied, 2)
+        self.assertIn("moved to Next Action", extra)
 
     def test_inapplicable_items_skipped_and_reported(self):
         inbox = create_item_in_status(self.user, GTDStatus.INBOX)
         completed = create_item_in_status(self.user, GTDStatus.COMPLETED)
 
-        _, extra = self.move([inbox, completed], "Next Action")
+        applied, extra = self.move([inbox, completed], "Next Action")
 
         completed.refresh_from_db()
         self.assertEqual(completed.status, GTDStatus.COMPLETED)
-        self.assertIn("1 item(s) → Next Action", extra)
+        # run() reports what actually transitioned, not the selection size
+        self.assertEqual(applied, 1)
+        self.assertIn("moved to Next Action", extra)
         self.assertIn("1 skipped", extra)
 
     def test_complete_sets_flags_and_stops_recurrence(self):
@@ -919,3 +920,15 @@ class BatchActionViewTests(BatchTestBase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, "/tags/")
+
+    def test_plain_confirm_rejects_unsafe_return_url(self):
+        # returnUrl is caller-controlled: foreign hosts (open redirect) fall
+        # back to the dashboard, the action itself still runs.
+        response = self.client.post(
+            self._url(slug="remove_area") + "?returnUrl=https://evil.example/",
+            {"ids": [self.item_b.pk], "confirm": "1"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("dashboard"))
+        self.item_b.refresh_from_db()
+        self.assertIsNone(self.item_b.area)

@@ -48,6 +48,19 @@ class TestItemViews(TestCase):
         self.assertNotContains(response, "Test item")
         self.assertContains(response, "Found 0 result")
 
+    def test_dashboard_pagination_preserves_search_query(self):
+        """Pagination links must keep q (and any other params), not reset them."""
+        self.client.force_login(self.user)
+        for i in range(51):  # one over paginate_by=50
+            Item.objects.create(title=f"paginated {i}", user=self.user)
+
+        response = self.client.get("/?q=paginated")
+        self.assertContains(response, "?q=paginated&amp;page=2")
+
+        response = self.client.get("/?q=paginated&page=2")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "?q=paginated&amp;page=1")
+
     def test_item_create_get_returns_200(self):
         """Test that GET request to item create view returns 200"""
         self.client.force_login(self.user)
