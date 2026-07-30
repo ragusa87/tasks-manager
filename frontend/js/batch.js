@@ -1,4 +1,5 @@
 import { getCsrfToken } from './csrf.js';
+import { showModal } from './modal.js';
 
 // Batch-action selection for list pages (dashboard, tags, areas).
 //
@@ -27,8 +28,6 @@ function syncUi() {
     const total = parseInt(barEl.dataset.totalCount || '0', 10);
     const count = selectAll ? Math.max(total - excluded.size, 0) : checked;
 
-    document.getElementById('batch-select-all-input').value = selectAll ? '1' : '';
-    document.getElementById('batch-excluded-input').value = Array.from(excluded).join(',');
     const countText = selectAll ? `All ${count} selected` : `${count} selected`;
     document.getElementById('batch-count').textContent = countText;
     // Floating count pill (small screens; see batch_bar.html)
@@ -96,9 +95,9 @@ function submitBatchAction(url) {
         return;
     }
 
-    // Desktop: POST as an HTMX request and open the preview modal, the same
-    // #modal-container flow as openItemModal in base.js (close button,
-    // Escape, overlay and focus handling all come from there).
+    // Desktop: POST as an HTMX request and open the preview through the
+    // shared modal plumbing (close button, Escape, overlay, focus capture
+    // and restore all come from modal.js).
     const body = new FormData();
     entries.forEach(([name, value]) => body.append(name, value));
     fetch(url, {
@@ -112,18 +111,7 @@ function submitBatchAction(url) {
             }
             return response.text();
         })
-        .then((html) => {
-            const container = document.querySelector('#modal-container');
-            if (!container) return;
-            container.innerHTML = html;
-            const modal = document.getElementById('modal');
-            if (modal) {
-                modal.style.display = 'block';
-                htmx.process(modal);
-                document.dispatchEvent(new CustomEvent('openmodal'));
-                (modal.querySelector('input:not([type="hidden"]), select, button') || modal).focus();
-            }
-        })
+        .then(showModal)
         .catch((error) => console.error('Batch action failed:', error));
 }
 
