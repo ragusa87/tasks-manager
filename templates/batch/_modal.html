@@ -1,0 +1,48 @@
+{% load sprite_tags %}
+
+<!-- Generic batch-action preview/confirm modal (loaded via HTMX by batch.js) -->
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"
+     class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-surface">
+        <div id="modal-content">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2 id="modal-title" class="text-xl font-bold text-body">{{ action.label }}</h2>
+                {% include "batch/_preview.html" %}
+            </div>
+
+            {% if applicable_count %}
+            <form method="post"
+                  action="{{ request.path }}"
+                  hx-post="{{ request.path }}"
+                  hx-target="#modal-container"
+                  hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="confirm" value="1">
+                {% for name, value in selection_fields %}
+                    <input type="hidden" name="{{ name }}" value="{{ value }}">
+                {% endfor %}
+
+                {% include "batch/_form_fields.html" %}
+
+                <!-- Modal footer -->
+                <div class="flex items-center justify-end pt-6 mt-6 border-t border-line space-x-2">
+                    <button type="button" id="close-modal-btn" class="btn-secondary">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        {% sprite "lucide-circle-check" 16 class="mr-2" %}
+                        Apply to {{ applicable_count }}
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="flex items-center justify-end pt-6 mt-6 border-t border-line">
+                <button type="button" id="close-modal-btn" class="btn-secondary">
+                    Close
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

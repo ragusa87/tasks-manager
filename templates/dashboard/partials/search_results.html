@@ -14,14 +14,32 @@
             </p>
             {% endif %}
         </div>
+        {% if batch_actions and paginator.count %}
+        <button type="button" id="batch-toggle" class="btn-secondary flex-shrink-0">
+            {% sprite "lucide-clipboard-check" 16 class="mr-2" %}
+            <span class="batch-off-ui">Batch actions</span>
+            <span class="batch-ui">Done</span>
+        </button>
+        {% endif %}
     </div>
+
+    {% if batch_actions %}
+        {% include "partials/batch_bar.html" with batch_model=batch_model batch_actions=batch_actions total_count=paginator.count page_count=page_obj|length search_query=search_query bar_padding="px-4" %}
+    {% endif %}
 
     <div class="border-t border-line">
         {% if page_obj %}
             <ul class="divide-y divide-line">
                 {% for item in page_obj %}
                 <li class="px-4 py-4 relative">
-                    {% include 'partials/item_row.html' with item=item %}
+                    <div class="flex items-center gap-2">
+                        <label class="batch-ui flex items-center p-2 cursor-pointer">
+                            <input type="checkbox" name="ids" value="{{ item.id }}" class="batch-checkbox h-4 w-4">
+                        </label>
+                        <div class="flex-1 min-w-0">
+                            {% include 'partials/item_row.html' with item=item %}
+                        </div>
+                    </div>
                 </li>
                 {% endfor %}
             </ul>

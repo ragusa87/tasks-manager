@@ -218,6 +218,141 @@ class ReferenceForm(TransitionForm):
         self.fields["parent"].queryset = queryset
 
 
+class BatchActionForm(forms.Form):
+    """
+    Base class for @batch_action forms.
+
+    BatchActionView passes the requesting ``user`` so forms can scope their
+    choices (tags/areas belong to a user). Every batch-action form should
+    extend this so the view can pass ``user`` uniformly.
+    """
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+
+class BatchTagFormBase(BatchActionForm):
+    tag = forms.ModelChoiceField(
+        queryset=Tag.objects.none(),
+        required=True,
+        label="Tag",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.user is not None:
+            self.fields["tag"].queryset = Tag.objects.filter(user=self.user)
+
+
+class BatchAddTagForm(BatchTagFormBase):
+    """Pick (or create) the tag to add to every selected item."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tag"].widget = AutocompleteWidget(
+            field_type="tags",
+            allow_multiple=False,
+            allow_create=True,
+            placeholder="Search or create a tag…",
+        )
+
+
+class BatchRemoveTagForm(BatchTagFormBase):
+    """Pick the tag to remove from every selected item."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tag"].widget = AutocompleteWidget(
+            field_type="tags",
+            allow_multiple=False,
+            allow_create=False,
+            placeholder="Search tags…",
+        )
+
+
+class BatchAreaForm(BatchActionForm):
+    """Pick the area to set on the selected items (replace_area / add_area)."""
+
+    area = forms.ModelChoiceField(
+        queryset=Area.objects.none(),
+        required=True,
+        label="Area",
+        widget=AutocompleteWidget(
+            field_type="areas",
+            allow_multiple=False,
+            allow_create=False,
+            placeholder="Search areas…",
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.user is not None:
+            self.fields["area"].queryset = Area.objects.filter(user=self.user)
+
+
+class BatchConvertToAreaForm(BatchActionForm):
+    """Options for converting tags into areas."""
+
+    area = forms.ModelChoiceField(
+        queryset=Area.objects.none(),
+        required=False,
+        label="Destination area",
+        widget=AutocompleteWidget(
+            field_type="areas",
+            allow_multiple=False,
+            allow_create=False,
+            placeholder="Search areas…",
+        ),
+        help_text=(
+            "Leave empty to create/reuse one area per tag, named after it. "
+            "Pick an area to move every selected tag's items there."
+        ),
+    )
+    delete_source = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Delete tags after conversion",
+        help_text="Only tags left without any item are deleted.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.user is not None:
+            self.fields["area"].queryset = Area.objects.filter(user=self.user)
+
+
+class BatchConvertToTagForm(BatchActionForm):
+    """Options for converting areas into tags."""
+
+    tag = forms.ModelChoiceField(
+        queryset=Tag.objects.none(),
+        required=False,
+        label="Destination tag",
+        widget=AutocompleteWidget(
+            field_type="tags",
+            allow_multiple=False,
+            allow_create=True,
+            placeholder="Search or create a tag…",
+        ),
+        help_text=(
+            "Leave empty to create/reuse one tag per area, named after it. "
+            "Pick a tag to apply it to every selected area's items."
+        ),
+    )
+    delete_source = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Delete areas after conversion",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.user is not None:
+            self.fields["tag"].queryset = Tag.objects.filter(user=self.user)
+
+
 class ItemForm(forms.ModelForm):
     estimated_duration = forms.ChoiceField(
         choices=[("", "Not specified")] + GTDDuration.choices,

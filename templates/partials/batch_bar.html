@@ -1,0 +1,53 @@
+{% load sprite_tags %}
+
+{% comment %}
+Generic batch-action bar, hidden unless <body> has the batch-mode class
+(toggled by frontend/js/batch.js via the #batch-toggle button).
+Parameters:
+  batch_model   - registry key ("item", "tag", "area")
+  batch_actions - BatchActionsBag from the view context
+  total_count   - total matching objects (paginator.count)
+  page_count    - objects on the current page
+  search_query  - the q string (dashboard only; empty elsewhere)
+The action buttons carry data-batch-url instead of hx-post: batch.js POSTs
+the selection itself so it can branch between the modal (desktop) and the
+full-page form (small screens / no JS gets nothing, batch UI needs JS).
+{% endcomment %}
+<div id="batch-bar"
+     class="batch-ui {{ bar_padding|default:'px-4 sm:px-6' }} py-2 border-t border-line bg-ground flex flex-wrap items-center gap-x-4 gap-y-2"
+     data-total-count="{{ total_count|default:0 }}">
+    <input type="hidden" name="q" value="{{ search_query|default:'' }}">
+    <input type="hidden" name="select_all" value="" id="batch-select-all-input">
+    <input type="hidden" name="excluded_ids" value="" id="batch-excluded-input">
+
+    {# The p-2 around the checkbox matches the p-2 of the row checkboxes so #}
+    {# the whole column lines up (bar_padding must match the rows' padding). #}
+    <label class="inline-flex items-center gap-2 text-sm text-muted cursor-pointer">
+        <span class="p-2 flex items-center"><input type="checkbox" id="batch-select-page" class="h-4 w-4"></span>
+        <span class="hidden sm:inline">Page</span>
+    </label>
+
+    <span id="batch-count" class="text-sm font-medium text-body">0 selected</span>
+
+    {% if total_count > page_count %}
+        <button type="button" id="batch-select-all"
+                class="text-sm text-accent hover:underline hidden"
+                data-label-select="Select all {{ total_count }} matching"
+                data-label-clear="Clear selection">
+            Select all {{ total_count }} matching
+        </button>
+    {% endif %}
+
+    <span class="flex-1"></span>
+
+    {% for action in batch_actions %}
+        <button type="button"
+                class="btn-secondary batch-action-btn"
+                disabled
+                {% if action.description %}title="{{ action.description }}"{% endif %}
+                data-batch-url="{% url 'batch_action' model_name=batch_model action_slug=action.name %}">
+            {% if action.sprite %}{% sprite action.sprite 16 class="mr-2" %}{% endif %}
+            {{ action.label }}
+        </button>
+    {% endfor %}
+</div>

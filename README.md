@@ -16,6 +16,7 @@ I don't intent to maintain this project in the long term.
 * Attach documents to tasks (PDF, images, audio), uploaded via drag & drop, stored on local disk or S3-compatible storage (see `STORAGE_URL`)
 * Capture with the microphone or the camera: voice notes and photos become task attachments
 * Offload: a mobile-first capture page, installable as an app (PWA)
+* Batch actions: select tasks on the dashboard (or all matching a search) and add/remove tags, set areas; convert tags to areas and back from the tag/area pages
 
 ## Screenshots
 
@@ -33,7 +34,6 @@ representative demo data before capturing.
 
 ### TODOS
 - Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)
-- Bach actions support: `tag<->area` conversion, `+tag`, `-tag`, `+area`, `-area` etc
 - New transition: Convert whole project to references
 - DateTime picker could respect the user's locale.
 - htmx show connectivity issue and 500.

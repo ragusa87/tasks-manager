@@ -66,7 +66,7 @@
    (e.g. class="btn-primary w-full"). The composable bases (btn, badge,
    alert) are @utility so the variant classes can @apply them. */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ring-offset-ground;
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ring-offset-ground disabled:opacity-50 disabled:pointer-events-none;
 }
 @utility badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
@@ -453,4 +453,17 @@
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* Batch-action mode (frontend/js/batch.js): .batch-ui elements (row
+   checkboxes, the batch bar, the toggle's "Done" label) are visible only
+   while <body> carries .batch-mode; .batch-off-ui is the inverse (the
+   toggle's idle label). The class lives on <body> — a node htmx never
+   swaps — so the mode survives the OOB re-render of the result list. */
+body:not(.batch-mode) .batch-ui {
+  display: none !important;
+}
+
+body.batch-mode .batch-off-ui {
+  display: none !important;
 }

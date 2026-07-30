@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}{{ action.label }}{% endblock %}
+{% block header_title %}{{ action.label }}{% endblock %}
+
+{% comment %}
+Full-page variant of the batch confirm modal: used below the sm breakpoint
+(batch.js submits a plain form there, mirroring the item-detail behavior)
+and for any non-HTMX request.
+{% endcomment %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-body">{{ action.label }}</h2>
+                {% include "batch/_preview.html" %}
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="{{ return_url }}" class="btn-secondary">
+                    {% sprite "lucide-chevron-left" 24 class="mr-2" %}
+                    Cancel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if applicable_count %}
+    <div class="card p-4 sm:p-6">
+        <form method="post" action="{{ request.get_full_path }}">
+            {% csrf_token %}
+            <input type="hidden" name="confirm" value="1">
+            {% for name, value in selection_fields %}
+                <input type="hidden" name="{{ name }}" value="{{ value }}">
+            {% endfor %}
+
+            {% include "batch/_form_fields.html" %}
+
+            <div class="flex items-center justify-end pt-6 mt-6 border-t border-line space-x-2">
+                <a href="{{ return_url }}" class="btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn-primary">
+                    {% sprite "lucide-circle-check" 16 class="mr-2" %}
+                    Apply to {{ applicable_count }}
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
