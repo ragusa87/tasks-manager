@@ -16,7 +16,12 @@ I don't intent to maintain this project in the long term.
 * Attach documents to tasks (PDF, images, audio), uploaded via drag & drop, stored on local disk or S3-compatible storage (see `STORAGE_URL`)
 * Capture with the microphone or the camera: voice notes and photos become task attachments
 * Offload: a mobile-first capture page, installable as an app (PWA)
-* Batch actions: select tasks on the dashboard (or all matching a search) and add/remove tags, set areas; convert tags to areas and back from the tag/area pages
+* Batch actions: select tasks on the dashboard (or all matching a search) and apply an action to the whole selection
+  * Tasks: add/remove a tag, add/replace/remove the area, move to another status (complete, cancel, next action, someday…) — every status transition that needs no extra input is offered, with a per-transition count of applicable items
+  * Tags page: convert tags to areas or to contexts
+  * Contexts page: convert contexts to tags or to areas
+  * Areas page: convert areas to tags
+  * Conversions move the items along (optionally merging into an existing destination and deleting the source); a confirmation modal previews how many items are affected, and items whose area would be overwritten are skipped, never overwritten
 
 ## Screenshots
 

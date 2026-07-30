@@ -223,12 +223,15 @@ class BatchActionForm(forms.Form):
     Base class for @batch_action forms.
 
     BatchActionView passes the requesting ``user`` so forms can scope their
-    choices (tags/areas belong to a user). Every batch-action form should
-    extend this so the view can pass ``user`` uniformly.
+    choices (tags/areas belong to a user), and the resolved ``selection``
+    queryset so forms can build selection-aware choices (e.g. per-transition
+    counts). Every batch-action form should extend this so the view can pass
+    both uniformly.
     """
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, selection=None, **kwargs):
         self.user = user
+        self.selection = selection
         super().__init__(*args, **kwargs)
 
 
@@ -351,6 +354,97 @@ class BatchConvertToTagForm(BatchActionForm):
         super().__init__(*args, **kwargs)
         if self.user is not None:
             self.fields["tag"].queryset = Tag.objects.filter(user=self.user)
+
+
+class BatchConvertToContextForm(BatchActionForm):
+    """Options for converting tags into contexts."""
+
+    context = forms.ModelChoiceField(
+        queryset=Context.objects.none(),
+        required=False,
+        label="Destination context",
+        widget=AutocompleteWidget(
+            field_type="contexts",
+            allow_multiple=False,
+            allow_create=True,
+            placeholder="Search or create a context…",
+        ),
+        help_text=(
+            "Leave empty to create/reuse one context per tag, named after it. "
+            "Pick a context to apply it to every selected tag's items."
+        ),
+    )
+    delete_source = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Delete tags after conversion",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.user is not None:
+            self.fields["context"].queryset = Context.objects.filter(user=self.user)
+
+
+class BatchTransitionForm(BatchActionForm):
+    """
+    Pick the status transition for the batch "Move" action. Choices are the
+    form-less ItemFlow transition groups, each labeled with how many selected
+    items can take it (computed in ONE aggregate query — selections can be
+    huge); groups no selected item can take are hidden.
+    """
+
+    transition = forms.ChoiceField(
+        label="Transition",
+        widget=forms.Select(attrs={"class": "input"}),
+        help_text="Completing or cancelling a recurring item stops its recurrence.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .batch import formless_transition_groups
+
+        groups = formless_transition_groups()
+        counts = {}
+        if self.selection is not None:
+            counts = self.selection.aggregate(
+                **{
+                    key: models.Count("pk", filter=group["q"], distinct=True)
+                    for key, group in groups.items()
+                }
+            )
+        self.fields["transition"].choices = [
+            (key, f"{group['label']} ({counts[key]})")
+            for key, group in groups.items()
+            if counts.get(key)
+        ]
+
+
+class BatchContextToTagForm(BatchConvertToTagForm):
+    """Options for converting contexts into tags."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tag"].help_text = (
+            "Leave empty to create/reuse one tag per context, named after it. "
+            "Pick a tag to apply it to every selected context's items."
+        )
+        self.fields["delete_source"].label = "Delete contexts after conversion"
+
+
+class BatchContextToAreaForm(BatchConvertToAreaForm):
+    """Options for converting contexts into areas."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["area"].help_text = (
+            "Leave empty to create/reuse one area per context, named after it. "
+            "Pick an area to move every selected context's items there."
+        )
+        self.fields["delete_source"].label = "Delete contexts after conversion"
+        self.fields[
+            "delete_source"
+        ].help_text = "Only contexts left without any item are deleted."
 
 
 class ItemForm(forms.ModelForm):
