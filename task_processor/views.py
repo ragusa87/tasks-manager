@@ -8,7 +8,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Case, Count, IntegerField, Q, Value, When
+from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
+from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
@@ -51,6 +52,7 @@ from .forms import (
 )
 from .models import AllowedSender, Area, Context, Document, EmailInbox, Item, Tag
 from .models.email_inbox import EMAIL_INBOX_PERMISSION
+from .models.item import ItemFlow
 from .search import FilterCategory
 from .uploads import DocumentValidationError, attach_document
 
@@ -119,7 +121,8 @@ class DashboardStatsView(TemplateView):
         week_ago = timezone.now() - timedelta(days=7)
 
         return {
-            **self._get_statistic_count(),
+            "status_stats": self._get_status_stats(user_items),
+            "disk_stats": self._get_disk_stats(),
             "completed_count": Item.objects.for_user(self.request.user)
             .filter(is_completed=True)
             .count(),
@@ -141,16 +144,66 @@ class DashboardStatsView(TemplateView):
             "recent_items": user_items.order_by("-updated_at")[:10],
         }
 
-    def _get_statistic_count(self):
-        result = (
-            Item.objects.filter(user=self.request.user)
-            .values("status")
-            .annotate(total=Count("id"))
-        )
+    def _get_status_stats(self, user_items):
+        """
+        One entry per GTD status, in declaration order and including zero
+        counts, for the status-distribution chart (JSON-serialized with
+        json_script). ``sprite`` reuses the per-state icon of the item rows.
+        """
+        counts = dict(user_items.values_list("status").annotate(count=Count("id")))
+        return [
+            {
+                "value": status.value,
+                "label": str(status.label),
+                "sprite": ItemFlow.state_icon_mapping[status.value][0],
+                "count": counts.get(status.value, 0),
+            }
+            for status in GTDStatus
+        ]
 
+    # Same content families as Document.icon (image / audio / generic).
+    DISK_FAMILIES = (
+        ("images", "Images", "lucide-image", Q(content_type__startswith="image/")),
+        ("audio", "Audio", "lucide-music", Q(content_type__startswith="audio/")),
+        (
+            "other",
+            "Other",
+            "lucide-file",
+            ~Q(content_type__startswith="image/")
+            & ~Q(content_type__startswith="audio/"),
+        ),
+    )
+
+    def _get_disk_stats(self):
+        """
+        Disk usage of the user's documents for the disk-usage chart, split by
+        content family. Sizes are bytes (``categories`` is JSON-serialized
+        with json_script and formatted client-side); one aggregate query.
+        """
+        totals = Document.objects.filter(user=self.request.user).aggregate(
+            **{
+                f"{key}_size": Coalesce(Sum("file_size", filter=q), 0)
+                for key, _label, _sprite, q in self.DISK_FAMILIES
+            },
+            **{
+                f"{key}_count": Count("id", filter=q)
+                for key, _label, _sprite, q in self.DISK_FAMILIES
+            },
+        )
+        categories = [
+            {
+                "value": key,
+                "label": label,
+                "sprite": sprite,
+                "size": totals[f"{key}_size"],
+                "count": totals[f"{key}_count"],
+            }
+            for key, label, sprite, _q in self.DISK_FAMILIES
+        ]
         return {
-            f"status_{result[status]}": result[status]["total"]
-            for status in range(len(result))
+            "total_size": sum(c["size"] for c in categories),
+            "total_count": sum(c["count"] for c in categories),
+            "categories": categories,
         }
 
 

@@ -3,7 +3,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from task_processor.constants import GTDStatus, Priority
-from task_processor.models import Area, Context, Item, Tag
+from task_processor.models import Area, Context, Document, Item, Tag
 
 
 class TestItemViews(TestCase):
@@ -229,6 +229,83 @@ class TestItemViews(TestCase):
         # Should redirect to login
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login/", response.url)
+
+
+class TestDashboardStatsView(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="stats", password="testpass")
+        self.other = User.objects.create_user(username="other", password="testpass")
+
+    def test_status_stats_counts_per_status_in_declaration_order(self):
+        for _ in range(2):
+            Item.objects.create(title="i", user=self.user, status=GTDStatus.INBOX)
+        Item.objects.create(title="n", user=self.user, status=GTDStatus.NEXT_ACTION)
+        Item.objects.create(title="x", user=self.other, status=GTDStatus.INBOX)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard_stats"))
+
+        stats = response.context["status_stats"]
+        self.assertEqual([s["value"] for s in stats], list(GTDStatus.values))
+        counts = {s["value"]: s["count"] for s in stats}
+        self.assertEqual(counts[GTDStatus.INBOX], 2)  # other user's item excluded
+        self.assertEqual(counts[GTDStatus.NEXT_ACTION], 1)
+        self.assertEqual(counts[GTDStatus.COMPLETED], 0)  # zero counts included
+
+    def test_status_stats_entries_carry_label_and_sprite(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard_stats"))
+        by_value = {s["value"]: s for s in response.context["status_stats"]}
+        self.assertEqual(by_value[GTDStatus.INBOX]["label"], "Inbox")
+        self.assertEqual(by_value[GTDStatus.INBOX]["sprite"], "lucide-inbox")
+        # Serialized into the page for charts.js via json_script
+        self.assertContains(response, 'id="status-stats-data"')
+
+    def test_requires_authentication(self):
+        response = self.client.get(reverse("dashboard_stats"))
+        self.assertEqual(response.status_code, 302)
+
+    def _create_document(self, user, item, name, size, content_type):
+        return Document.objects.create(
+            item=item,
+            file_name=name,
+            file_size=size,
+            content_type=content_type,
+            content_hash=name,  # unique per (item, hash); no real file needed
+            user=user,
+        )
+
+    def test_disk_stats_sums_sizes_per_content_family(self):
+        item = Item.objects.create(title="i", user=self.user)
+        self._create_document(self.user, item, "a.png", 1000, "image/png")
+        self._create_document(self.user, item, "b.jpg", 500, "image/jpeg")
+        self._create_document(self.user, item, "c.ogg", 200, "audio/ogg")
+        self._create_document(self.user, item, "d.pdf", 30, "application/pdf")
+        foreign_item = Item.objects.create(title="f", user=self.other)
+        self._create_document(self.other, foreign_item, "e.png", 9999, "image/png")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard_stats"))
+
+        disk = response.context["disk_stats"]
+        self.assertEqual(disk["total_size"], 1730)  # other user's file excluded
+        self.assertEqual(disk["total_count"], 4)
+        by_value = {c["value"]: c for c in disk["categories"]}
+        self.assertEqual(by_value["images"]["size"], 1500)
+        self.assertEqual(by_value["images"]["count"], 2)
+        self.assertEqual(by_value["audio"]["size"], 200)
+        self.assertEqual(by_value["other"]["size"], 30)
+        # Serialized into the page for charts.js via json_script
+        self.assertContains(response, 'id="disk-stats-data"')
+
+    def test_disk_stats_empty_without_documents(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard_stats"))
+        disk = response.context["disk_stats"]
+        self.assertEqual(disk["total_size"], 0)
+        self.assertEqual(disk["total_count"], 0)
+        self.assertEqual([c["size"] for c in disk["categories"]], [0, 0, 0])
 
 
 class TestItemDetailViewTemplates(TestCase):

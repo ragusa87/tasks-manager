@@ -1,6 +1,42 @@
 {% load sprite_tags %}
 <!-- Charts and Analytics Row -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Status Distribution Chart -->
+    {{ status_stats|json_script:"status-stats-data" }}
+    <div class="card p-6">
+        <h3 class="text-lg font-medium text-body mb-4">Status Distribution</h3>
+        <div class="relative h-48 mb-4">
+            <canvas id="statusChart"></canvas>
+            <div id="statusChartPlaceholder" class="absolute inset-0 flex items-center justify-center text-muted text-lg hidden">
+                No data
+            </div>
+        </div>
+        <!-- Custom Legend with Icons -->
+        <div id="statusLegend" class="grid grid-cols-2 gap-2"></div>
+    </div>
+
+    <!-- Disk Usage Chart -->
+    {{ disk_stats.categories|json_script:"disk-stats-data" }}
+    <div class="card p-6">
+        <h3 class="text-lg font-medium text-body mb-4">
+            Disk Usage
+            {% if disk_stats.total_count %}
+                <span class="text-muted font-normal">
+                    — {{ disk_stats.total_size|filesizeformat }} in
+                    {{ disk_stats.total_count }} document{{ disk_stats.total_count|pluralize }}
+                </span>
+            {% endif %}
+        </h3>
+        <div class="relative h-48 mb-4">
+            <canvas id="diskChart"></canvas>
+            <div id="diskChartPlaceholder" class="absolute inset-0 flex items-center justify-center text-muted text-lg hidden">
+                No documents
+            </div>
+        </div>
+        <!-- Custom Legend with Icons -->
+        <div id="diskLegend" class="grid grid-cols-2 gap-2"></div>
+    </div>
+
     <!-- Priority Distribution Chart -->
     <div class="card p-6">
         <h3 class="text-lg font-medium text-body mb-4">Priority Distribution</h3>
