@@ -65,8 +65,10 @@ class Command(BaseCommand):
 
             svg_content += f"\n{symbol}"
 
-        # Close the SVG sprite
-        svg_content += "\n</svg>"
+        # Close the SVG sprite (trailing newline: keep the generated file
+        # byte-identical to what the end-of-file-fixer pre-commit hook wants,
+        # so regenerating never dirties a commit)
+        svg_content += "\n</svg>\n"
 
         # Write to output file
         with open(output_file, "w", encoding="utf-8") as f:
