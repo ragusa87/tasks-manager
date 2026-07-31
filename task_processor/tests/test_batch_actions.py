@@ -66,7 +66,7 @@ class BatchRegistryTests(BatchTestBase):
         actions = ItemBatchActions(self.user).get_available_actions()
         names = [action.name for action in actions]
         # positions: add_tag=20, remove_tag=10, replace_area=5, add_area=4,
-        # move=2, remove_area=-10
+        # move=2, convert_to_reference=1, remove_area=-10
         self.assertEqual(
             names,
             [
@@ -75,6 +75,7 @@ class BatchRegistryTests(BatchTestBase):
                 "replace_area",
                 "add_area",
                 "move",
+                "convert_to_reference",
                 "remove_area",
             ],
         )
@@ -476,13 +477,18 @@ class BatchTransitionFormTests(BatchTestBase):
                 "Next Action": 3,  # 2 inbox + 1 someday
                 "Someday/Maybe": 3,  # 2 inbox + 1 waiting
                 "Convert to Project": 3,  # 2 inbox + 1 someday
-                "Complete": 2,  # someday + waiting
+                "Complete": 4,  # 2 inbox + someday + waiting
                 "Cancel": 5,  # everything (nothing cancelled)
                 "Received Response": 1,  # waiting
                 "Reopen": 1,  # completed
                 # "Restore to Inbox" hidden: no cancelled item selected
+                "Delete": 5,  # pseudo-transition: every item is deletable
             },
         )
+
+    def test_delete_choice_is_last(self):
+        form = BatchTransitionForm(user=self.user, selection=self.selection)
+        self.assertEqual(form.fields["transition"].choices[-1][0], "delete")
 
     def test_zero_count_groups_hidden(self):
         self.assertNotIn("Restore to Inbox", self.counts_by_label())
@@ -552,6 +558,17 @@ class MoveActionTests(BatchTestBase):
         self.assertIsNone(item.remind_at)
         self.assertIsNone(item.rrule)
 
+    def test_complete_from_inbox(self):
+        inbox = create_item_in_status(self.user, GTDStatus.INBOX)
+
+        applied, _extra = self.move([inbox], "Complete")
+
+        inbox.refresh_from_db()
+        self.assertEqual(applied, 1)
+        self.assertEqual(inbox.status, GTDStatus.COMPLETED)
+        self.assertTrue(inbox.is_completed)
+        self.assertIsNotNone(inbox.completed_at)
+
     def test_cancel_skips_already_cancelled(self):
         inbox = create_item_in_status(self.user, GTDStatus.INBOX)
         cancelled = create_item_in_status(self.user, GTDStatus.CANCELLED)
@@ -561,6 +578,34 @@ class MoveActionTests(BatchTestBase):
         inbox.refresh_from_db()
         self.assertEqual(inbox.status, GTDStatus.CANCELLED)
         self.assertIn("1 skipped", extra)
+
+    def test_delete_pseudo_transition_deletes_any_status(self):
+        inbox = create_item_in_status(self.user, GTDStatus.INBOX)
+        completed = create_item_in_status(self.user, GTDStatus.COMPLETED)
+        kept = create_item_in_status(self.user, GTDStatus.NEXT_ACTION)
+
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("move")
+        selection = actions.resolve_selection(
+            selection_data(ids=[inbox.pk, completed.pk])
+        )
+        applied, extra = actions.run(action, selection, transition="delete")
+
+        self.assertEqual(applied, 2)
+        self.assertIn("deleted", extra)
+        self.assertFalse(Item.objects.filter(pk__in=[inbox.pk, completed.pk]).exists())
+        self.assertTrue(Item.objects.filter(pk=kept.pk).exists())
+
+    def test_delete_pseudo_transition_ignores_other_users_items(self):
+        foreign = create_item_in_status(self.other, GTDStatus.INBOX)
+
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("move")
+        selection = actions.resolve_selection(selection_data(ids=[foreign.pk]))
+        applied, _extra = actions.run(action, selection, transition="delete")
+
+        self.assertEqual(applied, 0)
+        self.assertTrue(Item.objects.filter(pk=foreign.pk).exists())
 
     def test_reopen_only_affects_completed(self):
         completed = create_item_in_status(self.user, GTDStatus.COMPLETED)
@@ -574,6 +619,57 @@ class MoveActionTests(BatchTestBase):
         self.assertEqual(completed.status, GTDStatus.INBOX)
         self.assertFalse(completed.is_completed)
         self.assertEqual(inbox.status, GTDStatus.INBOX)
+
+
+class ConvertToReferenceActionTests(BatchTestBase):
+    def convert(self, items, parent=None):
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("convert_to_reference")
+        selection = actions.resolve_selection(
+            selection_data(ids=[item.pk for item in items])
+        )
+        applicable = actions.filter_applicable(action, selection)
+        return actions.run(action, applicable, parent=parent)
+
+    def test_converts_inbox_and_next_action_items(self):
+        inbox = create_item_in_status(self.user, GTDStatus.INBOX)
+        next_action = create_item_in_status(self.user, GTDStatus.NEXT_ACTION)
+
+        applied, _extra = self.convert([inbox, next_action])
+
+        inbox.refresh_from_db()
+        next_action.refresh_from_db()
+        self.assertEqual(applied, 2)
+        self.assertEqual(inbox.status, GTDStatus.REFERENCE)
+        self.assertEqual(next_action.status, GTDStatus.REFERENCE)
+
+    def test_other_states_are_not_applicable(self):
+        completed = create_item_in_status(self.user, GTDStatus.COMPLETED)
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("convert_to_reference")
+        selection = actions.resolve_selection(selection_data(ids=[completed.pk]))
+        self.assertEqual(actions.filter_applicable(action, selection).count(), 0)
+
+    def test_parent_is_applied(self):
+        project = create_item_in_status(self.user, GTDStatus.PROJECT)
+        inbox = create_item_in_status(self.user, GTDStatus.INBOX)
+
+        self.convert([inbox], parent=project)
+
+        inbox.refresh_from_db()
+        self.assertEqual(inbox.status, GTDStatus.REFERENCE)
+        self.assertEqual(inbox.parent_id, project.pk)
+
+    def test_form_parent_choices_scoped_to_user_and_parentable_statuses(self):
+        from task_processor.forms import BatchReferenceForm
+
+        project = create_item_in_status(self.user, GTDStatus.PROJECT)
+        create_item_in_status(self.user, GTDStatus.INBOX)  # not a valid parent
+        create_item_in_status(self.other, GTDStatus.PROJECT)  # foreign
+
+        form = BatchReferenceForm(user=self.user, selection=None)
+        queryset = form.fields["parent"].queryset
+        self.assertEqual(list(queryset), [project])
 
 
 class ImpactPreviewTests(BatchTestBase):
@@ -849,9 +945,10 @@ class BatchActionViewTests(BatchTestBase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Next Action (2)")
+        self.assertContains(response, "Complete (2)")
         self.assertContains(response, "Cancel (2)")
         # Zero-count and form-based transitions are absent
-        self.assertNotContains(response, "Complete (")
+        self.assertNotContains(response, "Received Response")
         self.assertNotContains(response, "Waiting For")
         self.assertNotContains(response, "Convert as Reference")
 

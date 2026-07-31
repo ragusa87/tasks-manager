@@ -376,7 +376,16 @@ class ItemBatchActions(BatchActions):
         python conditions lacking a @batchable filter_q). Execution goes
         through item.flow so FSM on_success saves and post_save signals
         (reminder/rrule clearing) behave exactly like single transitions.
+
+        ``transition`` may also be the "delete" pseudo-transition offered by
+        BatchTransitionForm: not part of the flow, but every item is deletable
+        (mirroring ItemDeleteView). Like the single-item delete it cascades to
+        children (parent FK) and documents, whose stored files are cleaned up
+        by the Document post_delete receiver.
         """
+        if transition == "delete":
+            deleted = queryset.delete()[1].get(Item._meta.label, 0)
+            return deleted, gettext("deleted")
         group = formless_transition_groups()[transition]
         total = queryset.count()
         applied = 0
@@ -400,6 +409,48 @@ class ItemBatchActions(BatchActions):
                 "skipped": skipped
             }
         return applied, extra
+
+    # Sources of the two @requires_form reference transitions
+    # (process_as_reference: inbox, convert_as_reference: next_action).
+    # "Move" only offers form-less transitions, so the reference conversion
+    # gets its own action carrying the optional-parent form.
+    REFERENCE_SOURCES = (GTDStatus.INBOX, GTDStatus.NEXT_ACTION)
+
+    @batch_action(
+        label=_("Convert to reference"),
+        sprite="lucide-book-marked",
+        form_class="task_processor.forms.BatchReferenceForm",
+        applicable=lambda actions, queryset: queryset.filter(
+            status__in=actions.REFERENCE_SOURCES
+        ),
+        description=_(
+            "Turns each selected inbox or next-action item into reference "
+            "material, optionally filed under a project or reference. Items "
+            "in other states are skipped."
+        ),
+        position=1,
+    )
+    def convert_to_reference(self, queryset, parent=None):
+        """Run the status-specific reference transition per item.
+
+        Execution goes through item.flow (like "Move") so FSM guards and
+        signals behave exactly like single-item conversions.
+        """
+        applied = 0
+        for item in queryset:
+            flow = item.flow
+            method = next(
+                (
+                    getattr(flow, name)
+                    for name in ("process_as_reference", "convert_as_reference")
+                    if getattr(flow, name).can_proceed()
+                ),
+                None,
+            )
+            if method:
+                method(parent=parent)
+                applied += 1
+        return applied, None
 
 
 # --- Conversion helpers -----------------------------------------------------
