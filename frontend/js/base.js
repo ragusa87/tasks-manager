@@ -4,7 +4,7 @@ import 'air-datepicker/air-datepicker.css';
 import localeEn from 'air-datepicker/locale/en';
 import localeFr from 'air-datepicker/locale/fr';
 import htmx from 'htmx.org';
-import { initDocumentUpload } from './documents.js';
+import { initDocumentUpload, showToast } from './documents.js';
 import { initAudioRecorders } from './audio-recorder.js';
 import { initThemeToggle } from './theme.js';
 import { getCsrfToken } from './csrf.js';
@@ -40,6 +40,45 @@ document.body.addEventListener('htmx:configRequest', function(evt) {
     if (csrfToken) {
         evt.detail.headers['X-CSRFToken'] = csrfToken;
     }
+});
+
+// Recover from a proxy auth lapse that would otherwise kill a background
+// request silently. Global on purpose: htmx events bubble to document.body, so
+// this covers every htmx request in the app (deletes, transitions, modal
+// saves, batch actions, ...), not just one page.
+//
+// The Keycloak plugin in front of the app (Gwojda/keycloakopenid) has no way to
+// answer an XHR with 401 -- when AUTH_TOKEN has expired it always 302s to the
+// Keycloak login on another origin, and the browser blocks that cross-origin
+// redirect for an XHR (CORS). htmx surfaces this as htmx:sendError (a
+// network-level failure, distinct from htmx:responseError which carries a real
+// HTTP status), so the action just fails with nothing on screen. A full-page
+// reload *can* follow that same redirect as a top-level navigation and re-auth
+// transparently while the Keycloak SSO session is still alive -- so recover by
+// reloading. The sessionStorage guard stops this from looping when the real
+// cause is the network being down or the server being unreachable.
+var REAUTH_KEY = 'htmx-reauth-reload-at';
+var REAUTH_WINDOW_MS = 20000;
+document.body.addEventListener('htmx:afterOnLoad', function() {
+    // A real response came back, so auth is fine again -- reset the guard.
+    sessionStorage.removeItem(REAUTH_KEY);
+});
+document.body.addEventListener('htmx:sendError', function() {
+    if (!navigator.onLine) {
+        showToast('You appear to be offline — reconnect and try again.', 'error', 5000);
+        return;
+    }
+    var now = Date.now();
+    var last = Number(sessionStorage.getItem(REAUTH_KEY) || 0);
+    if (now - last < REAUTH_WINDOW_MS) {
+        // We just reloaded and the next request still failed: don't loop,
+        // let the user retry by hand rather than reload endlessly.
+        showToast('Could not reach the server. Reload the page to sign back in.', 'error', 8000);
+        return;
+    }
+    sessionStorage.setItem(REAUTH_KEY, String(now));
+    showToast('Session expired — reloading to sign you back in…', 'error', 4000);
+    setTimeout(function() { window.location.reload(); }, 1200);
 });
 
 // Generic modal handling (item detail, @requires_form transition forms,
