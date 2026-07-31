@@ -408,6 +408,7 @@ class TransitionGroupTests(BatchTestBase):
             "Received Response": {"receive_response"},
             "Reopen": {"reopen"},
             "Restore to Inbox": {"uncancel"},
+            "Move back to Inbox": {"revert_to_inbox"},
         }
         actual = {
             label: set(group["methods"]) for label, group in self.label_map().items()
@@ -447,6 +448,26 @@ class TransitionGroupTests(BatchTestBase):
         group = self.label_map()["Reopen"]
         self.assertFalse(item.flow.reopen.can_proceed())
         self.assertFalse(Item.objects.filter(group["q"], pk=item.pk).exists())
+
+    def test_revert_to_inbox_blocked_when_project_has_children(self):
+        """A childless project may go back to the inbox; one with children
+        may not (python condition and its @batchable SQL twin agree)."""
+        childless = create_item_in_status(self.user, GTDStatus.PROJECT)
+        parent = create_item_in_status(self.user, GTDStatus.PROJECT)
+        create_item_in_status(self.user, GTDStatus.NEXT_ACTION, parent=parent)
+        group = self.label_map()["Move back to Inbox"]
+
+        self.assertTrue(childless.flow.revert_to_inbox.can_proceed())
+        self.assertTrue(Item.objects.filter(group["q"], pk=childless.pk).exists())
+
+        self.assertFalse(parent.flow.revert_to_inbox.can_proceed())
+        self.assertFalse(Item.objects.filter(group["q"], pk=parent.pk).exists())
+
+    def test_revert_to_inbox_moves_childless_project(self):
+        project = create_item_in_status(self.user, GTDStatus.PROJECT)
+        project.flow.revert_to_inbox()
+        project.refresh_from_db()
+        self.assertEqual(project.status, GTDStatus.INBOX)
 
 
 class BatchTransitionFormTests(BatchTestBase):
