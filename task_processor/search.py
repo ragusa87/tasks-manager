@@ -303,6 +303,13 @@ class SearchFilter:
                     "blue",
                     FilterCategory.RELATIONSHIP,
                 ),
+                FilterOption(
+                    "Has Children",
+                    "has:children",
+                    "lucide-folder-tree",
+                    "blue",
+                    FilterCategory.RELATIONSHIP,
+                ),
             ]
         )
 
@@ -821,7 +828,7 @@ def apply_search(queryset, query: str, **kwargs):
     Supported search fields:
     - in:inbox, in:next, in:waiting, in:someday, in:reference, in:project, in:completed, in:cancelled
     - is:overdue, is:due, is:today, is:soon, is:active, is:completed, is:actionable
-    - has:due, has:project, has:context, has:area, has:description
+    - has:due, has:project, has:context, has:area, has:description, has:children
     - priority:low, priority:normal, priority:high, priority:urgent
     - due:today, due:tomorrow, due:+3days, due:-1week
     - project:"Project Name" or project:123 (id)
@@ -944,6 +951,16 @@ def _build_field_filter(field_name: str, values: list) -> Q:
                 field_q |= Q(area__isnull=False)
             elif value == "description":
                 field_q |= ~Q(description="")
+            elif value == "children":
+                from .models import Item
+
+                # Subquery instead of Q(sub_items__isnull=False): the reverse
+                # FK join would repeat a parent once per child in list views
+                # (apply_search callers don't dedupe). No user scoping needed,
+                # pks are unique and the caller's queryset is already scoped.
+                field_q |= Q(
+                    pk__in=Item.objects.filter(parent__isnull=False).values("parent")
+                )
 
         elif field_name == "priority":
             # Priority-based filters
