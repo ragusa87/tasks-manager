@@ -498,6 +498,41 @@ class BatchReferenceForm(BatchActionForm):
             ).order_by("title")
 
 
+class BatchMoveUnderForm(BatchActionForm):
+    """
+    Required destination for the batch "Move under…" action: re-parent the
+    selected items under the chosen project or reference.
+
+    Choices are the user's *top-level* projects/references only. A nested
+    target would put moved items at depth 2, exceeding MAX_DEPTH; keeping the
+    target top-level lands every moved (childless) item at depth 1, always
+    valid. Mirrors the /autocomplete/search/parent/ endpoint's filter.
+    """
+
+    parent = forms.ModelChoiceField(
+        queryset=Item.objects.none(),
+        required=True,
+        label="Move under",
+        empty_label="Select a project or reference…",
+        widget=AutocompleteWidget(
+            field_type="parent",
+            allow_multiple=False,
+            allow_create=False,
+            placeholder="Search projects or references…",
+        ),
+        help_text="File the selected items under this project or reference.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.user is not None:
+            self.fields["parent"].queryset = Item.objects.filter(
+                user=self.user,
+                status__in=GTDConfig.STATUS_WITH_PARENT_ALLOWED,
+                parent__isnull=True,
+            ).order_by("title")
+
+
 class BatchMergeTopLevelForm(BatchActionForm):
     """
     Pick the merge target among the selected items themselves: the batch

@@ -299,6 +299,18 @@ def formless_transition_groups():
     return {group["methods"][0]: group for group in by_label.values()}
 
 
+def _childless(queryset):
+    """Items with no sub-items of their own.
+
+    Subquery over the parent FK (mirroring the ``has:children`` search filter)
+    rather than ``sub_items__isnull=True``, whose reverse join would drop or
+    duplicate rows. Pks are globally unique, so no user scoping is needed.
+    """
+    return queryset.exclude(
+        pk__in=Item.objects.filter(parent__isnull=False).values("parent")
+    )
+
+
 def _merge_applicable(actions, queryset):
     """Top-level projects/references, and only when there are at least two:
     merging fewer is meaningless, so the preview shows 'not applicable' and
@@ -479,6 +491,30 @@ class ItemBatchActions(BatchActions):
                 method(parent=parent if parent is not None else item.parent)
                 applied += 1
         return applied, None
+
+    @batch_action(
+        label=_("Move under…"),
+        sprite="lucide-folder-tree",
+        form_class="task_processor.forms.BatchMoveUnderForm",
+        applicable=lambda actions, queryset: _childless(queryset),
+        description=_(
+            "Re-parents each selected item under the project or reference you "
+            "pick. Items that have their own sub-items are skipped: nesting "
+            "them would exceed the maximum project depth."
+        ),
+        position=3,
+    )
+    def move_under(self, queryset, parent):
+        """Re-parent childless items under a top-level project/reference.
+
+        A plain .update(): no status change, and a childless item moved under
+        a top-level target lands at depth 1 — always within MAX_DEPTH and never
+        circular (it has no descendants the target could belong to). The target
+        is excluded so a selected item chosen as its own destination is a
+        no-op rather than a self-parent.
+        """
+        moved = queryset.exclude(pk=parent.pk).update(parent=parent)
+        return moved, None
 
     @batch_action(
         label=_("Merge"),
