@@ -147,6 +147,46 @@ class AutocompleteWidget(forms.Widget):
         )
 
 
+class LocalAutocompleteMixin:
+    """
+    Real <select> wrapped in the autocomplete markup: the "local" mode of
+    ``initializeAutocomplete`` (frontend/js/base.js) hides the select, reveals
+    a filter input and drives the same dropdown UX from the parsed <option>s.
+    No endpoint involved — use it for fields whose choices are fixed and known
+    server-side (e.g. constrained to a batch selection). The select stays the
+    submitted input (the JS keeps it in sync), so the field degrades to a
+    plain select without JS.
+    """
+
+    allow_multiple = False
+
+    def __init__(self, placeholder="Search…", attrs=None):
+        self.placeholder = placeholder
+        super().__init__({"class": "autocomplete-select input mt-1", **(attrs or {})})
+
+    def render(self, name, value, attrs=None, renderer=None):
+        select_html = super().render(name, value, attrs, renderer)
+        # render_to_string for the wrapper: same rationale as AutocompleteWidget
+        return mark_safe(
+            render_to_string(
+                "widgets/autocomplete_select.html",
+                {
+                    "select": select_html,
+                    "placeholder": self.placeholder,
+                    "allow_multiple": self.allow_multiple,
+                },
+            )
+        )
+
+
+class LocalAutocompleteWidget(LocalAutocompleteMixin, forms.Select):
+    pass
+
+
+class LocalAutocompleteMultipleWidget(LocalAutocompleteMixin, forms.SelectMultiple):
+    allow_multiple = True
+
+
 class TransitionForm(forms.Form):
     """
     Base class for @requires_form transition forms.
@@ -455,6 +495,36 @@ class BatchReferenceForm(BatchActionForm):
                 user=self.user,
                 status__in=GTDConfig.STATUS_WITH_PARENT_ALLOWED,
                 parent__isnull=True,
+            ).order_by("title")
+
+
+class BatchMergeTopLevelForm(BatchActionForm):
+    """
+    Pick the merge target among the selected items themselves: the batch
+    "Merge" action moves every child of the other selected top-level
+    projects/references under it. Choices are exactly the applicable
+    selection, so a target outside it is rejected by validation.
+    """
+
+    target = forms.ModelChoiceField(
+        queryset=Item.objects.none(),
+        required=True,
+        label="Merge into",
+        empty_label="Select an item…",
+        widget=LocalAutocompleteWidget(placeholder="Search the selected items…"),
+        help_text=(
+            "All children of the other selected items will be moved under "
+            "this one. The other items are kept as empty top-level items."
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.selection is not None:
+            # Rebuild by pk: search-based selections may carry M2M joins
+            # (duplicate rows would duplicate <option>s).
+            self.fields["target"].queryset = Item.objects.filter(
+                pk__in=self.selection.values("pk")
             ).order_by("title")
 
 
