@@ -66,7 +66,8 @@ class BatchRegistryTests(BatchTestBase):
         actions = ItemBatchActions(self.user).get_available_actions()
         names = [action.name for action in actions]
         # positions: add_tag=20, remove_tag=10, replace_area=5, add_area=4,
-        # move=2, convert_to_reference=1, merge_top_level=0, remove_area=-10
+        # move_under=3, move=2, convert_to_reference=1, merge_top_level=0,
+        # remove_area=-10
         self.assertEqual(
             names,
             [
@@ -74,6 +75,7 @@ class BatchRegistryTests(BatchTestBase):
                 "remove_tag",
                 "replace_area",
                 "add_area",
+                "move_under",
                 "move",
                 "convert_to_reference",
                 "merge_top_level",
@@ -704,6 +706,77 @@ class ConvertToReferenceActionTests(BatchTestBase):
         form = BatchReferenceForm(user=self.user, selection=None)
         queryset = form.fields["parent"].queryset
         self.assertEqual(list(queryset), [project])
+
+
+class MoveUnderActionTests(BatchTestBase):
+    def move_under(self, items, parent):
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("move_under")
+        selection = actions.resolve_selection(
+            selection_data(ids=[item.pk for item in items])
+        )
+        applicable = actions.filter_applicable(action, selection)
+        return actions.run(action, applicable, parent=parent)
+
+    def test_reassigns_childless_items_to_new_parent(self):
+        old = create_item_in_status(self.user, GTDStatus.PROJECT)
+        new = create_item_in_status(self.user, GTDStatus.PROJECT)
+        child = create_item_in_status(self.user, GTDStatus.NEXT_ACTION, parent=old)
+        loose = create_item_in_status(self.user, GTDStatus.NEXT_ACTION)
+
+        applied, _extra = self.move_under([child, loose], parent=new)
+
+        child.refresh_from_db()
+        loose.refresh_from_db()
+        self.assertEqual(applied, 2)
+        self.assertEqual(child.parent_id, new.pk)
+        self.assertEqual(loose.parent_id, new.pk)
+
+    def test_items_with_children_are_not_applicable(self):
+        create_item_in_status(self.user, GTDStatus.PROJECT)
+        parent = create_item_in_status(self.user, GTDStatus.PROJECT)
+        create_item_in_status(self.user, GTDStatus.NEXT_ACTION, parent=parent)
+
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("move_under")
+        selection = actions.resolve_selection(selection_data(ids=[parent.pk]))
+        self.assertEqual(actions.filter_applicable(action, selection).count(), 0)
+
+    def test_target_in_selection_is_not_self_parented(self):
+        """A top-level item chosen as its own destination is a no-op, not a
+        self-parent (which would be circular)."""
+        target = create_item_in_status(self.user, GTDStatus.PROJECT)
+        loose = create_item_in_status(self.user, GTDStatus.NEXT_ACTION)
+
+        applied, _extra = self.move_under([target, loose], parent=target)
+
+        target.refresh_from_db()
+        loose.refresh_from_db()
+        self.assertIsNone(target.parent_id)
+        self.assertEqual(loose.parent_id, target.pk)
+        self.assertEqual(applied, 1)
+
+    def test_moved_subtree_stays_within_max_depth(self):
+        """Moved childless items land at depth 1 under a top-level target."""
+        new = create_item_in_status(self.user, GTDStatus.PROJECT)
+        child = create_item_in_status(self.user, GTDStatus.NEXT_ACTION)
+
+        self.move_under([child], parent=new)
+
+        child.refresh_from_db()
+        self.assertEqual(child.depth, 1)
+
+    def test_form_target_choices_are_top_level_parentable_only(self):
+        from task_processor.forms import BatchMoveUnderForm
+
+        top = create_item_in_status(self.user, GTDStatus.PROJECT)
+        nested = create_item_in_status(self.user, GTDStatus.PROJECT, parent=top)
+        create_item_in_status(self.user, GTDStatus.NEXT_ACTION)  # not parentable
+        create_item_in_status(self.other, GTDStatus.PROJECT)  # foreign
+
+        form = BatchMoveUnderForm(user=self.user, selection=None)
+        self.assertEqual(list(form.fields["parent"].queryset), [top])
+        self.assertNotIn(nested, form.fields["parent"].queryset)
 
 
 class MergeTopLevelActionTests(BatchTestBase):
