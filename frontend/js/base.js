@@ -270,6 +270,30 @@ function initializeAutocomplete() {
         let selectedItems = [];
         let searchTimeout;
 
+        // Local mode: a real <select> carries the options (and the submitted
+        // value) — filter it client-side instead of hitting the endpoint.
+        // See LocalAutocompleteWidget / widgets/autocomplete_select.html.
+        const select = container.querySelector('select.autocomplete-select');
+        const isLocal = container.dataset.local === 'true' && !!select;
+        let localOptions = [];
+        if (isLocal) {
+            // Progressive enhancement: swap the plain select for the filter input.
+            input.classList.remove('hidden');
+            select.classList.add('hidden');
+            select.setAttribute('tabindex', '-1');
+            // Ids stay strings in local mode (option values are strings), so
+            // the === comparisons in showDropdown/removeItem are consistent.
+            localOptions = Array.from(select.options)
+                .filter(o => o.value !== '')
+                .map(o => ({ id: o.value, text: o.text.trim() }));
+            // Restore pre-selected option(s): the select itself carries the
+            // state when the form re-renders (validation error, saved value).
+            selectedItems = Array.from(select.selectedOptions)
+                .filter(o => o.value !== '')
+                .map(o => ({ id: o.value, text: o.text.trim() }));
+            updateSelectedDisplay();  // chips; re-hides the input if picked
+        }
+
         // Load initial selected items
         if (hiddenInput && hiddenInput.value && hiddenInput.value !== '') {
             try {
@@ -335,6 +359,12 @@ function initializeAutocomplete() {
         });
 
         function searchItems(query) {
+            if (isLocal) {
+                const q = query.toLowerCase();
+                showDropdown(localOptions.filter(o => o.text.toLowerCase().includes(q)), query);
+                return;
+            }
+
             const url = `/autocomplete/search/${fieldType}/?q=${encodeURIComponent(query)}`;
 
             fetch(url)
@@ -411,7 +441,8 @@ function initializeAutocomplete() {
                 selectedItems = [item];
                 updateSelectedDisplay();
                 updateHiddenInput();
-                input.value = item.text;
+                // Without a badge container the input doubles as the display
+                if (!selectedContainer) input.value = item.text;
             }
             hideDropdown();
         }
@@ -420,6 +451,9 @@ function initializeAutocomplete() {
             selectedItems = selectedItems.filter(item => item.id !== itemId);
             updateSelectedDisplay();
             updateHiddenInput();
+            // Single-select: removing the chip means "pick something else" —
+            // hand focus back to the (now visible) input, which reopens the list.
+            if (!allowMultiple && selectedContainer) input.focus();
         }
 
         function updateSelectedDisplay() {
@@ -427,18 +461,43 @@ function initializeAutocomplete() {
 
             selectedContainer.innerHTML = '';
 
-            if (allowMultiple) {
-                selectedItems.forEach(item => {
-                    const badge = cloneTemplate('autocomplete-badge-template');
-                    if (!badge) return;
-                    badge.querySelector('[data-badge-label]').textContent = item.text;
-                    badge.querySelector('button').addEventListener('click', () => removeItem(item.id));
-                    selectedContainer.appendChild(badge);
+            selectedItems.forEach(item => {
+                const badge = cloneTemplate('autocomplete-badge-template');
+                if (!badge) return;
+                badge.querySelector('[data-badge-label]').textContent = item.text;
+                badge.querySelector('button').addEventListener('click', (e) => {
+                    // Removal detaches the badge, so if this click bubbled to
+                    // the document-level close handler it would read as an
+                    // outside click and immediately close the list removeItem
+                    // just reopened.
+                    e.stopPropagation();
+                    removeItem(item.id);
                 });
+                selectedContainer.appendChild(badge);
+            });
+
+            // Single-select with a badge container: the chip IS the display
+            // (remove it via its X to search again), so the search input only
+            // shows while nothing is picked. Editing text back into the input
+            // can then never disagree with the submitted value.
+            if (!allowMultiple) {
+                const hasSelection = selectedItems.length > 0;
+                input.classList.toggle('hidden', hasSelection);
+                if (hasSelection) input.value = '';
             }
         }
 
         function updateHiddenInput() {
+            if (isLocal) {
+                // The select is the submitted input — mirror the selection back.
+                if (allowMultiple) {
+                    const ids = new Set(selectedItems.map(item => item.id));
+                    Array.from(select.options).forEach(o => { o.selected = ids.has(o.value); });
+                } else {
+                    select.value = selectedItems.length > 0 ? selectedItems[0].id : '';
+                }
+                return;
+            }
             if (hiddenInput) {
                 if (allowMultiple) {
                     hiddenInput.value = selectedItems.map(item => item.id).join(',');

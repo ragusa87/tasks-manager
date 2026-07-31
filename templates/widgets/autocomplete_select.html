@@ -1,0 +1,11 @@
+<div class="autocomplete-container relative" data-local="true"
+     data-allow-multiple="{{ allow_multiple|yesno:'true,false' }}">
+    <div class="selected-items flex flex-wrap gap-1"></div>
+    <input type="text"
+           class="autocomplete-input input mt-1 hidden"
+           placeholder="{{ placeholder }}"
+           autocomplete="off"
+           value="">
+    {{ select }}
+    <div class="autocomplete-dropdown dropdown-panel absolute z-10 w-full hidden max-h-48 overflow-y-auto"></div>
+</div>

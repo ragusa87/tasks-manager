@@ -351,6 +351,11 @@ class Command(BaseCommand):
             projects.append(project)
             items_created += 1
 
+        # Two near-identical projects with sub-references, for manually
+        # testing the "Merge" batch action.
+        self.create_merge_test_projects(user)
+        items_created += 8
+
         # Create next actions (40% of items)
         next_action_count = int(count * 0.40)
         for i in range(next_action_count):
@@ -434,6 +439,39 @@ class Command(BaseCommand):
             project.tags.set(selected_tags)
 
         return project
+
+    def create_merge_test_projects(self, user):
+        """Two near-identical top-level projects, each holding three
+        sub-references — select both and run the "Merge" batch action to see
+        all six references land under the project you pick, deterministic
+        titles so the scenario is easy to find."""
+        projects = {
+            "Migrate the company wiki": [
+                "Confluence export notes v1",
+                "Wiki structure draft 2",
+                "Page inventory rev 3",
+            ],
+            "Migrate the company wiki (legacy)": [
+                "Markdown style guide v4",
+                "Access rights matrix 5",
+                "Retired pages list 6",
+            ],
+        }
+        for title, reference_titles in projects.items():
+            project = Item.objects.create(
+                title=title,
+                description=f"Multi-step project: {title}",
+                status=GTDStatus.PROJECT,
+                user=user,
+            )
+            for reference_title in reference_titles:
+                Item.objects.create(
+                    title=reference_title,
+                    description=f"Reference material: {reference_title}",
+                    status=GTDStatus.REFERENCE,
+                    user=user,
+                    parent=project,
+                )
 
     def create_next_action_item(self, user, title, contexts, areas, tags, parent=None):
         """Create a next action item"""

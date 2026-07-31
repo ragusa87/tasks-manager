@@ -66,7 +66,7 @@ class BatchRegistryTests(BatchTestBase):
         actions = ItemBatchActions(self.user).get_available_actions()
         names = [action.name for action in actions]
         # positions: add_tag=20, remove_tag=10, replace_area=5, add_area=4,
-        # move=2, convert_to_reference=1, remove_area=-10
+        # move=2, convert_to_reference=1, merge_top_level=0, remove_area=-10
         self.assertEqual(
             names,
             [
@@ -76,6 +76,7 @@ class BatchRegistryTests(BatchTestBase):
                 "add_area",
                 "move",
                 "convert_to_reference",
+                "merge_top_level",
                 "remove_area",
             ],
         )
@@ -672,6 +673,229 @@ class ConvertToReferenceActionTests(BatchTestBase):
         self.assertEqual(list(queryset), [project])
 
 
+class MergeTopLevelActionTests(BatchTestBase):
+    def top_level(self, title, status=GTDStatus.PROJECT, user=None):
+        """A top-level project/reference with a custom title."""
+        item = Item.objects.create(title=title, user=user or self.user)
+        Item.objects.filter(pk=item.pk).update(status=status)
+        item.refresh_from_db()
+        return item
+
+    def merge(self, items, target):
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("merge_top_level")
+        selection = actions.resolve_selection(
+            selection_data(ids=[item.pk for item in items])
+        )
+        applicable = actions.filter_applicable(action, selection)
+        return actions.run(action, applicable, target=target)
+
+    def applicable(self, items):
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("merge_top_level")
+        selection = actions.resolve_selection(
+            selection_data(ids=[item.pk for item in items])
+        )
+        return actions.filter_applicable(action, selection)
+
+    def test_children_reparented_to_target(self):
+        target = self.top_level("target")
+        source_a = self.top_level("source a")
+        source_b = self.top_level("source b")
+        child_a = Item.objects.create(title="a1", user=self.user, parent=source_a)
+        child_b = Item.objects.create(title="b1", user=self.user, parent=source_b)
+
+        applied, extra = self.merge([target, source_a, source_b], target)
+
+        child_a.refresh_from_db()
+        child_b.refresh_from_db()
+        self.assertEqual(applied, 3)
+        self.assertIn("2 child item(s)", extra)
+        self.assertIn(target.title, extra)
+        self.assertEqual(child_a.parent_id, target.pk)
+        self.assertEqual(child_b.parent_id, target.pk)
+
+    def test_sources_kept_and_empty(self):
+        target = self.top_level("target")
+        source = self.top_level("source")
+        Item.objects.create(title="c", user=self.user, parent=source)
+
+        self.merge([target, source], target)
+
+        source.refresh_from_db()
+        self.assertIsNone(source.parent)
+        self.assertEqual(source.status, GTDStatus.PROJECT)
+        self.assertEqual(source.sub_items.count(), 0)
+
+    def test_target_own_children_untouched(self):
+        target = self.top_level("target")
+        source = self.top_level("source")
+        own_child = Item.objects.create(title="own", user=self.user, parent=target)
+
+        self.merge([target, source], target)
+
+        own_child.refresh_from_db()
+        self.assertEqual(own_child.parent_id, target.pk)
+
+    def test_grandchildren_follow_parent(self):
+        target = self.top_level("target")
+        source = self.top_level("source")
+        sub_project = Item.objects.create(
+            title="sub project", user=self.user, parent=source
+        )
+        Item.objects.filter(pk=sub_project.pk).update(status=GTDStatus.PROJECT)
+        grandchild = Item.objects.create(
+            title="leaf", user=self.user, parent=sub_project
+        )
+
+        self.merge([target, source], target)
+
+        sub_project.refresh_from_db()
+        grandchild.refresh_from_db()
+        self.assertEqual(sub_project.parent_id, target.pk)
+        self.assertEqual(grandchild.parent_id, sub_project.pk)
+        self.assertLessEqual(grandchild.depth, 2)
+
+    def test_non_applicable_items_filtered_out(self):
+        project_a = self.top_level("a")
+        project_b = self.top_level("b")
+        inbox = create_item_in_status(self.user, GTDStatus.INBOX)
+        nested = Item.objects.create(title="nested", user=self.user, parent=project_a)
+        Item.objects.filter(pk=nested.pk).update(status=GTDStatus.REFERENCE)
+
+        applicable = self.applicable([project_a, project_b, inbox, nested])
+
+        self.assertQuerySetEqual(applicable, [project_a, project_b], ordered=False)
+
+    def test_requires_two_applicable_items(self):
+        project = self.top_level("only one")
+        inbox = create_item_in_status(self.user, GTDStatus.INBOX)
+        self.assertEqual(self.applicable([project, inbox]).count(), 0)
+
+    def test_mixed_project_and_reference_merge(self):
+        target = self.top_level("ref target", status=GTDStatus.REFERENCE)
+        source = self.top_level("project source")
+        child = Item.objects.create(title="c", user=self.user, parent=source)
+
+        self.merge([target, source], target)
+
+        child.refresh_from_db()
+        self.assertEqual(child.parent_id, target.pk)
+
+    def test_ignores_other_users_children(self):
+        target = self.top_level("target")
+        source = self.top_level("source")
+        # A foreign item wrongly pointing at the source must not be touched.
+        foreign_child = Item.objects.create(
+            title="foreign", user=self.other, parent=source
+        )
+
+        self.merge([target, source], target)
+
+        foreign_child.refresh_from_db()
+        self.assertEqual(foreign_child.parent_id, source.pk)
+
+    def test_impact_counts_children(self):
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("merge_top_level")
+        target = self.top_level("target")
+        source = self.top_level("source")
+        Item.objects.create(title="c1", user=self.user, parent=source)
+        Item.objects.create(title="c2", user=self.user, parent=target)
+
+        impact = actions.describe_impact(action, self.applicable([target, source]))
+
+        self.assertIn("2 child item(s) will be moved", str(impact))
+
+    def test_impact_without_children(self):
+        actions = ItemBatchActions(self.user)
+        action = actions.get_action("merge_top_level")
+        target = self.top_level("target")
+        source = self.top_level("source")
+
+        impact = actions.describe_impact(action, self.applicable([target, source]))
+
+        self.assertIn("no children", str(impact))
+
+
+class BatchMergeTopLevelFormTests(BatchTestBase):
+    def top_level(self, title, user=None):
+        item = Item.objects.create(title=title, user=user or self.user)
+        Item.objects.filter(pk=item.pk).update(status=GTDStatus.PROJECT)
+        item.refresh_from_db()
+        return item
+
+    def setUp(self):
+        super().setUp()
+        self.project_b = self.top_level("beta")
+        self.project_a = self.top_level("alpha")
+        self.selection = Item.objects.filter(
+            pk__in=[self.project_a.pk, self.project_b.pk]
+        )
+
+    def form(self, data=None):
+        from task_processor.forms import BatchMergeTopLevelForm
+
+        return BatchMergeTopLevelForm(data, user=self.user, selection=self.selection)
+
+    def test_target_choices_are_selection_ordered_by_title(self):
+        form = self.form()
+        self.assertEqual(
+            list(form.fields["target"].queryset),
+            [self.project_a, self.project_b],
+        )
+
+    def test_rejects_target_outside_selection(self):
+        outside = self.top_level("outside")
+        form = self.form({"target": str(outside.pk)})
+        self.assertFalse(form.is_valid())
+        self.assertIn("target", form.errors)
+
+    def test_target_required(self):
+        form = self.form({})
+        self.assertFalse(form.is_valid())
+        self.assertIn("target", form.errors)
+
+    def test_widget_renders_local_autocomplete_markup(self):
+        html = str(self.form()["target"])
+        self.assertIn("autocomplete-container", html)
+        self.assertIn('data-local="true"', html)
+        self.assertIn("<select", html)
+        # chip container: the picked value renders as a removable badge
+        self.assertIn("selected-items", html)
+        self.assertIn("alpha", html)
+        self.assertIn("beta", html)
+
+    def test_bound_form_keeps_chosen_option_selected(self):
+        form = self.form({"target": str(self.project_a.pk)})
+        form.is_valid()
+        html = str(form["target"])
+        self.assertIn(f'value="{self.project_a.pk}" selected', html)
+
+    def test_multiple_widget_renders_and_round_trips(self):
+        from django import forms as django_forms
+
+        from task_processor.forms import LocalAutocompleteMultipleWidget
+
+        class MultiForm(django_forms.Form):
+            targets = django_forms.ModelMultipleChoiceField(
+                queryset=self.selection, widget=LocalAutocompleteMultipleWidget()
+            )
+
+        html = str(MultiForm()["targets"])
+        self.assertIn('data-allow-multiple="true"', html)
+        self.assertIn("selected-items", html)
+        self.assertIn("multiple", html)
+
+        form = MultiForm(selection_data(targets=[self.project_a.pk, self.project_b.pk]))
+        self.assertTrue(form.is_valid())
+        self.assertQuerySetEqual(
+            form.cleaned_data["targets"],
+            [self.project_a, self.project_b],
+            ordered=False,
+        )
+
+
 class ImpactPreviewTests(BatchTestBase):
     def setUp(self):
         super().setUp()
@@ -1018,6 +1242,63 @@ class BatchActionViewTests(BatchTestBase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, "/tags/")
+
+    def _two_projects_with_children(self):
+        target = create_item_in_status(self.user, GTDStatus.PROJECT)
+        source = create_item_in_status(self.user, GTDStatus.PROJECT)
+        child = Item.objects.create(title="child", user=self.user, parent=source)
+        return target, source, child
+
+    def test_merge_preview_shows_impact_and_selection_options(self):
+        target, source, _child = self._two_projects_with_children()
+        response = self.client.post(
+            self._url(slug="merge_top_level"),
+            {"ids": [target.pk, source.pk]},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1 child item(s) will be moved")
+        self.assertContains(response, 'data-local="true"')
+        self.assertContains(response, f'value="{target.pk}"')
+        self.assertContains(response, f'value="{source.pk}"')
+        self.assertContains(response, 'name="confirm" value="1"')
+
+    def test_merge_confirm_reparents_children(self):
+        target, source, child = self._two_projects_with_children()
+        response = self.client.post(
+            self._url(slug="merge_top_level"),
+            {"ids": [target.pk, source.pk], "confirm": "1", "target": target.pk},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("HX-Trigger"), "refreshItems")
+        child.refresh_from_db()
+        source.refresh_from_db()
+        self.assertEqual(child.parent_id, target.pk)
+        self.assertIsNone(source.parent)
+
+    def test_merge_confirm_rejects_target_outside_selection(self):
+        target, source, child = self._two_projects_with_children()
+        outside = create_item_in_status(self.user, GTDStatus.PROJECT)
+        response = self.client.post(
+            self._url(slug="merge_top_level"),
+            {"ids": [target.pk, source.pk], "confirm": "1", "target": outside.pk},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 400)
+        child.refresh_from_db()
+        self.assertEqual(child.parent_id, source.pk)
+
+    def test_merge_preview_single_applicable_item_not_applicable(self):
+        project = create_item_in_status(self.user, GTDStatus.PROJECT)
+        response = self.client.post(
+            self._url(slug="merge_top_level"),
+            {"ids": [project.pk, self.item_a.pk]},  # item_a is inbox
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "None of the 2 selected")
+        self.assertNotContains(response, 'name="confirm"')
 
     def test_plain_confirm_rejects_unsafe_return_url(self):
         # returnUrl is caller-controlled: foreign hosts (open redirect) fall

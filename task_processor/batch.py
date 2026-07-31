@@ -17,7 +17,7 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
-from task_processor.constants import GTDStatus
+from task_processor.constants import GTDConfig, GTDStatus
 from task_processor.models import Item
 from task_processor.models.base_models import Area, Context, Tag
 from task_processor.models.item import ItemFlow
@@ -299,6 +299,29 @@ def formless_transition_groups():
     return {group["methods"][0]: group for group in by_label.values()}
 
 
+def _merge_applicable(actions, queryset):
+    """Top-level projects/references, and only when there are at least two:
+    merging fewer is meaningless, so the preview shows 'not applicable' and
+    the confirm button stays hidden."""
+    applicable = queryset.filter(
+        parent__isnull=True, status__in=GTDConfig.STATUS_WITH_PARENT_ALLOWED
+    )
+    if applicable.order_by().values("pk").distinct().count() < 2:
+        return applicable.none()
+    return applicable
+
+
+def _merge_impact(actions, queryset):
+    """Children moved by the merge, counted in one aggregate query."""
+    count = Item.objects.filter(user=actions.user, parent__in=queryset).count()
+    if not count:
+        return _("The selected items have no children: merging will change nothing.")
+    return _(
+        "%(count)d child item(s) will be moved under the item you pick; "
+        "the other selected items are kept, emptied."
+    ) % {"count": count}
+
+
 @register_batch_actions
 class ItemBatchActions(BatchActions):
     model = Item
@@ -451,6 +474,37 @@ class ItemBatchActions(BatchActions):
                 method(parent=parent)
                 applied += 1
         return applied, None
+
+    @batch_action(
+        label=_("Merge"),
+        sprite="lucide-merge",
+        form_class="task_processor.forms.BatchMergeTopLevelForm",
+        applicable=_merge_applicable,
+        description=_(
+            "Moves every child of the selected top-level projects and "
+            "references under the one you pick; the others are kept as "
+            "empty top-level items. Applies only when at least two selected "
+            "items are top-level projects or references."
+        ),
+        impact=_merge_impact,
+        position=0,
+    )
+    def merge_top_level(self, queryset, target):
+        """Re-parent all direct children of the non-target selected items.
+
+        A plain .update(): no status change (so no FSM transition), and
+        nothing listens to parent changes. Grandchildren follow automatically
+        (only the direct parent FK moves) and MAX_DEPTH is preserved: sources
+        and target are all top-level, so every moved subtree keeps its depth.
+        """
+        sources = queryset.exclude(pk=target.pk)
+        moved = Item.objects.filter(user=self.user, parent__in=sources).update(
+            parent=target
+        )
+        return gettext('%(moved)d child item(s) moved under "%(title)s"') % {
+            "moved": moved,
+            "title": target.title,
+        }
 
 
 # --- Conversion helpers -----------------------------------------------------
