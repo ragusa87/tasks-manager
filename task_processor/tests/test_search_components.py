@@ -232,6 +232,14 @@ class TestSearchFilter(TestCase):
         for status in expected_statuses:
             self.assertIn(status, status_labels)
 
+    def test_relationship_filters_include_has_children(self):
+        """The has:children suggestion is offered with the other has: chips"""
+        relationship_filters = self.search_filter.get_filters_by_category(
+            FilterCategory.RELATIONSHIP
+        )
+        queries = [f.filter_query for f in relationship_filters]
+        self.assertIn("has:children", queries)
+
     def test_get_popular_filters(self):
         """Test getting popular filters"""
         popular = self.search_filter.get_popular_filters()

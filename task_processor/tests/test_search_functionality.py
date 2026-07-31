@@ -170,6 +170,26 @@ class TestSearchFunctionality(TestCase):
         self.assertIn(self.project, has_area_items)
         self.assertNotIn(self.inbox_item, has_area_items)
 
+    def test_has_children(self):
+        """Test 'has:children' matches items with sub-items, once each"""
+        # A second child must not duplicate the parent in the results
+        Item.objects.create(
+            title="Write copy",
+            status=GTDStatus.NEXT_ACTION,
+            parent=self.project,
+            user=self.user,
+        )
+        result = apply_search(Item.objects.for_user(self.user), "has:children")
+        self.assertEqual(list(result), [self.project])
+
+    def test_has_children_excluded(self):
+        """Test '-has:children' keeps only items without sub-items"""
+        result = apply_search(Item.objects.for_user(self.user), "-has:children")
+        result_list = list(result)
+        self.assertNotIn(self.project, result_list)
+        self.assertIn(self.project_task, result_list)
+        self.assertIn(self.inbox_item, result_list)
+
     def test_tags_alias(self):
         """Test that 'tags:' works as alias for 'context:'"""
         result1 = apply_search(Item.objects.for_user(self.user), 'context:"office"')
