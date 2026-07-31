@@ -408,16 +408,54 @@ class BatchTransitionForm(BatchActionForm):
         counts = {}
         if self.selection is not None:
             counts = self.selection.aggregate(
+                delete=models.Count("pk", distinct=True),
                 **{
                     key: models.Count("pk", filter=group["q"], distinct=True)
                     for key, group in groups.items()
-                }
+                },
             )
-        self.fields["transition"].choices = [
+        choices = [
             (key, f"{group['label']} ({counts[key]})")
             for key, group in groups.items()
             if counts.get(key)
         ]
+        # "Delete" is a pseudo-transition (handled by ItemBatchActions.move):
+        # not part of the flow, but every item is deletable, so its count is
+        # the whole selection. Kept last — it is the destructive choice.
+        if counts.get("delete"):
+            choices.append(("delete", f"Delete ({counts['delete']})"))
+        self.fields["transition"].choices = choices
+
+
+class BatchReferenceForm(BatchActionForm):
+    """
+    Optional parent for the batch "Convert to reference" action, mirroring
+    the single-item ReferenceForm. No self-exclusion needed: parents are
+    projects/references while the action only applies to inbox/next-action
+    items, so the chosen parent can never be part of the applicable selection.
+    """
+
+    parent = forms.ModelChoiceField(
+        queryset=Item.objects.none(),
+        required=False,
+        label="File under",
+        widget=AutocompleteWidget(
+            field_type="parent",
+            allow_multiple=False,
+            allow_create=False,
+            placeholder="Search projects or references…",
+        ),
+        help_text="Optionally file the references under a project or another reference.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.user is not None:
+            self.fields["parent"].queryset = Item.objects.filter(
+                user=self.user,
+                status__in=GTDConfig.STATUS_WITH_PARENT_ALLOWED,
+                parent__isnull=True,
+            ).order_by("title")
 
 
 class BatchContextToTagForm(BatchConvertToTagForm):

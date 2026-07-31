@@ -631,6 +631,7 @@ class ItemFlow:
 
     @state_field.transition(
         source=[
+            GTDStatus.INBOX,
             GTDStatus.NEXT_ACTION,
             GTDStatus.PROJECT,
             GTDStatus.SOMEDAY_MAYBE,
