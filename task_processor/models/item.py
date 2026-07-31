@@ -680,6 +680,32 @@ class ItemFlow:
         self.item.is_completed = False
         self.item.completed_at = None
 
+    # SQL twin of the python condition: a project with children would leave
+    # them pointing at an inbox item (not a valid parent status), so only a
+    # childless project may go back for re-clarification. Mirrors the
+    # has:children search filter — an item is a parent iff its pk appears as
+    # some item's parent; negated, that is "childless" (no user scoping
+    # needed, pks are unique and can_proceed() re-checks the concrete item).
+    @batchable(
+        filter_q=lambda: ~Q(
+            pk__in=Item.objects.filter(parent__isnull=False).values("parent")
+        )
+    )
+    @state_field.transition(
+        source=GTDStatus.PROJECT,
+        target=GTDStatus.INBOX,
+        conditions=[lambda self: not self.item.sub_items.exists()],
+        label=_("Move back to Inbox"),
+    )
+    def revert_to_inbox(self):
+        """Send a childless project back to the inbox for re-clarification.
+
+        Blocked while the project still has children: sending it to the inbox
+        would orphan them under a non-project parent (see the ``conditions``
+        guard and its @batchable SQL twin).
+        """
+        pass
+
     @state_field.on_success()
     def _on_transition_success(self, descriptor, source, target, **kwargs):
         """Save the item after successful transition"""
