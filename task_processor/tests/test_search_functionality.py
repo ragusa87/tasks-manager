@@ -190,6 +190,38 @@ class TestSearchFunctionality(TestCase):
         self.assertIn(self.project_task, result_list)
         self.assertIn(self.inbox_item, result_list)
 
+    def test_has_document(self):
+        """Test 'has:document' matches items with an attachment, once each"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from task_processor.models import Document
+
+        def attach(item, name):
+            content = name.encode()
+            Document.objects.create(
+                item=item,
+                user=self.user,
+                file=SimpleUploadedFile(name, content),
+                file_name=name,
+                file_size=len(content),
+            )
+
+        # Two documents on one item must not duplicate it in the results
+        attach(self.next_action, "a.pdf")
+        attach(self.next_action, "b.pdf")
+
+        result = apply_search(Item.objects.for_user(self.user), "has:document")
+        self.assertEqual(list(result), [self.next_action])
+
+        # 'attachment' is an accepted alias
+        alias = apply_search(Item.objects.for_user(self.user), "has:attachment")
+        self.assertEqual(list(alias), [self.next_action])
+
+        # Exclusion keeps only items without attachments
+        excluded = apply_search(Item.objects.for_user(self.user), "-has:document")
+        self.assertNotIn(self.next_action, list(excluded))
+        self.assertIn(self.inbox_item, list(excluded))
+
     def test_tags_alias(self):
         """Test that 'tags:' works as alias for 'context:'"""
         result1 = apply_search(Item.objects.for_user(self.user), 'context:"office"')

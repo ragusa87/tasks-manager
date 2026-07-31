@@ -310,6 +310,13 @@ class SearchFilter:
                     "blue",
                     FilterCategory.RELATIONSHIP,
                 ),
+                FilterOption(
+                    "Has Document",
+                    "has:document",
+                    "lucide-paperclip",
+                    "blue",
+                    FilterCategory.RELATIONSHIP,
+                ),
             ]
         )
 
@@ -828,7 +835,8 @@ def apply_search(queryset, query: str, **kwargs):
     Supported search fields:
     - in:inbox, in:next, in:waiting, in:someday, in:reference, in:project, in:completed, in:cancelled
     - is:overdue, is:due, is:today, is:soon, is:active, is:completed, is:actionable
-    - has:due, has:project, has:context, has:area, has:description, has:children
+    - has:due, has:project, has:context, has:area, has:description, has:children,
+      has:document (alias has:attachment)
     - priority:low, priority:normal, priority:high, priority:urgent
     - due:today, due:tomorrow, due:+3days, due:-1week
     - project:"Project Name" or project:123 (id)
@@ -951,6 +959,13 @@ def _build_field_filter(field_name: str, values: list) -> Q:
                 field_q |= Q(area__isnull=False)
             elif value == "description":
                 field_q |= ~Q(description="")
+            elif value in ("document", "attachment"):
+                from .models import Document
+
+                # Subquery instead of Q(documents__isnull=False): the reverse
+                # FK join would repeat an item once per attached document in
+                # list views (apply_search callers don't dedupe).
+                field_q |= Q(pk__in=Document.objects.values("item"))
             elif value == "children":
                 from .models import Item
 
