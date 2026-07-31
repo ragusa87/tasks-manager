@@ -661,6 +661,18 @@ class ConvertToReferenceActionTests(BatchTestBase):
         self.assertEqual(inbox.status, GTDStatus.REFERENCE)
         self.assertEqual(inbox.parent_id, project.pk)
 
+    def test_no_parent_chosen_keeps_current_parent(self):
+        project = create_item_in_status(self.user, GTDStatus.PROJECT)
+        next_action = create_item_in_status(self.user, GTDStatus.NEXT_ACTION)
+        next_action.parent = project
+        next_action.save()
+
+        self.convert([next_action])  # no parent in the form
+
+        next_action.refresh_from_db()
+        self.assertEqual(next_action.status, GTDStatus.REFERENCE)
+        self.assertEqual(next_action.parent_id, project.pk)
+
     def test_form_parent_choices_scoped_to_user_and_parentable_statuses(self):
         from task_processor.forms import BatchReferenceForm
 

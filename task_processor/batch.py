@@ -458,6 +458,11 @@ class ItemBatchActions(BatchActions):
 
         Execution goes through item.flow (like "Move") so FSM guards and
         signals behave exactly like single-item conversions.
+
+        When no parent is chosen in the form (``parent is None``), each item
+        keeps its current parent instead of being moved to the top level: the
+        reference transitions overwrite ``item.parent`` unconditionally, so we
+        pass the item's existing parent back in.
         """
         applied = 0
         for item in queryset:
@@ -471,7 +476,7 @@ class ItemBatchActions(BatchActions):
                 None,
             )
             if method:
-                method(parent=parent)
+                method(parent=parent if parent is not None else item.parent)
                 applied += 1
         return applied, None
 
