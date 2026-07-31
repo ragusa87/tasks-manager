@@ -108,6 +108,16 @@ let camDeviceId = null; // last camera the user switched to, sticky for the sess
 $('camBtn').onclick = openCamera;
 $('libBtn').onclick = () => $('libIn').click();
 
+/* Camera and Library are mutually exclusive: a live getUserMedia preview
+   collides with the native library picker on mobile, so while the camera
+   is running Library goes dead, and while it isn't Camera is the only way
+   to start one. Driven entirely by whether camStream is live. */
+function syncCaptureButtons() {
+    const live = !!camStream;
+    $('camBtn').disabled = live;
+    $('libBtn').disabled = live;
+}
+
 async function acquireCamera() {
     if (camDeviceId) {
         try {
@@ -152,6 +162,7 @@ async function switchCamera() {
         return;
     }
     camDeviceId = next.deviceId;
+    syncCaptureButtons(); // new stream live -- keep Library dead
     const video = $('shot').querySelector('video');
     video.srcObject = camStream;
     paintPreviewMirror(video);
@@ -177,6 +188,7 @@ async function openCamera() {
         return;
     }
     setCam('granted');
+    syncCaptureButtons(); // preview is live -- Library goes dead
     state.photo = null; // the preview replaces any previous shot
     const stage = $('shot');
     stage.innerHTML = '';
@@ -235,6 +247,7 @@ function stopCamera() {
     if (!camStream) return false;
     camStream.getTracks().forEach((t) => t.stop());
     camStream = null;
+    syncCaptureButtons(); // stream gone -- Library live again
     return true;
 }
 
