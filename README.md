@@ -225,3 +225,27 @@ You can configure django to use the reverse proxy for authentication.
 * Set `CUSTOM_AUTHENTICATION_BACKEND=authcrunch` in your docker-compose.override.yaml file and restart your containers.
 * Configure your reverse proxy to set the `X-Token-User-Name` and `X-Token-User-Roles` so that django can identify the user.
 * You need a role "authp/admin" to be super-admin.
+
+## License
+
+Copyright (C) 2026 Laurent Constantin
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the **GNU Affero General Public License** as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See the [LICENSE](LICENSE) file for the full text.
+
+In short, the AGPL lets anyone use, modify and self-host this software —
+including for commercial purposes — **on the condition that any modified version
+(including one offered to users over a network) is also released under the AGPL,
+with its source code made available.**
+
+### Commercial license
+
+If you want to use this software in a way that is incompatible with the AGPL —
+for example, embedding it in a closed-source product or offering it as a hosted
+service without publishing your modifications — a separate **commercial license
+is available on request.**
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how contributions are handled (a CLA
+is required so this dual-licensing stays possible).

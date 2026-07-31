@@ -1,8 +1,9 @@
 [project]
 name = "tasks-proto"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Django web task manager based on the GTD methodology"
 readme = "README.md"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.11"
 dependencies = [
     "aiosmtpd>=1.4.6",
