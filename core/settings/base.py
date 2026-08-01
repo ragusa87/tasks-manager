@@ -114,8 +114,23 @@ LOGIN_REDIRECT_URL = "/"
 # e.g. https://keycloak.example.com/realms/<realm>/protocol/openid-connect/logout
 LOGOUT_REDIRECT_URL = get_env_variable("LOGOUT_REDIRECT_URL", "/login/")
 # Session cookie set by the auth proxy (traefik keycloakopenid plugin),
-# deleted on logout so the proxy re-authenticates on the next request.
+# deleted on logout so the proxy re-authenticates on the next request. When it
+# holds a JWT, the traefik-keycloak backend reads roles and the logout endpoint
+# from it (see below).
 AUTH_PROXY_COOKIE_NAME = get_env_variable("AUTH_PROXY_COOKIE_NAME", "AUTH_TOKEN")
+# OAuth client whose roles map to Django permissions. The traefik-keycloak
+# backend reads roles from resource_access.<client>.roles in the proxy JWT.
+AUTH_PROXY_OAUTH_CLIENT = get_env_variable("AUTH_PROXY_OAUTH_CLIENT", "tasks")
+# JWT client roles that grant is_superuser / is_staff (space-separated).
+AUTH_PROXY_SUPERUSER_ROLES = get_env_variable(
+    "AUTH_PROXY_SUPERUSER_ROLES", "superuser"
+).split()
+AUTH_PROXY_STAFF_ROLES = get_env_variable("AUTH_PROXY_STAFF_ROLES", "staff").split()
+# When enabled and the proxy cookie holds a JWT, derive the logout URL
+# (Keycloak end-session endpoint) from its issuer instead of LOGOUT_REDIRECT_URL.
+AUTH_PROXY_LOGOUT_FROM_JWT = (
+    get_env_variable("AUTH_PROXY_LOGOUT_FROM_JWT", "False").lower() == "true"
+)
 
 
 # Internationalization
@@ -362,3 +377,9 @@ if CUSTOM_AUTHENTICATION_BACKEND == "authcrunch":
         "core.auth.remote_user_backend.AuthcrunchRemoteUserBackend"
     ]
     MIDDLEWARE += ["core.auth.remote_user_backend.AuthcrunchRemoteUserMiddleware"]
+elif CUSTOM_AUTHENTICATION_BACKEND == "traefik-keycloak":
+    # Roles come from the proxy JWT (resource_access.<client>.roles), not the
+    # header, so a stock RemoteUserBackend creates the user and the middleware
+    # maps staff/superuser from the token.
+    AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.RemoteUserBackend"]
+    MIDDLEWARE += ["core.auth.remote_user_backend.TraefikKeycloakRemoteUserMiddleware"]

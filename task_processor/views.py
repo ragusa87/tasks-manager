@@ -34,6 +34,9 @@ from django.views.generic import (
 )
 from factory.django import get_model
 
+from core.auth.jwt import decode_jwt_claims, logout_url_from_claims
+from core.auth.remote_user_backend import AuthcrunchRemoteUserMiddleware
+
 from .batch import (
     AreaBatchActions,
     ContextBatchActions,
@@ -257,13 +260,42 @@ class LogoutView(View):
 
     def get(self, request):
         """Handle logout"""
+        # Read the redirect target before flushing the session / deleting the
+        # cookie, since it may be derived from the proxy JWT held in the cookie.
+        redirect_url = self._redirect_url(request)
         if request.user.is_authenticated:
             username = request.user.first_name or request.user.username
             logout(request)
             messages.success(request, f"Goodbye, {username}! You have been logged out.")
-        response = redirect(settings.LOGOUT_REDIRECT_URL)
+        response = redirect(redirect_url)
         response.delete_cookie(settings.AUTH_PROXY_COOKIE_NAME)
         return response
+
+    def _redirect_url(self, request):
+        """
+        Prefer the Keycloak end-session endpoint derived from the proxy JWT so
+        logout also ends the upstream SSO session; fall back to the configured
+        LOGOUT_REDIRECT_URL when disabled, when the request is not gated by the
+        trusted proxy header, or when the cookie carries no usable JWT.
+
+        The JWT is read only when the trusted ``X-Token-User-Name`` header is
+        present — the same gate ``TraefikKeycloakRemoteUserMiddleware`` uses for
+        role sync. The cookie is client-controlled and its signature is
+        unverified here, so trusting its issuer on an ungated request would let a
+        forged cookie turn logout into an open redirect. The proxy sets the
+        header only after validating the session (and strips any client copy).
+        """
+        if (
+            settings.AUTH_PROXY_LOGOUT_FROM_JWT
+            and AuthcrunchRemoteUserMiddleware.header in request.META
+        ):
+            claims = decode_jwt_claims(
+                request.COOKIES.get(settings.AUTH_PROXY_COOKIE_NAME, "")
+            )
+            url = logout_url_from_claims(claims)
+            if url:
+                return url
+        return settings.LOGOUT_REDIRECT_URL
 
     def post(self, request):
         """Handle logout via POST"""
