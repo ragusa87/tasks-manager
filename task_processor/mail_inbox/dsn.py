@@ -87,8 +87,8 @@ class InboxDSN:
         optional — both forms give the same result:
             absent                append '@<default_domain>'
             0 / false / no / off  use the username verbatim (no domain)
-            @constantin.dev       -> 'inbox-x@constantin.dev'
-            constantin.dev        -> 'inbox-x@constantin.dev'
+            @example.com          -> 'inbox-x@example.com'
+            example.com           -> 'inbox-x@example.com'
         """
         if self.username is None:
             return None
