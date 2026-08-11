@@ -17,6 +17,7 @@ class FilterCategory(TextChoices):
     AREA = "area", "Area"
     CONTEXT = "context", "Context"
     PROJECT = "project", "Project"
+    TAG = "tag", "Tag"
 
 
 class FilterStrategy(Enum):
@@ -55,6 +56,7 @@ FILTER_STRATEGY_MAP = {
     FilterCategory.AREA: FilterStrategy.INVERT,
     FilterCategory.CONTEXT: FilterStrategy.NORMAL,
     FilterCategory.PROJECT: FilterStrategy.EXCLUSIVE,
+    FilterCategory.TAG: FilterStrategy.INVERT,
 }
 
 
@@ -113,11 +115,12 @@ class SearchFilter:
     to generate dynamic search suggestions and filters.
     """
 
-    def __init__(self, user=None, areas=None, contexts=None, projects=None):
+    def __init__(self, user=None, areas=None, contexts=None, projects=None, tags=None):
         self.user = user
         self.areas = areas or []
         self.contexts = contexts or []
         self.projects = projects or []
+        self.tags = tags or []
 
     def get_all_filters(self) -> List[FilterOption]:
         """Get all filter options."""
@@ -359,6 +362,20 @@ class SearchFilter:
                     FilterCategory.PROJECT,
                 )
                 for project in self.projects
+            ]
+        )
+
+        # Tag filters
+        filters.extend(
+            [
+                FilterOption(
+                    tag.name,
+                    f'tag:"{tag.name}"',
+                    "lucide-tag",
+                    "pink",
+                    FilterCategory.TAG,
+                )
+                for tag in self.tags
             ]
         )
 
@@ -809,14 +826,21 @@ class SearchParser:
             collection[field].append(value)
 
 
+def extract_referenced_values(query: str, field_name: str) -> List[str]:
+    """Return raw values referenced by ``field_name:<value>`` tokens in a
+    query, from both included (``tag:foo``) and excluded (``-tag:foo``)
+    tokens."""
+    tokens = SearchParser().parse(query or "")
+    return tokens.included.get(field_name, []) + tokens.excluded.get(field_name, [])
+
+
 def extract_referenced_ids(query: str, field_name: str) -> List[int]:
     """Return integer ids referenced by ``field_name:<id>`` tokens in a query.
 
     Looks at both included (``project:4``) and excluded (``-project:4``)
     tokens. Non-integer values (e.g. ``project:"name"``) are ignored.
     """
-    tokens = SearchParser().parse(query or "")
-    values = tokens.included.get(field_name, []) + tokens.excluded.get(field_name, [])
+    values = extract_referenced_values(query, field_name)
     ids = []
     for value in values:
         try:
@@ -841,6 +865,7 @@ def apply_search(queryset, query: str, **kwargs):
     - due:today, due:tomorrow, due:+3days, due:-1week
     - project:"Project Name" or project:123 (id)
     - context:"@office", area:"Work"
+    - tag:urgent, tag:abc,def,ghi (any of), -tag:def (exclude)
     - waiting:"Person Name"
     """
 
@@ -1050,14 +1075,17 @@ def _build_field_filter(field_name: str, values: list) -> Q:
             except (ValueError, TypeError):
                 field_q |= Q(parent__title__icontains=value)
         elif field_name == "tag":
-            # Project name search
-            field_q |= Q(tags__name=value)
+            # Tag name search (exclusion is handled by the parser's -tag: form)
+            from .models import Item
 
-            if value.startswith("-"):
-                neg_value = value[1:]
-                field_q |= ~Q(tags__name=neg_value)
-            else:
-                field_q |= Q(tags__name=value)
+            # Subquery instead of Q(tags__name=...): with several values
+            # (tag:abc,def) the M2M join would repeat an item once per
+            # matching tag in list views (apply_search callers don't
+            # dedupe). No user scoping needed, pks are unique and the
+            # caller's queryset is already scoped.
+            field_q |= Q(
+                pk__in=Item.objects.filter(tags__name__iexact=value).values("pk")
+            )
 
         elif field_name == "parent":
             # Parent project ID search

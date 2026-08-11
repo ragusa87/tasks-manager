@@ -272,3 +272,35 @@ class AreaManager(models.Manager):
                 user=user,
                 defaults={"description": f"Default {area_name} area"},
             )
+
+
+class TagManager(models.Manager):
+    """Manager for Tag model"""
+
+    def for_user(self, user):
+        return self.filter(user=user)
+
+    def suggestions(self, user, limit=10, include_names=None):
+        """Most-used tags, for the search filter chips.
+
+        Showing every tag would flood the suggestions, so only the
+        ``limit`` most-used ones are returned. ``include_names``
+        force-includes tags referenced in the current search query
+        (``tag:<name>``) even when they fall outside the top ``limit``,
+        so an active filter chip stays visible and removable.
+        """
+        queryset = (
+            self.for_user(user)
+            .annotate(item_count=models.Count("item"))
+            .order_by("-item_count", "name")
+        )
+        tags = list(queryset[:limit])
+        if include_names:
+            shown = {tag.name.lower() for tag in tags}
+            name_q = models.Q()
+            for name in include_names:
+                if name.lower() not in shown:
+                    name_q |= models.Q(name__iexact=name)
+            if name_q:
+                tags.extend(queryset.filter(name_q))
+        return tags

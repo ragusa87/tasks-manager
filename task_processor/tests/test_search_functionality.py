@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from task_processor.constants import GTDStatus, Priority
 from task_processor.models import Item
-from task_processor.models.base_models import Area, Context
+from task_processor.models.base_models import Area, Context, Tag
 from task_processor.search import apply_search
 
 
@@ -299,3 +299,131 @@ class TestSearchFunctionality(TestCase):
         self.assertNotIn(self.project, result_list)
         self.assertNotIn(self.project_task, result_list)
         self.assertIn(non_project_task, result_list)
+
+
+class TestTagSearch(TestCase):
+    """Test the tag:<name> search field and tag chip suggestions"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="taguser", email="tag@example.com"
+        )
+        self.other_user = User.objects.create_user(
+            username="otheruser", email="other@example.com"
+        )
+
+        self.tag_abc = Tag.objects.create(name="abc", user=self.user)
+        self.tag_def = Tag.objects.create(name="def", user=self.user)
+        self.tag_ghi = Tag.objects.create(name="ghi", user=self.user)
+
+        self.item_abc = Item.objects.create(
+            title="Item abc", status=GTDStatus.INBOX, user=self.user
+        )
+        self.item_abc.tags.add(self.tag_abc)
+
+        self.item_def = Item.objects.create(
+            title="Item def", status=GTDStatus.INBOX, user=self.user
+        )
+        self.item_def.tags.add(self.tag_def)
+
+        self.item_both = Item.objects.create(
+            title="Item both", status=GTDStatus.INBOX, user=self.user
+        )
+        self.item_both.tags.add(self.tag_abc, self.tag_def)
+
+        self.item_untagged = Item.objects.create(
+            title="Item untagged", status=GTDStatus.INBOX, user=self.user
+        )
+
+    def test_single_tag(self):
+        result = apply_search(Item.objects.for_user(self.user), "tag:abc")
+        self.assertCountEqual(list(result), [self.item_abc, self.item_both])
+
+    def test_multiple_tags_or_within_field(self):
+        """tag:abc,def matches items having any of the tags"""
+        result = apply_search(Item.objects.for_user(self.user), "tag:abc,def,ghi")
+        self.assertCountEqual(
+            list(result), [self.item_abc, self.item_def, self.item_both]
+        )
+
+    def test_multiple_tags_no_duplicates(self):
+        """An item carrying several matching tags must appear only once"""
+        result = apply_search(Item.objects.for_user(self.user), "tag:abc,def")
+        self.assertEqual(list(result).count(self.item_both), 1)
+
+    def test_excluded_tag(self):
+        result = apply_search(Item.objects.for_user(self.user), "-tag:def")
+        self.assertCountEqual(list(result), [self.item_abc, self.item_untagged])
+
+    def test_include_and_exclude_tags(self):
+        result = apply_search(Item.objects.for_user(self.user), "tag:abc -tag:def")
+        self.assertEqual(list(result), [self.item_abc])
+
+    def test_tag_case_insensitive(self):
+        result = apply_search(Item.objects.for_user(self.user), "tag:ABC")
+        self.assertCountEqual(list(result), [self.item_abc, self.item_both])
+
+    def test_quoted_tag_with_space(self):
+        spaced_tag = Tag.objects.create(name="my tag", user=self.user)
+        self.item_untagged.tags.add(spaced_tag)
+        result = apply_search(Item.objects.for_user(self.user), 'tag:"my tag"')
+        self.assertEqual(list(result), [self.item_untagged])
+
+    def test_tag_combined_with_free_text(self):
+        result = apply_search(Item.objects.for_user(self.user), "tag:abc both")
+        self.assertEqual(list(result), [self.item_both])
+
+    def test_unknown_tag_matches_nothing(self):
+        result = apply_search(Item.objects.for_user(self.user), "tag:nope")
+        self.assertEqual(list(result), [])
+
+
+class TestTagSuggestions(TestCase):
+    """Test TagManager.suggestions used to build the tag filter chips"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="sugguser", email="sugg@example.com"
+        )
+        self.other_user = User.objects.create_user(
+            username="suggother", email="suggother@example.com"
+        )
+
+    def _tag_with_items(self, name, item_count):
+        tag = Tag.objects.create(name=name, user=self.user)
+        for i in range(item_count):
+            item = Item.objects.create(
+                title=f"{name} {i}", status=GTDStatus.INBOX, user=self.user
+            )
+            item.tags.add(tag)
+        return tag
+
+    def test_limit_and_usage_ordering(self):
+        rare = self._tag_with_items("rare", 1)
+        popular = self._tag_with_items("popular", 3)
+        medium = self._tag_with_items("medium", 2)
+
+        tags = Tag.objects.suggestions(self.user, limit=2)
+        self.assertEqual(tags, [popular, medium])
+        self.assertNotIn(rare, tags)
+
+    def test_include_names_resurfaces_queried_tag(self):
+        rare = self._tag_with_items("rare", 1)
+        self._tag_with_items("popular", 3)
+        self._tag_with_items("medium", 2)
+
+        tags = Tag.objects.suggestions(self.user, limit=2, include_names=["RARE"])
+        self.assertIn(rare, tags)
+
+    def test_include_names_does_not_duplicate_visible_tag(self):
+        popular = self._tag_with_items("popular", 2)
+
+        tags = Tag.objects.suggestions(self.user, limit=2, include_names=["popular"])
+        self.assertEqual(tags.count(popular), 1)
+
+    def test_scoped_to_user(self):
+        self._tag_with_items("mine", 1)
+        Tag.objects.create(name="theirs", user=self.other_user)
+
+        tags = Tag.objects.suggestions(self.user, include_names=["theirs"])
+        self.assertEqual([tag.name for tag in tags], ["mine"])
