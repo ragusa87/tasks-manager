@@ -37,12 +37,15 @@ if not os.getenv("DB_NAME"):
         }
     }
 
-# Per-process in-memory cache: the mail-inbox rate limiter needs a working
-# cache (DummyCache would make it fail open); only the mail listener process
-# enforces limits, so a local cache is enough in development.
+# Redis cache, like production: cross-process flags (e.g. Nirvana import
+# cancellation set by web, read by the Celery worker) need a shared backend —
+# a per-process LocMemCache would leave the worker blind to them.
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        # DB 2: the Channels layer lives in DB 1, and a cache.clear() must
+        # not wipe channels state.
+        "LOCATION": os.getenv("CACHE_URL", "redis://redis:6379/2"),
     }
 }
 

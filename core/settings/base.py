@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
     "channels",
     "django_extensions",
     "django_vite",
@@ -240,6 +241,12 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 # Cap on voice-note recordings; injected into the pages so the JS recorders
 # (dropzone + offload) enforce the same limit.
 MAX_RECORDING_SECONDS = 60
+
+# Seconds without a heartbeat before a running Nirvana import is considered
+# dead (worker crashed) and eligible for cleanup.
+NIRVANA_IMPORT_HEARTBEAT_MAX_AGE = int(
+    os.getenv("NIRVANA_IMPORT_HEARTBEAT_MAX_AGE", "300")
+)
 
 # Minimum age of ApiKey.last_used_at before it is refreshed on an
 # authenticated API request (avoids one DB write per request).

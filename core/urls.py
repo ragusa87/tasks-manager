@@ -27,6 +27,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", ninja_api.urls),
     path("theme/", SetThemeView.as_view(), name="set_theme"),
+    path("settings/nirvana-import/", include("nirvana.urls")),
     path("", include("task_processor.urls")),
 ]
 

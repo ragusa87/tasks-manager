@@ -28,6 +28,11 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute="*/30"),
         "options": {"queue": "reminders"},
     },
+    "cleanup-stale-nirvana-imports-every-15-minutes": {
+        "task": "nirvana.tasks.cleanup_stale_import_jobs",
+        "schedule": crontab(minute="*/15"),
+        "options": {"queue": "reminders"},
+    },
 }
 
 # Default queue configuration
