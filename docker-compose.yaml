@@ -18,7 +18,7 @@ x-django-service: &django-service
     - REDIS_CHANNEL_URL=redis://redis:6379/1
     - CELERY_RESULT_BACKEND=redis://redis:6379/0
     - REDBEAT_REDIS_URL=${REDBEAT_REDIS_URL:-redis://redis:6379/0}
-    - CACHE_URL=redis://redis:6379/1
+    - CACHE_URL=${CACHE_URL:-redis://redis:6379/2}
     - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     - EMAIL_URL=${EMAIL_URL}
     - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
@@ -30,6 +30,7 @@ x-django-service: &django-service
     - USER_EMAIL_INBOX_DOMAIN=${USER_EMAIL_INBOX_DOMAIN:-tasks.docker.test}
     - STORAGE_URL=${STORAGE_URL:-file://media}
     - DOCUMENT_PRESIGNED_URL_EXPIRY=${DOCUMENT_PRESIGNED_URL_EXPIRY:-300}
+    - NIRVANA_IMPORT_HEARTBEAT_MAX_AGE=${NIRVANA_IMPORT_HEARTBEAT_MAX_AGE:-300}
   volumes: &django-volumes
     - media_data:/app/media
     - uv_cache:/root/.cache/uv

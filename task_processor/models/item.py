@@ -271,7 +271,6 @@ class Item(models.Model):
         max_length=100,
         null=True,
         blank=True,
-        unique=True,
         help_text="External Nirvana ID for syncing",
     )
 
@@ -292,6 +291,14 @@ class Item(models.Model):
             models.Index(fields=["nirvana_id"]),
             models.Index(fields=["remind_at"]),
             models.Index(fields=["remind_at", "status", "is_completed"]),
+        ]
+        constraints = [
+            # Nirvana ids are only unique within one account's export; a
+            # global unique would make one user's import collide with
+            # another's.
+            models.UniqueConstraint(
+                fields=["user", "nirvana_id"], name="unique_nirvana_id_per_user"
+            ),
         ]
 
     def __str__(self):

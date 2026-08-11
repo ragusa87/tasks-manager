@@ -1,0 +1,66 @@
+{% load humanize sprite_tags %}
+<div id="import-job-{{ job.id }}"
+     aria-live="polite"
+     {% if not job.is_finished %}
+     hx-get="{% url 'nirvana_import_job_status' job.id %}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     {% endif %}>
+    {% if job.is_finished %}
+    <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center">
+            <span aria-hidden="true">
+                {% if job.status == "success" %}
+                    {% sprite "lucide-circle-check" 20 class="mr-2 text-cat-green" %}
+                {% elif job.status == "cancelled" %}
+                    {% sprite "lucide-circle-x" 20 class="mr-2 text-muted" %}
+                {% else %}
+                    {% sprite "lucide-circle-alert" 20 class="mr-2 text-danger" %}
+                {% endif %}
+            </span>
+            <span class="font-medium text-body">{{ job.get_status_display }}</span>
+        </div>
+        <span class="text-muted text-sm">{{ job.created_at|date:"DATETIME_FORMAT" }}</span>
+    </div>
+    {% else %}
+    <ul class="mb-3 space-y-1">
+        {% for phase in job.phase_checklist %}
+        <li class="flex items-center">
+            <span class="mr-2 w-5 flex justify-center shrink-0" aria-hidden="true">
+                {% if phase.state == "done" %}
+                    {% sprite "lucide-circle-check" 16 class="text-cat-green" %}
+                {% elif phase.state == "current" %}
+                    {% sprite "lucide-arrow-right" 16 class="text-accent" %}
+                {% else %}
+                    {% sprite "lucide-circle" 16 class="text-muted" %}
+                {% endif %}
+            </span>
+            <span class="{% if phase.state == 'todo' %}text-muted{% else %}text-body{% endif %}">
+                {{ phase.label }}{% if phase.count %} <span class="text-muted">({{ phase.count }})</span>{% endif %}
+                <span class="sr-only">
+                    {% if phase.state == "done" %}(done){% elif phase.state == "current" %}(in progress){% else %}(pending){% endif %}
+                </span>
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+    <div class="w-full bg-ground rounded-full h-2" role="progressbar"
+         aria-label="Import progress"
+         aria-valuenow="{{ job.percent }}" aria-valuemin="0" aria-valuemax="100">
+        <div class="bg-accent h-2 rounded-full transition-all" style="width: {{ job.percent }}%"></div>
+    </div>
+    {% if job.heartbeat %}
+    <p class="mt-2 text-muted text-sm">Last seen: {{ job.heartbeat|naturaltime }}</p>
+    {% endif %}
+    {% endif %}
+
+    {% if job.status == "success" %}
+    <p class="text-muted">
+        Imported {{ job.created_count }} new and updated {{ job.updated_count }} existing item{{ job.updated_count|pluralize }}{% if job.wipe_existing %} after wiping existing data{% endif %}.
+    </p>
+    {% elif job.status == "cancelled" %}
+    <p class="text-muted">Import cancelled — items already imported were kept.</p>
+    {% elif job.status == "failure" %}
+    <p class="text-danger">{{ job.error_message }}</p>
+    {% endif %}
+</div>
