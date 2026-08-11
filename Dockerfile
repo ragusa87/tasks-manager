@@ -19,14 +19,17 @@ RUN mkdir -p /app/node_modules && chown -R ${USER_ID}:${GROUP_ID} /app
 # Switch to the user with specified UID
 USER ${USER_ID}:${GROUP_ID}
 
-COPY package-lock.json .
-COPY package.json .
-COPY vite.config.js .
+# Install node deps first so that editing frontend/templates does not
+# invalidate the (expensive) `npm ci` layer.
+COPY package-lock.json package.json ./
+RUN --mount=type=cache,target=/tmp/npm-cache,uid=${USER_ID},gid=${GROUP_ID} \
+    npm ci --cache /tmp/npm-cache --prefer-offline
 
+COPY vite.config.js .
 RUN mkdir -p frontend static/dist
 COPY frontend frontend/
 COPY templates templates/
-RUN npm ci && npm run vite build
+RUN npm run vite build
 
 
 FROM python:3.14-slim AS django
@@ -60,22 +63,24 @@ RUN groupadd -g ${GROUP_ID} appuser && \
 # Set up application directory
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
-
 # Create necessary directories with correct permissions
 RUN mkdir -p /app/logs /app/media /app/staticfiles /app/static /opt/python && \
     chown -R appuser:appuser /app /opt/python
 
-# Copy application code
-COPY --chown=appuser:appuser . .
-
 # Switch to non-root user
 USER appuser
-
-# Install Python dependencies
 ENV PATH="/opt/python/venv/bin:$PATH"
-RUN uv sync --frozen
+
+# Install Python dependencies BEFORE copying the source. This is a
+# non-package project, so the venv only needs pyproject.toml + uv.lock;
+# editing application code no longer busts the dependency layer, and a
+# BuildKit cache mount keeps the uv download cache across rebuilds.
+COPY --chown=appuser:appuser pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=${USER_ID},gid=${GROUP_ID} \
+    uv sync --frozen --no-install-project
+
+# Copy application code
+COPY --chown=appuser:appuser . .
 
 # Expose port
 EXPOSE 8000

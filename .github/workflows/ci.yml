@@ -79,8 +79,9 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Own cache scope so the prod and dev exports don't clobber each other.
+          cache-from: type=gha,scope=prod
+          cache-to: type=gha,mode=max,scope=prod
           target: django-prod
           build-args: |
             USER_ID=1000
@@ -93,8 +94,12 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}-dev
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Read the prod scope too: django-prod is FROM django, so the shared
+          # vite/django base layers are reused instead of rebuilt.
+          cache-from: |
+            type=gha,scope=dev
+            type=gha,scope=prod
+          cache-to: type=gha,mode=max,scope=dev
           target: django
           build-args: |
             USER_ID=1000
