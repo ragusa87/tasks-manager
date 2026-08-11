@@ -42,6 +42,7 @@ alias fix := format
 # Fix styling offenses and format code
 format:
   docker compose exec {{BACKEND_CONTAINER}} ruff check --fix
+  docker compose exec {{BACKEND_CONTAINER}} ruff format
 
 alias c := compile
 # Compile the requirements files
