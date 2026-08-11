@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 
 from task_processor.constants import GTDConfig
-from task_processor.models.managers import AreaManager
+from task_processor.models.managers import AreaManager, TagManager
 
 
 class Context(models.Model):
@@ -70,6 +70,7 @@ class Tag(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    objects = TagManager()
 
     class Meta:
         unique_together = ("name", "user")

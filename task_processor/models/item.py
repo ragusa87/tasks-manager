@@ -687,8 +687,8 @@ class ItemFlow:
     # some item's parent; negated, that is "childless" (no user scoping
     # needed, pks are unique and can_proceed() re-checks the concrete item).
     @batchable(
-        filter_q=lambda: ~Q(
-            pk__in=Item.objects.filter(parent__isnull=False).values("parent")
+        filter_q=lambda: (
+            ~Q(pk__in=Item.objects.filter(parent__isnull=False).values("parent"))
         )
     )
     @state_field.transition(
