@@ -268,6 +268,27 @@ class TestSearchFunctionality(TestCase):
         self.assertIn(self.project, result_list)
         self.assertIn(self.project_task, result_list)
 
+    def test_project_search_by_id_includes_reference_container(self):
+        """project:<id> must include the container itself even when it is a
+        reference folder (e.g. a Nirvana reference list), not only a project.
+        Regression: the container was matched only when status == PROJECT."""
+        reference = Item.objects.create(
+            title="Work memo",
+            status=GTDStatus.REFERENCE,
+            user=self.user,
+        )
+        ref_child = Item.objects.create(
+            title="Cube Jira",
+            status=GTDStatus.REFERENCE,
+            parent=reference,
+            user=self.user,
+        )
+        result = list(
+            apply_search(Item.objects.for_user(self.user), f"project:{reference.pk}")
+        )
+        self.assertIn(reference, result)
+        self.assertIn(ref_child, result)
+
     def test_project_search_partial_name(self):
         """Test searching by partial project name"""
         result = apply_search(Item.objects.for_user(self.user), 'project:"Website"')

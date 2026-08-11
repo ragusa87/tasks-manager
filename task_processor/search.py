@@ -918,7 +918,7 @@ def _build_field_filter(field_name: str, values: list) -> Q:
 
     from django.utils import timezone
 
-    from .constants import GTDStatus, Priority
+    from .constants import GTDConfig, GTDStatus, Priority
 
     field_q = Q()
 
@@ -1067,10 +1067,15 @@ def _build_field_filter(field_name: str, values: list) -> Q:
                     pass
 
         elif field_name == "project":
-            # Project name search or id
+            # Project name search or id. The container itself is matched too,
+            # not only its children — but it may be a reference folder, not a
+            # project (e.g. Nirvana reference lists), so allow any status that
+            # can be a parent rather than PROJECT alone.
             try:
                 item_id = int(value)
-                field_q |= Q(id=item_id, status=GTDStatus.PROJECT)
+                field_q |= Q(
+                    id=item_id, status__in=GTDConfig.STATUS_WITH_PARENT_ALLOWED
+                )
                 field_q |= Q(parent__id=item_id)
             except (ValueError, TypeError):
                 field_q |= Q(parent__title__icontains=value)
@@ -1125,169 +1130,3 @@ def _build_field_filter(field_name: str, values: list) -> Q:
             field_q |= Q(contexts__name__icontains=clean_value)
 
     return field_q
-
-
-def _apply_field_filter(queryset, field_name: str, values: list, exclude: bool = False):
-    """Apply a specific field filter to the queryset."""
-    from datetime import timedelta
-
-    from django.db.models import Q
-    from django.utils import timezone
-
-    from .constants import GTDStatus, Priority
-
-    # Build separate Q objects for inclusion and exclusion
-    include_q = Q()
-    exclude_q = Q()
-
-    for value in values:
-        value = value.lower().strip()
-
-        # Determine if this specific value should be included or excluded
-        # based on the exclude parameter passed to this function
-        target_q = exclude_q if exclude else include_q
-
-        if field_name == "in":
-            # Status-based filters
-            status_map = {
-                "inbox": GTDStatus.INBOX,
-                "next": GTDStatus.NEXT_ACTION,
-                "action": GTDStatus.NEXT_ACTION,
-                "waiting": GTDStatus.WAITING_FOR,
-                "someday": GTDStatus.SOMEDAY_MAYBE,
-                "maybe": GTDStatus.SOMEDAY_MAYBE,
-                "reference": GTDStatus.REFERENCE,
-                "project": GTDStatus.PROJECT,
-                "completed": GTDStatus.COMPLETED,
-                "cancelled": GTDStatus.CANCELLED,
-                "canceled": GTDStatus.CANCELLED,
-            }
-            if value in status_map:
-                target_q |= Q(status=status_map[value])
-
-        elif field_name == "is":
-            # State-based filters
-            now = timezone.now()
-            today = now.date()
-
-            if value == "overdue":
-                target_q |= Q(due_date__lt=now, is_completed=False)
-            elif value == "due":
-                target_q |= Q(due_date__date=today, is_completed=False)
-            elif value == "today":
-                target_q |= Q(due_date__date=today, is_completed=False)
-            elif value == "soon":
-                soon_date = now + timedelta(days=3)
-                target_q |= Q(
-                    due_date__lte=soon_date, due_date__gte=now, is_completed=False
-                )
-            elif value == "active":
-                target_q |= ~Q(
-                    status__in=[
-                        GTDStatus.COMPLETED,
-                        GTDStatus.CANCELLED,
-                        GTDStatus.REFERENCE,
-                    ]
-                )
-            elif value == "completed":
-                target_q |= Q(is_completed=True)
-            elif value == "actionable":
-                target_q |= Q(status__in=[GTDStatus.NEXT_ACTION, GTDStatus.PROJECT])
-
-        elif field_name == "has":
-            # Existence-based filters
-            if value == "due":
-                target_q |= Q(due_date__isnull=False)
-            elif value == "project":
-                target_q |= Q(parent__isnull=False)
-            elif value == "context":
-                target_q |= Q(contexts__isnull=False)
-            elif value == "area":
-                target_q |= Q(area__isnull=False)
-            elif value == "description":
-                target_q |= ~Q(description="")
-
-        elif field_name == "priority":
-            # Priority-based filters
-            value = value.lower()
-            priority_map = {
-                "low": Priority.LOW,
-                "normal": Priority.NORMAL,
-                "high": Priority.HIGH,
-                "urgent": Priority.URGENT,
-            }
-            if value in priority_map:
-                target_q |= Q(priority=priority_map[value])
-            elif value.startswith("-"):
-                # Handle negative priority values like "-low"
-                neg_value = value[1:]
-                if neg_value in priority_map:
-                    # For negative values, we always exclude regardless of the exclude flag
-                    exclude_q |= Q(priority=priority_map[neg_value])
-
-        elif field_name == "due":
-            # Date-based filters
-            now = timezone.now()
-            today = now.date()
-
-            if value == "today":
-                target_q |= Q(due_date__date=today)
-            elif value == "tomorrow":
-                tomorrow = today + timedelta(days=1)
-                target_q |= Q(due_date__date=tomorrow)
-            elif value.startswith("+") or value.startswith("-"):
-                # Parse relative dates like "+3days", "-1week"
-                try:
-                    sign = 1 if value.startswith("+") else -1
-                    value_part = value[1:]
-
-                    if value_part.endswith("day") or value_part.endswith("days"):
-                        days = int(value_part.replace("day", "").replace("s", ""))
-                        target_date = today + timedelta(days=sign * days)
-                        target_q |= Q(due_date__date=target_date)
-                    elif value_part.endswith("week") or value_part.endswith("weeks"):
-                        weeks = int(value_part.replace("week", "").replace("s", ""))
-                        target_date = today + timedelta(weeks=sign * weeks)
-                        target_q |= Q(due_date__date=target_date)
-                except (ValueError, AttributeError):
-                    pass
-
-        elif field_name == "project":
-            # Project name search
-            target_q |= Q(parent__title__icontains=value)
-
-        elif field_name == "parent":
-            # Parent project ID search
-            try:
-                parent_id = int(value)
-                target_q |= Q(parent__id=parent_id)
-            except (ValueError, TypeError):
-                # If not a valid integer, treat as name search
-                target_q |= Q(parent__title__icontains=value)
-
-        elif field_name == "context":
-            # Context search
-            clean_value = value.lstrip("@#!")  # Remove context prefixes
-            target_q |= Q(contexts__name__icontains=clean_value)
-
-        elif field_name == "area":
-            # Area search
-            target_q |= Q(area__name__icontains=value)
-
-        elif field_name == "waiting":
-            # Waiting for person search
-            target_q |= Q(waiting_for_person__icontains=value)
-
-        elif field_name == "tags":
-            # Tag search (alias for context)
-            clean_value = value.lstrip("@#!")
-            target_q |= Q(contexts__name__icontains=clean_value)
-
-    # Apply the filters
-    if include_q:
-        queryset = queryset.filter(include_q)
-
-    if exclude_q:
-        queryset = queryset.exclude(exclude_q)
-
-    return queryset
