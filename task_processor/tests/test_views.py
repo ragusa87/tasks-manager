@@ -453,6 +453,67 @@ class TestLogoutView(TestCase):
         self.assertEqual(cookie.value, "")
         self.assertEqual(cookie["max-age"], 0)
 
+    @staticmethod
+    def _jwt(payload):
+        import base64
+        import json
+
+        body = (
+            base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
+        )
+        return f"header.{body}.sig"
+
+    def test_logout_derives_url_from_jwt_when_enabled(self):
+        """With AUTH_PROXY_LOGOUT_FROM_JWT and the trusted proxy header, logout
+        redirects to the token's Keycloak end-session endpoint instead of
+        LOGOUT_REDIRECT_URL"""
+        self.client.force_login(self.user)
+        self.client.cookies["AUTH_TOKEN"] = self._jwt(
+            {"iss": "https://keycloak.example.com/realms/example", "azp": "tasks"}
+        )
+        with self.settings(
+            AUTH_PROXY_LOGOUT_FROM_JWT=True, LOGOUT_REDIRECT_URL="/login/"
+        ):
+            response = self.client.get(
+                reverse("logout"), HTTP_X_TOKEN_USER_NAME="alice"
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            "https://keycloak.example.com/realms/example"
+            "/protocol/openid-connect/logout?client_id=tasks",
+        )
+
+    def test_logout_ignores_jwt_without_trusted_header(self):
+        """A valid JWT cookie must NOT drive the logout redirect unless the
+        trusted proxy header gates the request — otherwise a forged cookie
+        (e.g. cookie injection, or the app reached directly) could redirect
+        logout to an attacker-chosen issuer."""
+        self.client.force_login(self.user)
+        self.client.cookies["AUTH_TOKEN"] = self._jwt(
+            {"iss": "https://evil.example.com/realms/example", "azp": "tasks"}
+        )
+        with self.settings(
+            AUTH_PROXY_LOGOUT_FROM_JWT=True, LOGOUT_REDIRECT_URL="/login/"
+        ):
+            response = self.client.get(reverse("logout"))  # no proxy header
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/login/")
+        self.assertNotIn("evil.example.com", response.url)
+
+    def test_logout_falls_back_to_configured_url_without_jwt(self):
+        """When the cookie is not a decodable JWT, logout uses LOGOUT_REDIRECT_URL"""
+        self.client.force_login(self.user)
+        self.client.cookies["AUTH_TOKEN"] = "opaque-not-a-jwt"
+        with self.settings(
+            AUTH_PROXY_LOGOUT_FROM_JWT=True, LOGOUT_REDIRECT_URL="/login/"
+        ):
+            response = self.client.get(
+                reverse("logout"), HTTP_X_TOKEN_USER_NAME="alice"
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)
+
     def test_logout_when_anonymous_still_redirects(self):
         """Logout works without an authenticated user"""
         response = self.client.get(reverse("logout"))

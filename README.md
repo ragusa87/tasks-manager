@@ -110,7 +110,13 @@ All environment variables must be documented here (this is enforced as a project
 | `FRONTEND_URL` | `https://tasks.docker.test` | Public URL of the app |
 | `CELERI_ADMIN_URL` | `http://tasks-celery-admin.docker.test/` | Flower dashboard URL |
 | `IS_DEMO` | `True` | Show demo credentials on the login page |
-| `CUSTOM_AUTHENTICATION_BACKEND` | `""` | Set to `authcrunch` to authenticate via the reverse proxy |
+| `CUSTOM_AUTHENTICATION_BACKEND` | `""` | Set to `authcrunch` (header roles) or `traefik-keycloak` (JWT-cookie roles) to authenticate via the reverse proxy |
+| `LOGOUT_REDIRECT_URL` | `/login/` | Where to redirect after logout; behind the proxy, point at the Keycloak end-session endpoint |
+| `AUTH_PROXY_COOKIE_NAME` | `AUTH_TOKEN` | Session cookie set by the auth proxy; deleted on logout |
+| `AUTH_PROXY_OAUTH_CLIENT` | `tasks` | OAuth client whose `resource_access.<client>.roles` in the proxy JWT map to Django permissions (`traefik-keycloak`) |
+| `AUTH_PROXY_SUPERUSER_ROLES` | `superuser` | Space-separated JWT client roles that grant `is_superuser` (`traefik-keycloak`) |
+| `AUTH_PROXY_STAFF_ROLES` | `staff` | Space-separated JWT client roles that grant `is_staff` (`traefik-keycloak`) |
+| `AUTH_PROXY_LOGOUT_FROM_JWT` | `False` | Derive the logout URL (Keycloak end-session endpoint) from the proxy JWT's issuer instead of `LOGOUT_REDIRECT_URL` |
 | `SENTRY_DSN` | — | Enable Sentry error tracking (production settings only) |
 | `DJANGO_VITE_DEV_SERVER_HOST` / `DJANGO_VITE_DEV_SERVER_PORT` / `DJANGO_VITE_DEV_SERVER_PROTOCOL` | `tasks-vite.docker.test` / `443` / `https` | Vite dev server (development settings only) |
 | `NODE_ENV` / `VITE_ALLOWED_HOSTS` / `VITE_CORS_ORIGIN` | — | Frontend build environment (docker-compose) |
@@ -173,8 +179,8 @@ produce the same login name:
 
 ```
 ?domain_in_username=0                # send the username verbatim (no domain)
-?domain_in_username=@constantin.dev  # → inbox-x@constantin.dev
-?domain_in_username=constantin.dev   # → inbox-x@constantin.dev  (same thing)
+?domain_in_username=@example.com     # → inbox-x@example.com
+?domain_in_username=example.com      # → inbox-x@example.com  (same thing)
 ```
 
 **Dry run.** Add `?dry_run=1` to make the IMAP engine read-only: it connects,
@@ -248,10 +254,28 @@ The command above will create a docker-compose.override.yaml file for you (based
 WARNING: If you re-run the command again, all existing data in your database will be lost (we recreate the database volume).
 
 #### Reverse proxy Authentication
-You can configure django to use the reverse proxy for authentication.
+You can configure django to use the reverse proxy for authentication. Two backends are available.
+
+**Authcrunch (header roles)**
 * Set `CUSTOM_AUTHENTICATION_BACKEND=authcrunch` in your docker-compose.override.yaml file and restart your containers.
 * Configure your reverse proxy to set the `X-Token-User-Name` and `X-Token-User-Roles` so that django can identify the user.
 * You need a role "authp/admin" to be super-admin.
+
+**Traefik + Keycloak (JWT-cookie roles)**
+
+For the [traefik keycloakopenid](https://github.com/lukaszraczylo/traefikoidc) plugin, roles are read from the Keycloak JWT stored in the `AUTH_TOKEN` cookie rather than a header.
+* Set `CUSTOM_AUTHENTICATION_BACKEND=traefik-keycloak`.
+* Configure the proxy to set `X-Token-User-Name` (used to identify the user) and to forward the JWT in the `AUTH_PROXY_COOKIE_NAME` cookie (`AUTH_TOKEN` by default).
+* Assign roles to the user on the `AUTH_PROXY_OAUTH_CLIENT` OAuth client (`tasks` by default). Django maps them from `resource_access.<client>.roles`: the `superuser` role grants `is_superuser` and `staff` grants `is_staff` (configurable via `AUTH_PROXY_SUPERUSER_ROLES` / `AUTH_PROXY_STAFF_ROLES`). Roles are re-synced on every proxied page request.
+* Set `AUTH_PROXY_LOGOUT_FROM_JWT=True` to derive the logout URL from the token's `iss` (Keycloak end-session endpoint), ending the upstream SSO session on logout.
+
+> **Security — the proxy must control the cookie.** Django reads the JWT's claims **without verifying its signature**, so this backend is only safe when the reverse proxy is the sole authority over the `AUTH_PROXY_COOKIE_NAME` cookie. The proxy MUST:
+> * validate the token against Keycloak (signature, expiry, audience) on every request it forwards, and reject/refresh invalid ones — the app trusts whatever the proxy lets through;
+> * strip any client-supplied `X-Token-User-Name` header so a client cannot impersonate a user (both role sync and JWT-derived logout only run when this header is present, which the proxy sets only after validating the session).
+>
+> Because a cookie is client-controlled, a token that reaches Django unvalidated could carry forged roles — or, on logout, a forged issuer. Both cookie-reading paths are gated on the trusted header for this reason. Never expose the app directly (bypassing the proxy) with this backend enabled.
+
+> **Session expiry / token refresh.** The `AUTH_TOKEN` access token is short-lived (Keycloak defaults to 5–15 min). Django keeps its own session alive across that expiry, but the proxy re-challenges Keycloak once the access token lapses. Django cannot refresh the token — it holds neither the refresh token nor the client secret. To avoid frequent re-authentication, enable token refresh in the proxy plugin and/or raise the Keycloak client's *SSO Session Idle* / *Max* lifetimes.
 
 ## License
 
