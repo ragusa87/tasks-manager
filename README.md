@@ -31,6 +31,9 @@ I don't intent to maintain this project in the long term.
 * ![Offload](docs/img/offload.png)
 * ![Offload, recording a voice note](docs/img/offload_voice.png)
 * ![Dashboard, light theme](docs/img/dashboard_light.png)
+* ![Batch actions, selecting tasks on the dashboard](docs/img/batch_bar.png)
+* ![Batch action preview modal](docs/img/batch_action.png)
+* ![Nirvana import](docs/img/nirvana_import.png)
 
 The screenshots (including the dashboard above) live in `docs/img/` and are
 regenerated with `just capture-docs` against a running local instance.
@@ -50,7 +53,7 @@ NirvanaHQ classifies its labels into three kinds — **Areas**, **Contacts** and
 **Contexts** (the three tabs of Nirvana's *Manage Tags…* dialog) — but its JSON
 export flattens all three into a single comma-separated `tags` string on each
 item, with **no field, prefix or ordering that marks which kind a label is**.
-For example an item can carry `,personnal,liip-rawbot,ANALYSIS,Yannick Vaucher (C2C),`
+For example an item can carry `,personal,project-alpha,ANALYSIS,Jane Doe,`
 mixing an area, a context and a contact indistinguishably (the tags are simply
 stored alphabetically). Because the distinction is not recoverable from the
 export, the importer maps **every** entry in `tags` to a GTD Tag — Areas are not
