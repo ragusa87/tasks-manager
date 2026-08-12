@@ -70,6 +70,7 @@ const shots = [
   { name: "dashboard", path: "/" },
   { name: "dashboard_light", path: "/", theme: "light" },
   { name: "offload", path: "/item/offload/", viewport: { width: 420, height: 800 } },
+  { name: "nirvana_import", path: "/settings/nirvana-import/" },
 ];
 
 const DEFAULT_VIEWPORT = { width: 1440, height: 900 };
@@ -176,6 +177,31 @@ async function main() {
     await shoot(page, "item_recording", `${BASE_URL}/ (item modal, recording)`);
   } else {
     console.warn("! item_detail skipped — no item found on the dashboard.");
+  }
+
+  // Batch actions: enter batch mode on the dashboard, tick the whole page to
+  // reveal the selection bar, then open one action's preview modal.
+  await page.setViewportSize(DEFAULT_VIEWPORT);
+  await page.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
+  const batchToggle = page.locator("#batch-toggle");
+  if (await batchToggle.count()) {
+    await batchToggle.click();
+    await page.locator("#batch-select-page").check();
+    await page.waitForTimeout(300); // let the bar enable its action buttons
+    await shoot(page, "batch_bar", `${BASE_URL}/ (batch mode, page selected)`);
+
+    const actionBtn = page.locator(".batch-action-btn:not([disabled])").first();
+    if (await actionBtn.count()) {
+      await actionBtn.click();
+      await page.waitForSelector("#modal", { state: "visible" });
+      await page.waitForTimeout(500);
+      await shoot(page, "batch_action", `${BASE_URL}/ (batch action preview)`);
+      await page.keyboard.press("Escape").catch(() => {});
+    } else {
+      console.warn("! batch_action skipped — no enabled batch action button.");
+    }
+  } else {
+    console.warn("! batch shots skipped — batch toggle not on the dashboard.");
   }
 
   // Offload page, voice tab, mid-recording (phone-sized like the offload shot).

@@ -88,6 +88,7 @@ class Command(BaseCommand):
                 self.create_api_key(user)
             if users:
                 self.create_email_inbox(users[0])
+                self.create_nirvana_import_job(users[0])
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -171,6 +172,27 @@ class Command(BaseCommand):
             f"Email inbox for {user.username}: {inbox.address} "
             f"(whitelisted sender: {user.email})"
         )
+
+    def create_nirvana_import_job(self, user):
+        """Give a demo user a finished Nirvana import in their history, so the
+        import page (and its docs screenshot) shows a representative
+        'Recent imports' entry instead of an empty list."""
+        from nirvana.models import ImportJob
+
+        ImportJob.objects.get_or_create(
+            user=user,
+            file_path=f"nirvana/{user.username}/export.json",
+            defaults={
+                "wipe_existing": True,
+                "status": ImportJob.Status.SUCCESS,
+                "phase": "Done",
+                "progress_current": 232,
+                "progress_total": 232,
+                "created_count": 210,
+                "updated_count": 22,
+            },
+        )
+        self.stdout.write(f"Nirvana import job (success) for {user.username}")
 
     def create_documents_item(self, user):
         """Create a next action holding sample documents of each kind."""
