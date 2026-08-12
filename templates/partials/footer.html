@@ -1,0 +1,14 @@
+{% load sprite_tags %}
+<footer class="mt-auto border-t border-line bg-surface">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted">
+            <span>&copy; {% now "Y" %} Laurent Constantin &middot; AGPL-3.0</span>
+            <a href="https://github.com/ragusa87/tasks-manager"
+               target="_blank" rel="noopener noreferrer"
+               class="flex items-center gap-1.5 text-muted hover:text-body font-medium">
+                {% sprite "custom-github" 16 %}
+                GitHub
+            </a>
+        </div>
+    </div>
+</footer>

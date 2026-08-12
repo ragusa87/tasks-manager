@@ -10,7 +10,7 @@ I don't intent to maintain this project in the long term.
 
 ## Features
 * Capture and manage tasks seamlessly
-* Import existing tasks from NirvanaHQ (via command line)
+* Import existing tasks from NirvanaHQ (from the web UI or the command line — see [Nirvana import](#nirvana-import))
 * Search and review tasks to decide on next actions
 * Capture tasks by email: each user gets a secret inbox address, incoming mail becomes an inbox task (see [Email inbox](#email-inbox))
 * Attach documents to tasks (PDF, images, audio), uploaded via drag & drop, stored on local disk or S3-compatible storage (see `STORAGE_URL`)
@@ -31,14 +31,43 @@ I don't intent to maintain this project in the long term.
 * ![Offload](docs/img/offload.png)
 * ![Offload, recording a voice note](docs/img/offload_voice.png)
 * ![Dashboard, light theme](docs/img/dashboard_light.png)
+* ![Batch actions, selecting tasks on the dashboard](docs/img/batch_bar.png)
+* ![Batch action preview modal](docs/img/batch_action.png)
+* ![Nirvana import](docs/img/nirvana_import.png)
 
 The screenshots (including the dashboard above) live in `docs/img/` and are
 regenerated with `just capture-docs` against a running local instance.
 **Warning: it resets the local database** (`just fixturize --clear`) to get
 representative demo data before capturing.
 
+## Nirvana import
+
+Import a NirvanaHQ export (JSON) either from the web UI
+(**Manage → Nirvana import**, runs in the background with live progress) or the
+command line (`just manage nirvana_import <file.json> <username>`, add
+`--delete` to wipe the user's existing data first).
+
+### Known limitation: everything in `tags` becomes a Tag
+
+NirvanaHQ classifies its labels into three kinds — **Areas**, **Contacts** and
+**Contexts** (the three tabs of Nirvana's *Manage Tags…* dialog) — but its JSON
+export flattens all three into a single comma-separated `tags` string on each
+item, with **no field, prefix or ordering that marks which kind a label is**.
+For example an item can carry `,personal,project-alpha,ANALYSIS,Jane Doe,`
+mixing an area, a context and a contact indistinguishably (the tags are simply
+stored alphabetically). Because the distinction is not recoverable from the
+export, the importer maps **every** entry in `tags` to a GTD Tag — Areas are not
+created and Contacts are not linked. This is a deliberate, accepted limitation:
+the authoritative Area / Contact / Context split lives only in Nirvana's own UI,
+so we don't attempt to reconstruct it. After importing you can reclassify from
+the app — the Tags / Contexts / Areas management pages let you convert a tag
+into an area or a context (see the batch-actions feature above).
+
+Note: an item's *waiting-for* person is a separate `waitingfor` field and **is**
+imported (into the task's "waiting for" person) — only tag-assigned contacts are
+lost.
+
 ### TODOS
-- Nirvana: UI for import, fix importing reference (parent reference is currently a project instead of a reference)
 - New transition: Convert whole project to references
 - DateTime picker could respect the user's locale.
 - htmx show connectivity issue and 500.
@@ -73,9 +102,10 @@ All environment variables must be documented here (this is enforced as a project
 | `CELERY_RESULT_BACKEND` | `redis://localhost:6379/0` | Celery result backend |
 | `REDBEAT_REDIS_URL` | `CELERY_BROKER_URL` value | Redis URL for the RedBeat beat scheduler (stores the schedule in Redis) |
 | `REDIS_CHANNEL_URL` | `redis://redis:6379/1` | Django Channels layer |
-| `CACHE_URL` | `redis://127.0.0.1:6379/1` | Redis cache (production settings only) |
+| `CACHE_URL` | `redis://127.0.0.1:6379/1` (prod), `redis://redis:6379/2` (dev) | Redis cache, shared between web and workers (e.g. import cancellation flags) |
 | `STORAGE_URL` | `file://media` | Document storage: `file://<dir>` or `s3://key:secret@endpoint/bucket/prefix?region=...` |
 | `DOCUMENT_PRESIGNED_URL_EXPIRY` | `300` | Expiry (seconds) of S3 presigned download URLs |
+| `NIRVANA_IMPORT_HEARTBEAT_MAX_AGE` | `300` | Seconds without a heartbeat before a running Nirvana import is considered dead and cleaned up |
 | `EMAIL_URL` | `console://` | Outgoing email backend DSN (dj-email-url format) |
 | `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | — / `587` / — / — | Outgoing SMTP (production settings only) |
 | `EMAIL_INBOX_DSN` | `smtp://0.0.0.0:2525?max_size=10485760` | Incoming mail engine DSN, see [Email inbox](#email-inbox) |

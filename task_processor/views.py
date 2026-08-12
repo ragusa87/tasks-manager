@@ -407,7 +407,11 @@ class DashboardView(ListView):
         )
 
         # Create search filter instance
-        from .search import SearchFilter, extract_referenced_ids
+        from .search import (
+            SearchFilter,
+            extract_referenced_ids,
+            extract_referenced_values,
+        )
 
         # Keep any project explicitly queried (project:<id>) visible in the
         # suggestions even when it is completed.
@@ -419,6 +423,12 @@ class DashboardView(ListView):
             contexts=contexts,
             projects=Item.objects.projects(
                 self.request.user, include_ids=queried_project_ids
+            ),
+            # Only the most-used tags, plus any explicitly queried
+            # (tag:<name>) so their chip stays visible and removable.
+            tags=Tag.objects.suggestions(
+                self.request.user,
+                include_names=extract_referenced_values(self.get_search_query(), "tag"),
             ),
         )
 

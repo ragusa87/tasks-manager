@@ -14,7 +14,7 @@
         {% vite_hmr_client %}
     {% endblock %}
 </head>
-<body class="bg-ground min-h-screen">
+<body class="bg-ground min-h-screen flex flex-col">
     {% block body_header %}
     <header class="bg-surface shadow-sm border-b border-line">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -67,6 +67,10 @@
                                         Email inbox
                                     </a>
                                     {% endif %}
+                                    <a href="{% url 'nirvana_import' %}"
+                                       class="menu-item">
+                                        Nirvana import
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -167,6 +171,9 @@
         {% block content %}
         {% endblock %}
     </main>
+    {% block body_footer %}
+    {% include "partials/footer.html" %}
+    {% endblock %}
     <div id="modal-container">
         <div id="modal" style="display: none"></div>
     </div>

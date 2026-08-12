@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}Nirvana Import{% endblock %}
+{% block header_title %}Nirvana Import{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <!-- Header -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-body">Nirvana Import</h2>
+        <p class="mt-1 text-muted">
+            Upload a Nirvana export (JSON) and it will be imported in the background.
+            Items, projects, reference material and tags are preserved.
+        </p>
+    </div>
+
+    {% if active_job %}
+    <!-- Running import -->
+    <div class="card mb-6">
+        <div class="p-6">
+            <h3 class="text-lg font-medium text-body mb-4">Import in progress</h3>
+            {% include "nirvana/partials/job_status.html" with job=active_job %}
+            <form method="post" action="{% url 'nirvana_import_job_cancel' active_job.id %}" class="mt-4"
+                  onsubmit="return confirm('Cancel this import? Items already imported will be kept.');">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary text-danger">
+                    {% sprite "lucide-circle-x" 16 class="mr-2" %}
+                    Cancel import
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <!-- Upload form -->
+    <div class="card mb-6">
+        <form method="post" enctype="multipart/form-data" class="p-6">
+            {% csrf_token %}
+            <h3 class="text-lg font-medium text-body mb-2 flex items-center">
+                {% sprite "lucide-cloud-upload" 24 class="mr-2 text-accent" %}
+                Upload export file
+            </h3>
+            <p class="text-muted mb-4">
+                In Nirvana, use Settings &rarr; Export data to download your JSON export.
+            </p>
+
+            <div class="mb-6">
+                <label for="{{ form.file.id_for_label }}" class="block font-medium text-muted mb-2">
+                    {{ form.file.label }} <span class="text-danger">*</span>
+                </label>
+                {{ form.file }}
+                {% if form.file.errors %}
+                <p class="mt-2 text-danger">{{ form.file.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-6 p-4 bg-warning-ground border border-warning/30 rounded-md">
+                <div class="flex items-center">
+                    {{ form.wipe_existing }}
+                    <label for="{{ form.wipe_existing.id_for_label }}" class="ml-2 block font-medium text-warning">
+                        {{ form.wipe_existing.label }}
+                    </label>
+                </div>
+                <p class="mt-2 text-warning">{{ form.wipe_existing.help_text }}</p>
+                {% if form.wipe_existing.errors %}
+                <p class="mt-2 text-danger">{{ form.wipe_existing.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-primary">
+                {% sprite "lucide-cloud-upload" 24 class="mr-2" %}
+                Start import
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if jobs %}
+    <!-- Recent imports -->
+    <div class="card overflow-hidden">
+        <div class="p-6">
+            <h3 class="text-lg font-medium text-body mb-4">Recent imports</h3>
+            <ul class="divide-y divide-line">
+                {% for job in jobs %}
+                <li class="py-3">
+                    {% include "nirvana/partials/job_status.html" with job=job %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if jobs|length >= recent_jobs_limit %}
+        <div class="px-6 py-3 border-t border-line bg-ground">
+            <p class="text-muted text-center">Showing last {{ recent_jobs_limit }} items</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
