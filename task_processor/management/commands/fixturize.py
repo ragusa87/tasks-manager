@@ -84,6 +84,7 @@ class Command(BaseCommand):
                 self.create_contexts_areas_and_tags(user)
                 self.create_items(user, options["items_per_user"])
                 self.create_documents_item(user)
+                self.create_long_content_item(user)
                 self.create_reviews(user)
                 self.create_api_key(user)
             if users:
@@ -193,6 +194,34 @@ class Command(BaseCommand):
             },
         )
         self.stdout.write(f"Nirvana import job (success) for {user.username}")
+
+    def create_long_content_item(self, user):
+        """A next action whose title and description are deliberately long,
+        including an unbroken URL-like token, so mobile layout / text-wrapping
+        regressions (horizontal scroll on long content) are easy to spot."""
+        title = (
+            "Follow up with the infrastructure team about the recurring "
+            "nightly backup job that keeps failing on the staging cluster and "
+            "double-check the retention policy at "
+            "https://internal.example.com/ops/backups/retention-policy?cluster=staging&window=nightly&verbose=true"
+        )
+        description = (
+            "This task intentionally carries a very long, single-paragraph "
+            "description so we can verify that long content wraps instead of "
+            "forcing horizontal scroll on narrow (mobile) viewports. It also "
+            "embeds an unbreakable token — "
+            "supercalifragilisticexpialidocious-nonbreaking-token-that-should-wrap-not-overflow "
+            "— to stress word-breaking behaviour."
+        )
+        Item.objects.get_or_create(
+            title=title,
+            user=user,
+            defaults={
+                "description": description,
+                "status": GTDStatus.NEXT_ACTION,
+                "priority": Priority.HIGH,
+            },
+        )
 
     def create_documents_item(self, user):
         """Create a next action holding sample documents of each kind."""
