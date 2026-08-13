@@ -9,6 +9,19 @@ DEBUG = True
 SECURE_PROXY_SSL_HEADER = None
 SECURE_SSL_REDIRECT = False
 
+# Pin upload/banner config so the suite is deterministic regardless of the host
+# environment — a demo deployment may set ALLOW_FILES_UPLOAD=False / a banner,
+# which would otherwise leak in through get_env_variable and break upload tests.
+# Cases that need the disabled behaviour use @override_settings locally.
+ALLOW_FILES_UPLOAD = True
+INSTANCE_BANNER = ""
+LOGIN_CAPTCHA_ENABLED = False
+TURNSTILE_SITE_KEY = ""
+TURNSTILE_SECRET_KEY = ""
+# Pinned True so the conditionally-registered demo_login route (see
+# task_processor/urls.py) exists during tests regardless of the host env.
+IS_DEMO = True
+
 # Use in-memory database for tests
 DATABASES = {
     "default": {

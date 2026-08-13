@@ -34,6 +34,8 @@ from django.views.generic import (
 )
 from factory.django import get_model
 
+from core.captcha import TOKEN_FIELD, captcha_enabled, verify_turnstile
+
 from .batch import (
     AreaBatchActions,
     ContextBatchActions,
@@ -41,7 +43,7 @@ from .batch import (
     TagBatchActions,
     get_batch_actions_class,
 )
-from .constants import GTDConfig, GTDStatus
+from .constants import DEMO_ACCOUNTS, GTDConfig, GTDStatus
 from .forms import (
     AllowedSenderForm,
     AreaForm,
@@ -207,27 +209,47 @@ class DashboardStatsView(TemplateView):
         }
 
 
+def _captcha_context():
+    """Widget context shared by the login and demo-login pages."""
+    return {
+        "CAPTCHA_ENABLED": captcha_enabled(),
+        "TURNSTILE_SITE_KEY": settings.TURNSTILE_SITE_KEY,
+    }
+
+
 class LoginView(View):
     """
     Custom login view for GTD application.
     """
+
+    def get_context(self):
+        """Context shared by the initial render and every re-render on error,
+        so the demo hints and the captcha widget never disappear mid-flow."""
+        context = _captcha_context()
+        if settings.IS_DEMO:
+            context["demo_users"] = [
+                {"username": username, "password": password}
+                for username, password in DEMO_ACCOUNTS
+            ]
+        return context
 
     def get(self, request):
         """Display login form"""
         if request.user.is_authenticated:
             return redirect("dashboard")
 
-        context = {}
-        if settings.IS_DEMO:
-            context["demo_users"] = (
-                {"username": "user1", "password": "password"},
-                {"username": "user2", "password": "password"},
-            )
-
-        return render(request, "auth/login.html", context)
+        return render(request, "auth/login.html", self.get_context())
 
     def post(self, request):
         """Handle login form submission"""
+        # Turnstile (when enabled) is checked before credentials so a failed
+        # captcha never reaches authenticate().
+        if not verify_turnstile(
+            request.POST.get(TOKEN_FIELD), request.META.get("REMOTE_ADDR")
+        ):
+            messages.error(request, "Captcha verification failed. Please try again.")
+            return render(request, "auth/login.html", self.get_context())
+
         username = request.POST.get("username")
         password = request.POST.get("password")
 
@@ -247,7 +269,54 @@ class LoginView(View):
         else:
             messages.error(request, "Please provide both username and password.")
 
-        return render(request, "auth/login.html")
+        return render(request, "auth/login.html", self.get_context())
+
+
+class DemoLoginView(View):
+    """Second-step captcha hand-off for the one-click demo accounts.
+
+    The login page's quick-login buttons auto-submit the form, which carries no
+    captcha token; when the captcha is armed they link here instead so the
+    visitor solves a Turnstile challenge before being signed in as the demo
+    user. Only available while IS_DEMO is on and only for the seeded accounts.
+    """
+
+    def _password(self, username):
+        # The hand-off exists only to gate quick demo login behind the captcha,
+        # so it is reachable only on a demo instance with the captcha armed, and
+        # only for the seeded accounts. Otherwise the page 404s (when the
+        # captcha is off the login page uses the one-click buttons instead).
+        if not (settings.IS_DEMO and captcha_enabled()):
+            return None
+        return dict(DEMO_ACCOUNTS).get(username)
+
+    def _context(self, username):
+        return {"username": username, **_captcha_context()}
+
+    def get(self, request, username):
+        if request.user.is_authenticated:
+            return redirect("dashboard")
+        if self._password(username) is None:
+            raise Http404
+        return render(request, "auth/demo_login.html", self._context(username))
+
+    def post(self, request, username):
+        password = self._password(username)
+        if password is None:
+            raise Http404
+        if not verify_turnstile(
+            request.POST.get(TOKEN_FIELD), request.META.get("REMOTE_ADDR")
+        ):
+            messages.error(request, "Captcha verification failed. Please try again.")
+            return render(request, "auth/demo_login.html", self._context(username))
+
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            messages.error(request, "Demo account is not available right now.")
+            return redirect("login")
+        login(request, user)
+        messages.success(request, f"Welcome, {user.first_name or user.username}!")
+        return redirect("dashboard")
 
 
 class LogoutView(View):
@@ -1465,6 +1534,9 @@ class DocumentUploadView(View):
     """
 
     def post(self, request, item_id):
+        # Uploads are switched off on this instance (e.g. locked-down demo).
+        if not settings.ALLOW_FILES_UPLOAD:
+            return HttpResponse("File uploads are disabled.", status=503)
         item = get_object_or_404(Item, id=item_id, user=request.user)
         files = request.FILES.getlist("files")
 

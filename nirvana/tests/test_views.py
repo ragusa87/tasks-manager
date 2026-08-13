@@ -40,6 +40,26 @@ class TestNirvanaImportView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Start import")
 
+    @override_settings(ALLOW_FILES_UPLOAD=False)
+    def test_page_still_renders_when_uploads_disabled(self):
+        # The page stays reachable; only the upload itself is refused.
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(ALLOW_FILES_UPLOAD=False)
+    @patch("nirvana.views.run_nirvana_import")
+    def test_upload_rejected_by_form_when_uploads_disabled(self, mock_task):
+        export = SimpleUploadedFile("export.json", json.dumps([{"id": "1"}]).encode())
+        response = self.client.post(self.url, {"file": export, "wipe_existing": "on"})
+        self.assertEqual(response.status_code, 200)  # re-rendered with the error
+        self.assertFormError(
+            response.context["form"],
+            "file",
+            "File uploads are disabled on this instance.",
+        )
+        self.assertFalse(ImportJob.objects.exists())
+        mock_task.delay.assert_not_called()
+
     @patch("nirvana.views.run_nirvana_import")
     def test_post_creates_job_and_dispatches_task(self, mock_task):
         export = SimpleUploadedFile("export.json", json.dumps([{"id": "1"}]).encode())

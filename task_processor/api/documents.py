@@ -54,4 +54,8 @@ def _upload_description() -> str:
     description=lazy(_upload_description, str)(),
 )
 def upload_document_endpoint(request, item_id: int, file: UploadedFile = File(...)):
+    # Uploads are switched off on this instance (e.g. locked-down demo). This
+    # also gates the offload page, which posts attachments through here.
+    if not settings.ALLOW_FILES_UPLOAD:
+        raise HttpError(503, "File uploads are disabled")
     return Status(201, upload_document(request.user, item_id, file))

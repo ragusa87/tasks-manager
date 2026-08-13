@@ -1,0 +1,7 @@
+{% if CAPTCHA_ENABLED %}
+<div class="flex justify-center">
+    <div class="cf-turnstile" data-sitekey="{{ TURNSTILE_SITE_KEY }}"
+         data-theme="auto" data-size="flexible"></div>
+</div>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}

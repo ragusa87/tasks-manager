@@ -24,6 +24,10 @@ class NirvanaImportForm(forms.Form):
 
     def clean_file(self):
         uploaded = self.cleaned_data["file"]
+        # The import ingests an uploaded file, so it is gated by the same master
+        # switch as document uploads: reject the file, keep the page usable.
+        if not settings.ALLOW_FILES_UPLOAD:
+            raise forms.ValidationError("File uploads are disabled on this instance.")
         if uploaded.size > settings.MAX_FILE_SIZE:
             max_mb = settings.MAX_FILE_SIZE // (1024 * 1024)
             raise forms.ValidationError(f"File exceeds the {max_mb} MB limit.")

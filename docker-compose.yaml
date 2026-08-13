@@ -31,6 +31,12 @@ x-django-service: &django-service
     - STORAGE_URL=${STORAGE_URL:-file://media}
     - DOCUMENT_PRESIGNED_URL_EXPIRY=${DOCUMENT_PRESIGNED_URL_EXPIRY:-300}
     - NIRVANA_IMPORT_HEARTBEAT_MAX_AGE=${NIRVANA_IMPORT_HEARTBEAT_MAX_AGE:-300}
+    - ALLOW_FILES_UPLOAD=${ALLOW_FILES_UPLOAD:-True}
+    - INSTANCE_BANNER=${INSTANCE_BANNER:-}
+    - SQLITE_DB_PATH=${SQLITE_DB_PATH:-/app/data/db.sqlite3}
+    - LOGIN_CAPTCHA_ENABLED=${LOGIN_CAPTCHA_ENABLED:-False}
+    - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:-}
+    - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-}
   volumes: &django-volumes
     - media_data:/app/media
     - uv_cache:/root/.cache/uv

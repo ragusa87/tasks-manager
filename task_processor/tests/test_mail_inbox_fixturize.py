@@ -13,9 +13,7 @@ from task_processor.models.email_inbox import (
 class FixturizeEmailInboxTests(TestCase):
     def run_command(self):
         out = StringIO()
-        management.call_command(
-            "fixturize", "--users=2", "--items-per-user=4", stdout=out
-        )
+        management.call_command("fixturize", "--items-per-user=4", stdout=out)
         return out.getvalue()
 
     def test_first_user_gets_email_inbox(self):

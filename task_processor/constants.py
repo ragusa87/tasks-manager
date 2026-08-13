@@ -110,3 +110,11 @@ class GTDConfig:
         Priority.HIGH: "lucide-arrow-up",
         Priority.URGENT: "lucide-circle-alert",
     }
+
+
+# Shared password for the sample users seeded by `fixturize`. On a demo instance
+# these accounts double as the one-click logins on the login page, so this is
+# the single source of truth for both the seeding command and the login view —
+# keep them in sync here, not by comment.
+DEMO_USER_PASSWORD = "password"
+DEMO_ACCOUNTS = (("user1", DEMO_USER_PASSWORD), ("user2", DEMO_USER_PASSWORD))
