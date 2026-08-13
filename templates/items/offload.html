@@ -24,12 +24,12 @@
 
     {% vite_hmr_client %}
 </head>
-<body class="offload-app h-dvh overflow-hidden bg-ground font-sans text-body antialiased"
+<body class="offload-app h-svh overflow-hidden bg-ground font-sans text-body antialiased"
       data-max-bytes="{{ MAX_FILE_SIZE }}" data-max-title-length="{{ MAX_TITLE_LENGTH }}"
       data-max-recording-seconds="{{ MAX_RECORDING_SECONDS }}">
     <form hidden aria-hidden="true">{% csrf_token %}</form>
 
-    <div class="offload-shell grid h-dvh grid-rows-[auto_auto_minmax(0,1fr)_auto] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] min-[620px]:mx-auto min-[620px]:max-w-[520px] min-[620px]:border-x min-[620px]:border-line">
+    <div class="offload-shell grid h-svh grid-rows-[auto_auto_minmax(0,1fr)_auto] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] min-[620px]:mx-auto min-[620px]:max-w-[520px] min-[620px]:border-x min-[620px]:border-line">
 
         <header class="flex items-center gap-2.5 border-b border-line px-4.5 pt-3 pb-2.5">
             <span class="font-mono text-xs font-bold tracking-[.22em]">OFFLOAD<em class="not-italic text-accent">→</em></span>
