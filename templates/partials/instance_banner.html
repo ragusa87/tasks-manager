@@ -1,0 +1,9 @@
+{% load sprite_tags %}
+{% if INSTANCE_BANNER %}
+<div role="status" class="w-full bg-accent text-ground">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-2 text-center text-sm font-medium">
+        {% sprite "lucide-triangle-alert" 18 class="shrink-0" %}
+        <span>{{ INSTANCE_BANNER }}</span>
+    </div>
+</div>
+{% endif %}

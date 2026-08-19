@@ -689,6 +689,7 @@ async function offload() {
 function httpMessage(r, text) {
     if (r.status === 401) return 'Session expired \u2014 reload the page and sign in.';
     if (r.status === 403) return 'Request blocked (CSRF/session) \u2014 reload the page.';
+    if (r.status === 503) return 'File uploads are disabled on this instance.';
     let detail = text.slice(0, 180);
     try {
         const j = JSON.parse(text);

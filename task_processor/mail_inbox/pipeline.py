@@ -149,6 +149,16 @@ def extract_body(message):
 def extract_attachments(message):
     """Return (kept, notes): decoded attachments passing the allowlist, and
     human-readable notes about the ones that were skipped."""
+    # Uploads switched off on this instance (e.g. locked-down demo): still file
+    # the message, but drop every attachment and note each so the item records
+    # what was skipped.
+    if not settings.ALLOW_FILES_UPLOAD:
+        notes = [
+            f"{part.get_filename() or 'attachment'}: skipped, uploads are disabled"
+            for part in message.iter_attachments()
+        ]
+        return [], notes
+
     max_count = settings.EMAIL_INBOX_MAX_ATTACHMENTS
     max_size = settings.EMAIL_INBOX_ATTACHMENT_MAX_SIZE
     allowed_types = settings.EMAIL_INBOX_ATTACHMENT_ALLOWED_TYPES

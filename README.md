@@ -86,6 +86,7 @@ You can also use pre-commit (`docker compose exec web pre-commit install`) or ru
 - **Development**: `core.settings.development`
 - **Testing**: `core.settings.test` (auto-selected when running tests)
 - **Production**: `core.settings.production`
+- **Demo**: `core.settings.demo` — production-based, locked-down public instance. Enforces `IS_DEMO=True` and `ALLOW_FILES_UPLOAD=False`, runs on a standalone **SQLite** database (no Postgres container needed — pairs with a compose override that disables `db`), and ships a default `INSTANCE_BANNER` that's still overridable via the env var. The periodic reset is `manage.py fixturize --clear`. Select it with `DJANGO_SETTINGS_MODULE=core.settings.demo`; see [Demo setup](#demo-setup) for a ready-made `docker-compose.override.demo-example.yaml`.
 
 ### Environment variables
 
@@ -113,6 +114,12 @@ All environment variables must be documented here (this is enforced as a project
 | `FRONTEND_URL` | `https://tasks.docker.test` | Public URL of the app |
 | `CELERI_ADMIN_URL` | `http://tasks-celery-admin.docker.test/` | Flower dashboard URL |
 | `IS_DEMO` | `True` | Show demo credentials on the login page |
+| `ALLOW_FILES_UPLOAD` | `True` | Master switch for user file uploads. When `False`, the task dropzone is hidden and its endpoint returns 503, the offload photo/voice endpoint returns 503 (the error is shown in-page), mail-inbox attachments are dropped (the item is still filed), and the Nirvana JSON import form rejects the upload. Existing documents stay viewable. Set `False` for a locked-down demo. |
+| `INSTANCE_BANNER` | `""` | Free-text notice shown site-wide (login, app, offload), e.g. `This instance disables uploads and self-resets hourly`. Empty = no banner. |
+| `SQLITE_DB_PATH` | `/app/data/db.sqlite3` | Demo settings only (`core.settings.demo`): filesystem path of the standalone SQLite database. Defaults to a dedicated `data` volume; ignored by the Postgres-backed settings. |
+| `LOGIN_CAPTCHA_ENABLED` | `False` | Require a Cloudflare Turnstile captcha on the login form. Needs `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to arm. |
+| `TURNSTILE_SITE_KEY` | `""` | Cloudflare Turnstile public site key (rendered in the login page). |
+| `TURNSTILE_SECRET_KEY` | `""` | Cloudflare Turnstile secret key (server-side verification only; never exposed). |
 | `CUSTOM_AUTHENTICATION_BACKEND` | `""` | Set to `authcrunch` to authenticate via the reverse proxy |
 | `SENTRY_DSN` | — | Enable Sentry error tracking (production settings only) |
 | `DJANGO_VITE_DEV_SERVER_HOST` / `DJANGO_VITE_DEV_SERVER_PORT` / `DJANGO_VITE_DEV_SERVER_PROTOCOL` | `tasks-vite.docker.test` / `443` / `https` | Vite dev server (development settings only) |
@@ -255,6 +262,45 @@ You can configure django to use the reverse proxy for authentication.
 * Set `CUSTOM_AUTHENTICATION_BACKEND=authcrunch` in your docker-compose.override.yaml file and restart your containers.
 * Configure your reverse proxy to set the `X-Token-User-Name` and `X-Token-User-Roles` so that django can identify the user.
 * You need a role "authp/admin" to be super-admin.
+
+### Demo setup
+
+To run a locked-down public demo (SQLite, no Postgres/workers, uploads disabled,
+throwaway sample data), use the demo settings module and the demo compose
+override:
+
+```bash
+cp .env.example .env                                    # set SECRET_KEY, ALLOWED_HOSTS, TURNSTILE_* …
+cp docker-compose.override.demo-example.yaml docker-compose.override.yaml
+docker compose up -d
+```
+
+The override sets `DJANGO_SETTINGS_MODULE=core.settings.demo` on the `web`
+service and, versus a normal deployment:
+
+- runs the released image on **SQLite** in a dedicated `sqlite_data` volume at
+  `/app/data/db.sqlite3` (override with `SQLITE_DB_PATH`), so no Postgres
+  container is needed;
+- disables the `db`, `mail`, `celery` and `celery-beat` services (the demo needs
+  none of them);
+- keeps Redis internal (no host port) so it can't clash with another stack;
+- ships placeholder traefik router/service names and a `demo.example.com`
+  hostname — **replace these with your own** before deploying.
+
+Edit the copied override to set your traefik hostname/resolver, and keep secrets
+(`SECRET_KEY`, `TURNSTILE_SECRET_KEY`, …) in `.env`, never in the committed
+override. Requires Docker Compose v2.24+ for the `!reset` / `!override` tags.
+
+Seed and reset the demo data with:
+
+```bash
+docker compose exec web python manage.py fixturize --clear   # or: just fixturize --clear
+```
+
+`fixturize` creates the demo accounts from `DEMO_ACCOUNTS` (`user1` / `user2`,
+password `password`) and refuses to run under `core.settings.production`.
+`--clear` wipes and reseeds — run it on a schedule (host cron / systemd timer)
+if you want the instance to self-reset.
 
 ## License
 

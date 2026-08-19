@@ -26,4 +26,8 @@ def site_settings(request):
         "ALLOWED_TYPES_ACCEPT": accept_attribute(settings.ALLOWED_TYPES),
         # The voice-note recorder uploads WAV; hidden when not allow-listed.
         "RECORDING_ENABLED": recording_enabled(settings.ALLOWED_TYPES),
+        # Master switch gating the upload UI (dropzone, offload photo/voice).
+        "ALLOW_FILES_UPLOAD": settings.ALLOW_FILES_UPLOAD,
+        # Optional site-wide notice; empty string renders nothing.
+        "INSTANCE_BANNER": settings.INSTANCE_BANNER,
     }

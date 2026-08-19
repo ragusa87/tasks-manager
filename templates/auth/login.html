@@ -65,6 +65,8 @@
                 </div>
             </div>
 
+            {% include "partials/turnstile.html" %}
+
             <div>
                 <button
                     type="submit"
@@ -97,10 +99,19 @@
                         <div class="bg-surface p-2 rounded border text-center flex flex-col relative">
                             <strong>{{user.username}}</strong><br>
                             <span class="text-muted">{{user.password}}</span>
+                            {% if CAPTCHA_ENABLED %}
+                            {# Captcha is armed: hand off to the second page that #}
+                            {# shows the Turnstile challenge before signing in.   #}
+                            <a href="{% url 'demo_login' user.username %}"
+                               class="expand-target text-accent hover:underline cursor-pointer flex-grow">
+                                Login as {{user.username}}
+                            </a>
+                            {% else %}
                             <a onclick="document.getElementById('username').value='{{user.username}}'; document.getElementById('password').value='{{user.password}}'; document.getElementById('login-form').submit()"
                                class="expand-target text-accent hover:underline cursor-pointer flex-grow">
                                 Login as {{user.username}}
                             </a>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>

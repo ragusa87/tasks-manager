@@ -6,14 +6,16 @@ import struct
 import wave
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission, User
 from django.core import management
 from django.core.files.base import ContentFile
-from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.core.management.base import BaseCommand, CommandError
+from django.db import OperationalError, ProgrammingError, connection, transaction
 from django.utils import timezone
 
 from task_processor.constants import (
+    DEMO_ACCOUNTS,
     GTDConfig,
     GTDDuration,
     GTDEnergy,
@@ -26,6 +28,7 @@ from task_processor.models import (
     ApiKey,
     Area,
     Context,
+    Document,
     EmailInbox,
     Item,
     Review,
@@ -45,12 +48,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--users",
-            type=int,
-            default=2,
-            help="Number of users to create (default: 2)",
-        )
-        parser.add_argument(
             "--items-per-user",
             type=int,
             default=50,
@@ -68,7 +65,23 @@ class Command(BaseCommand):
 
         management.call_command("migrate", "--noinput", stdout=StringIO())
 
+    def reject_production(self):
+        # fixturize seeds throwaway sample data and --clear DROPs every table,
+        # so it must never touch a production database. SETTINGS_MODULE mirrors
+        # DJANGO_SETTINGS_MODULE; refuse the production settings module outright
+        # (development, demo and test remain fine).
+        settings_module = settings.SETTINGS_MODULE or ""
+        if settings_module.endswith(".production"):
+            raise CommandError(
+                f"Refusing to run fixturize with "
+                f"DJANGO_SETTINGS_MODULE={settings_module!r}: this command "
+                f"creates sample data and --clear drops every table, so it is "
+                f"for development/demo only, never production."
+            )
+
     def handle(self, *args, **options):
+        self.reject_production()
+
         if options["clear"]:
             self.stdout.write("Clearing existing data...")
             self.clear_data()
@@ -78,7 +91,7 @@ class Command(BaseCommand):
         self.stdout.write("Generating sample data...")
 
         with transaction.atomic():
-            users = self.create_users(options["users"])
+            users = self.create_users()
             for user in users:
                 self.stdout.write(f"Creating data for user: {user.username}")
                 self.create_contexts_areas_and_tags(user)
@@ -97,50 +110,64 @@ class Command(BaseCommand):
             )
         )
 
-    def reset_sequence(self, model):
-        table = model._meta.db_table
-        pk = model._meta.pk.column
-        seq = f"{table}_{pk}_seq"
-
-        with connection.cursor() as cursor:
-            cursor.execute(f"SELECT COALESCE(MAX({pk}), 0) + 1 FROM {table}")
-            next_val = cursor.fetchone()[0]
-            cursor.execute(f"ALTER SEQUENCE {seq} RESTART WITH {next_val}")
-
     def clear_data(self):
+        # DROP TABLE bypasses the ORM, so the Document.delete() override and the
+        # post_delete receiver that remove the stored file never fire. Delete the
+        # documents through the ORM first, otherwise every reset orphans the
+        # previously seeded files and slowly fills the disk / S3 bucket.
+        try:
+            Document.objects.all().delete()
+        except (ProgrammingError, OperationalError):
+            pass  # not migrated yet (fresh DB) — nothing to clean
+
+        vendor = connection.vendor
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
-            )
-            all_tables = [row[0] for row in cursor.fetchall()]
+            if vendor == "postgresql":
+                cursor.execute(
+                    "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+                )
+                tables = [
+                    t
+                    for (t,) in cursor.fetchall()
+                    if t not in {"spatial_ref_sys"} and not t.startswith("temp_")
+                ]
+                for table in tables:
+                    cursor.execute(f'DROP TABLE "{table}" CASCADE')
+            elif vendor == "sqlite":
+                # SQLite has no CASCADE on DROP TABLE; disable FK enforcement
+                # for the wipe instead. PRAGMAs must run outside a transaction,
+                # which clear_data always is (handle() only wraps seeding).
+                cursor.execute("PRAGMA foreign_keys = OFF")
+                cursor.execute(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                )
+                tables = [name for (name,) in cursor.fetchall()]
+                for table in tables:
+                    cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
+                cursor.execute("PRAGMA foreign_keys = ON")
+            else:
+                raise CommandError(
+                    f"fixturize --clear does not support DB vendor {vendor!r}"
+                )
 
-            # Exclude system tables
-            tables_to_drop = [
-                t
-                for t in all_tables
-                if t not in {"spatial_ref_sys"} and not t.startswith("temp_")
-            ]
-            for table in tables_to_drop:
-                cursor.execute(f'DROP TABLE "{table}" CASCADE')
-
-    def create_users(self, count):
-        """Create sample users"""
+    def create_users(self):
+        """Create the demo/sample users from DEMO_ACCOUNTS — the same accounts
+        the login page offers as one-click demo logins, so seeding and login
+        read one source of truth."""
         users = []
-        for i in range(count):
-            username = f"user{i + 1}"
-            email = f"user{i + 1}@example.com"
-
+        for i, (username, password) in enumerate(DEMO_ACCOUNTS, start=1):
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults={
-                    "email": email,
+                    "email": f"{username}@example.com",
                     "first_name": "User",
-                    "last_name": f"{i + 1}",
+                    "last_name": str(i),
                     "is_active": True,
                 },
             )
             if created:
-                user.set_password("password")
+                user.set_password(password)
                 user.save()
             users.append(user)
         return users

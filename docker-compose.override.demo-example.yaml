@@ -1,0 +1,57 @@
+# Example override for a DEMO deployment.
+#
+# Copy to docker-compose.override.yaml (git-ignored) and replace the
+# placeholders below. Pairs with core/settings/demo.py.
+#
+# What it does:
+#   * runs the released image on the demo Django settings, with SQLite in a
+#     dedicated volume — no Postgres, no background workers,
+#   * avoids conflicts when another tasks-manager stack shares the host:
+#       - no Redis host port (the other stack may already own 6379),
+#       - no mail host port (2525),
+#       - a UNIQUE traefik router/service name and hostname.
+#
+# Secrets (SECRET_KEY, TURNSTILE_SECRET_KEY, …) belong in .env, never here.
+# Requires Docker Compose v2.24+ for the !reset / !override tags.
+
+services:
+  # Disabled services: the demo needs none of them.
+  db:
+    profiles: ["disabled"]        # SQLite instead of Postgres
+  mail:
+    profiles: ["disabled"]        # no inbound mail
+  celery:
+    profiles: ["disabled"]        # no background workers (avoids SQLite lock contention)
+  celery-beat:
+    profiles: ["disabled"]
+
+  # Keep Redis internal to the compose network (cache + channels). Drop the
+  # host port so it can't clash with another Redis on the host.
+  redis:
+    ports: !reset []
+
+  web:
+    image: ghcr.io/ragusa87/tasks-manager:latest
+    # To run an UNRELEASED branch, build the image locally instead of pulling
+    # the released tag above — uncomment:
+    # build:
+    #   context: .
+    #   target: django-prod
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings.demo
+    depends_on:
+      db: !reset null             # SQLite -> no Postgres dependency
+    # SQLite lives in its own volume (demo.py -> /app/data/db.sqlite3).
+    volumes:
+      - sqlite_data:/app/data
+    # Replace with your OWN unique router/service name and hostname so they
+    # don't collide with any other stack on the same traefik.
+    labels: !override
+      - traefik.enable=true
+      - "traefik.http.routers.tasks-demo.rule=Host(`demo.example.com`)"   # <-- your demo hostname
+      - traefik.http.routers.tasks-demo.entrypoints=http,https
+      - traefik.http.routers.tasks-demo.tls.certresolver=your-cert-resolver  # <-- your traefik resolver name
+      - traefik.http.services.tasks-demo.loadbalancer.server.port=8000
+
+volumes:
+  sqlite_data:

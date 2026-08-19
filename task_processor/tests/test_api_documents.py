@@ -155,6 +155,12 @@ class TestUploadDocumentEndpoint(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["content_type"], "image/png")
 
+    @override_settings(ALLOW_FILES_UPLOAD=False)
+    def test_upload_disabled_returns_503(self):
+        response = self.post_file(self.item.id, "report.pdf", make_pdf())
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(Document.objects.count(), 0)
+
     def test_missing_auth_returns_401(self):
         response = self.post_file(self.item.id, "report.pdf", make_pdf(), headers={})
         self.assertEqual(response.status_code, 401)

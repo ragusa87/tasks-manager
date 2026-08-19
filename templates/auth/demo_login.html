@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load sprite_tags %}
+
+{% block title %}Demo login{% endblock %}
+
+{% block body_header %}
+<div class="absolute top-4 right-4">
+    {% include "partials/theme_toggle.html" %}
+</div>
+{% endblock %}
+{% block messages %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-ground py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-accent/15">
+                <svg class="h-6 w-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-body">
+                Continue as {{ username }}
+            </h2>
+            <p class="mt-2 text-center text-muted">
+                Complete the check below to enter the demo.
+            </p>
+        </div>
+
+        {% include "partials/messages.html" %}
+
+        <form class="mt-8 space-y-6" method="post" action="{% url 'demo_login' username %}">
+            {% csrf_token %}
+
+            {% include "partials/turnstile.html" %}
+
+            <div>
+                <button type="submit" class="btn-primary group relative w-full">
+                    Enter as {{ username }}
+                </button>
+            </div>
+
+            <p class="text-center">
+                <a href="{% url 'login' %}" class="text-accent hover:underline">Back to login</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock content %}

@@ -595,7 +595,9 @@
                 {% include "partials/document_list.html" with item_id=item.id documents=documents %}
             </div>
 
+            {% if ALLOW_FILES_UPLOAD %}
             {% include "partials/document_dropzone.html" with item_id=item.id %}
+            {% endif %}
             {% else %}
             <div class="flex items-center gap-2 py-3 px-3 bg-ground rounded-md border border-dashed border-line">
                 {% sprite "lucide-info" 16 class="text-faint shrink-0" %}

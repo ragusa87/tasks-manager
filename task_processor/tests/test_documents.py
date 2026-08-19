@@ -147,6 +147,22 @@ class DocumentUploadViewTests(TestCase):
         self.assertEqual(document.item, self.item)
         self.assertEqual(document.user, self.user)
 
+    @override_settings(ALLOW_FILES_UPLOAD=False)
+    def test_upload_disabled_returns_503(self):
+        """With uploads switched off, the endpoint refuses and stores nothing."""
+        self.client.force_login(self.user)
+
+        pdf_file = io.BytesIO(make_pdf())
+        pdf_file.name = "test.pdf"
+
+        response = self.client.post(
+            reverse("document_upload", args=[self.item.id]),
+            {"files": pdf_file},
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(Document.objects.count(), 0)
+
     def test_upload_multiple_files(self):
         """Test uploading multiple files"""
         self.client.force_login(self.user)

@@ -235,6 +235,18 @@ class IngestMessageTests(MailInboxPipelineTestCase):
         self.assertIn("archive.zip", result.item.description)
         self.assertIn("not allowed", result.item.description)
 
+    @override_settings(ALLOW_FILES_UPLOAD=False)
+    def test_attachments_dropped_when_uploads_disabled(self):
+        # The message is still filed; every attachment is dropped and noted.
+        raw = build_raw(attachments=[("report.pdf", PDF_BYTES, "application", "pdf")])
+        result = self.ingest(raw)
+        self.assertTrue(result.accepted)
+        self.assertIsNotNone(result.item)
+        self.assertEqual(Document.objects.filter(item=result.item).count(), 0)
+        self.assertEqual(len(result.skipped_attachments), 1)
+        self.assertIn("report.pdf", result.item.description)
+        self.assertIn("disabled", result.item.description)
+
     @override_settings(EMAIL_INBOX_ATTACHMENT_MAX_SIZE=10)
     def test_oversize_attachment_skipped(self):
         raw = build_raw(attachments=[("report.pdf", PDF_BYTES, "application", "pdf")])

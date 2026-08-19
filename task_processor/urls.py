@@ -15,6 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
 from django.urls import path
 
 from .views import (
@@ -33,6 +34,7 @@ from .views import (
     CreateFieldView,
     DashboardStatsView,
     DashboardView,
+    DemoLoginView,
     DocumentDeleteView,
     DocumentDownloadView,
     DocumentUploadView,
@@ -142,3 +144,15 @@ urlpatterns = [
     path("tags/<int:tag_id>/update/", TagUpdateView.as_view(), name="tag_update"),
     path("tags/<int:tag_id>/delete/", TagDeleteView.as_view(), name="tag_delete"),
 ]
+
+# The demo captcha hand-off logs a visitor in as a seeded demo account, so the
+# route only exists on demo instances — a non-demo deployment never registers
+# it. The view keeps its own IS_DEMO + captcha guard as defence in depth.
+if settings.IS_DEMO:
+    urlpatterns += [
+        path(
+            "login/demo/<str:username>/",
+            DemoLoginView.as_view(),
+            name="demo_login",
+        ),
+    ]

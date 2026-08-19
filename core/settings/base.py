@@ -242,6 +242,25 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 # (dropzone + offload) enforce the same limit.
 MAX_RECORDING_SECONDS = 60
 
+# Master switch for user-initiated file uploads. When False, every way a user
+# can push a file in is turned off: the task dropzone is hidden and its endpoint
+# returns 503; the offload photo/voice endpoint returns 503 (the tabs stay and
+# surface the error); mail-inbox attachments are dropped (the item is still
+# filed); and the Nirvana JSON import form rejects the upload. Existing
+# documents stay viewable/downloadable and internal seeding (fixturize) is
+# unaffected. Meant for locked-down demo instances; default keeps normal
+# behaviour.
+ALLOW_FILES_UPLOAD = get_env_variable("ALLOW_FILES_UPLOAD", "True").lower() in (
+    "true",
+    "1",
+    "t",
+)
+
+# Free-text notice rendered site-wide (login, app pages, offload). Empty = no
+# banner. Independent of ALLOW_FILES_UPLOAD so the operator can word it freely,
+# e.g. "This instance disables uploads and self-resets hourly".
+INSTANCE_BANNER = get_env_variable("INSTANCE_BANNER", "")
+
 # Seconds without a heartbeat before a running Nirvana import is considered
 # dead (worker crashed) and eligible for cleanup.
 NIRVANA_IMPORT_HEARTBEAT_MAX_AGE = int(
@@ -295,6 +314,19 @@ CELERI_ADMIN_URL = get_env_variable(
     "CELERI_ADMIN_URL", "http://tasks-celery-admin.docker.test/"
 )
 IS_DEMO = get_env_variable("IS_DEMO", "True").lower() in ("true", "1", "t")
+
+# Optional Cloudflare Turnstile captcha on the login form. Off by default; when
+# enabled the login POST is rejected unless a valid Turnstile token is provided
+# (verified server-side). The site key is public (rendered in the page); the
+# secret key must stay server-side. Both are required for the captcha to arm —
+# see core.captcha.captcha_enabled().
+LOGIN_CAPTCHA_ENABLED = get_env_variable("LOGIN_CAPTCHA_ENABLED", "False").lower() in (
+    "true",
+    "1",
+    "t",
+)
+TURNSTILE_SITE_KEY = get_env_variable("TURNSTILE_SITE_KEY", "")
+TURNSTILE_SECRET_KEY = get_env_variable("TURNSTILE_SECRET_KEY", "")
 
 
 DATE_INPUT_FORMAT = "%Y-%m-%d"
