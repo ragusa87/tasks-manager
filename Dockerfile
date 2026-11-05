@@ -32,7 +32,7 @@ COPY templates templates/
 RUN npm run vite build
 
 
-FROM python:3.14-slim AS django
+FROM python:3.15-slim AS django
 # Build arguments for user/group IDs
 ARG USER_ID=1000
 ARG GROUP_ID=1000
